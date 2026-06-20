@@ -8,7 +8,7 @@ Application web unique fusionnant l'**atelier de préparation documentaire** (ex
 
 - **Front** : React + Vite, servi en statique sur o2switch, **PWA** (installable, en ligne).
 - **API** : PHP (sans framework lourd), compatible o2switch mutualisé.
-- **Base** : MySQL/MariaDB unique = source de vérité (atelier + corpus + staging).
+- **Base** : MySQL/MariaDB unique = source de vérité (atelier + corpus + auth). Validation d'un lot conforme → **intégration directe au corpus** (transaction).
 - **Traitements longs** : file de jobs `server_jobs` + cron (`run_jobs.php`).
 - **IA** : LiteLLM (cloud), providers configurables.
 - **Abstraction** : couche UI/UX + services conservée (portabilité Tauri/natif ultérieure sans réécriture).
@@ -23,7 +23,8 @@ Application web unique fusionnant l'**atelier de préparation documentaire** (ex
 
 - `docs/cahier_des_charges-lumosphere.md` — exigences fonctionnelles.
 - `docs/_contexte-ia/` — pack de contexte condensé pour l'IA codeuse (optimisation tokens).
-- Devbook de migration : voir `pretraitement/docs/devbook_migration_full_web-lumosphere.md` (dépôt source, en cours de migration).
+- `docs/stack_technique-lumosphere.md`, `docs/trame_travail-lumosphere.md`, `docs/conventions_traitement-lumosphere.md`.
+- Devbook de migration : `docs/devbook_migration_full_web-lumosphere.md`.
 
 ## Déploiement (o2switch)
 

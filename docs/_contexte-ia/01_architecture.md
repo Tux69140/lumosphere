@@ -1,42 +1,42 @@
 # 01 — Architecture
 
-## Vue d'ensemble
+## Overview
 ```
-Navigateur (PWA)  --HTTPS, même origine-->  API PHP (o2switch)  --PDO-->  MySQL unique
-  React/Vite                                      |                    [atelier|staging|corpus|auth]
-  couche d'abstraction (services)                 |
-                                          server_jobs + cron --> workers Python (venv py311)
+Browser (PWA)  --HTTPS, same-origin-->  PHP API (o2switch)  --PDO-->  single MySQL
+  React/Vite                                  |                    [atelier|corpus|auth]
+  abstraction layer (services)                |
+                                       server_jobs + cron --> Python workers (venv py311)
 ```
 
 ## Front
-- React 19 + Vite + TypeScript + Tailwind (charte orange/violet/gris, clair-sombre).
-- **PWA** : `manifest.json` + service worker minimal (installable ; **pas de cache hors-ligne**). Magasins via PWABuilder (MSIX, TWA + `assetlinks.json`).
-- **Responsive** desktop/tablette/mobile (l'UI actuelle est « bureau d'abord », à adapter).
-- **Abstraction obligatoire** : l'UI n'appelle jamais le runtime ; elle passe par le contrat `EpurielServices` (`abstraction/uiContract.ts`, `services/`). Un seul adaptateur aujourd'hui (Web/`fetch`). Persistance réglages = `localStorage`.
+- React 19 + Vite + TS + Tailwind (validated palette: green/gold/slate + indigo, light-dark; **Phosphor Icons**).
+- **PWA**: `manifest.json` + minimal service worker (installable; **no offline cache**). Stores via PWABuilder (MSIX, TWA + `assetlinks.json`).
+- **Responsive** desktop/tablet/mobile (current UI is desktop-first, to adapt).
+- **Mandatory abstraction**: UI never calls runtime directly; goes through `EpurielServices` contract (`abstraction/uiContract.ts`, `services/`). One adapter today (Web/`fetch`). Settings persisted in `localStorage`.
 
-## API PHP
-- Routeur unique + `bootstrap.php` (CORS, config, PDO, helpers). Fonctions préfixées `epuriel_*` (conservées).
-- Config sensible **hors dépôt** : `config/config.php` (db_*, lots_root, python_bin, timezone, clés IA). Jamais d'URL/secret en dur.
-- **Auth par session** (remplace le jeton `X-Epuriel-Token`). Tous les endpoints vérifient la session.
-- PDO **paramètres liés** uniquement.
+## PHP API
+- Single router + `bootstrap.php` (CORS, config, PDO, helpers). `epuriel_*` functions kept.
+- Sensitive config **outside repo**: `config/config.php` (db_*, lots_root, python_bin, timezone, AI keys). No hardcoded URL/secret.
+- **Strong session auth** (replaces `X-Epuriel-Token`): bcrypt, rate-limit + lockout, robust password policy, session-id regen, expiry/idle (no 2FA). Every endpoint checks session; CSRF on sensitive actions.
+- PDO **bound params** only.
 
-## Traitements longs
-Tout traitement lourd → table **`server_jobs`** dépilée par cron **`run_jobs.php`**. Jamais d'`exec()` long dans une requête web. Pas de Celery/RQ/Redis. Workers **Python** lancés via `exec()`.
+## Long tasks
+All heavy work → **`server_jobs`** table drained by cron **`run_jobs.php`**. No long `exec()` in a web request. No Celery/RQ/Redis. Python workers via `exec()`.
 
-## IA
-LiteLLM (cloud). Providers configurables, défaut `gemini`, allowlist des modèles, clés en config serveur.
+## AI
+LiteLLM (cloud). Configurable providers, default `gemini`, model allowlist, keys in server config.
 
-## Contraintes o2switch (mutualisé, pas de VPS)
+## o2switch limits (shared, no VPS)
 | | |
 |---|---|
 | PHP | 8.1.34 (web+cli) · MariaDB 11.4.12 |
 | `exec()`/cron | OK (`/usr/local/bin/php`) |
-| Python | **système 3.6.8 inutilisable → venv py311** |
+| Python | system 3.6.8 unusable → **venv py311** |
 | OK | PyMuPDF, Pillow, LiteLLM, Ghostscript (`/usr/bin/gs`) |
-| **ABSENTS** | Tesseract, OCRmyPDF, Poppler, Pandoc |
-| Non | VPS, GPU, processus persistant (→ Ollama local abandonné) |
+| **Absent → install** | Tesseract, OCRmyPDF, Poppler, Pandoc (venv if needed / embedded binary) |
+| No | VPS, GPU, persistent process (→ local Ollama dropped) |
 
-→ Chaîne **PDF OCR contrainte** ; **EPUB Pandoc** (phase 3) = binaire à embarquer.
+→ OCR and **EPUB Pandoc** (phase 3): **to install**, not deferred.
 
-## Déploiement
-Site à la **racine** `/home2/mist2786/public_html/` (build React + API PHP, même origine). Accès `ssh lumosphere`. Base `mist2786_lumosphere`, user applicatif `mist2786_lumo_usr` (SELECT/INSERT/UPDATE/DELETE only).
+## Deploy
+Site at **root** `/home2/mist2786/public_html/` (React build + PHP API, same origin). `ssh lumosphere`. DB `mist2786_lumosphere`, app user `mist2786_lumo_usr` (SELECT/INSERT/UPDATE/DELETE only).

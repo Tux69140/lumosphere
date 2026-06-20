@@ -1,0 +1,38 @@
+-- FTS5 autonome (sans content= — les triggers sont seuls responsables)
+CREATE VIRTUAL TABLE citations_fts USING fts5(
+  contenu,
+  auteur_nom
+);
+
+-- Trigger INSERT : jointure oeuvres → auteurs pour récupérer le nom
+CREATE TRIGGER citations_ai AFTER INSERT ON citations BEGIN
+  INSERT INTO citations_fts(rowid, contenu, auteur_nom)
+  SELECT NEW.id, NEW.contenu, a.nom
+  FROM auteurs a
+  JOIN oeuvres o ON o.id = NEW.oeuvre_id
+  WHERE a.id = o.auteur_id;
+END;
+
+-- Trigger DELETE
+CREATE TRIGGER citations_ad AFTER DELETE ON citations BEGIN
+  INSERT INTO citations_fts(citations_fts, rowid, contenu, auteur_nom)
+  VALUES('delete', OLD.id, OLD.contenu,
+    (SELECT a.nom FROM auteurs a JOIN oeuvres o ON o.id = OLD.oeuvre_id WHERE a.id = o.auteur_id));
+END;
+
+-- Trigger UPDATE
+CREATE TRIGGER citations_au AFTER UPDATE ON citations BEGIN
+  INSERT INTO citations_fts(citations_fts, rowid, contenu, auteur_nom)
+  VALUES('delete', OLD.id, OLD.contenu,
+    (SELECT a.nom FROM auteurs a JOIN oeuvres o ON o.id = OLD.oeuvre_id WHERE a.id = o.auteur_id));
+  INSERT INTO citations_fts(rowid, contenu, auteur_nom)
+  SELECT NEW.id, NEW.contenu, a.nom
+  FROM auteurs a
+  JOIN oeuvres o ON o.id = NEW.oeuvre_id
+  WHERE a.id = o.auteur_id;
+END;
+
+-- Trigger updated_at sur citations (même pattern à dupliquer pour auteurs, oeuvres, themes, users)
+CREATE TRIGGER citations_updated_at AFTER UPDATE ON citations BEGIN
+  UPDATE citations SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+END;

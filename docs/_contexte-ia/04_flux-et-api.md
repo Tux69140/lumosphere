@@ -1,27 +1,28 @@
-# 04 — Flux et API
+# 04 — Flows & API
 
-## Authentification (à créer)
-- `POST /auth/login` (email + mot de passe → session PHP, cookie `httpOnly`/`Secure`/`SameSite`).
+## Auth (to create)
+- `POST /auth/login` (email + password → PHP session, httpOnly/Secure/SameSite cookie).
 - `POST /auth/logout`.
-- Tous les autres endpoints : vérification de session (remplace `epuriel_require_token`) + CSRF sur actions sensibles.
-- Premier démarrage : admin par défaut → changement de mot de passe imposé.
+- All other endpoints: session check (replaces `epuriel_require_token`) + CSRF on sensitive actions. **Strong auth**: bcrypt, rate-limit + lockout, robust password policy (no 2FA this phase).
+- First boot: default admin → forced password change.
 
-## Flux atelier → staging → corpus
-1. **Collecte** : collecteur cron (Telegram/YouTube/HTML) **ou** upload PDF → création d'un **lot** `en_attente` (brut déposé, lot jetable).
-2. **Traitement** : étapes par source via `server_jobs` (nettoyage, segmentation, OCR si dispo, enrichissement IA). Workers Python.
-3. **Révision** humaine dans l'atelier.
-4. **Mise en staging** (étape A) : écriture dans `import_staging_*` ; contrôles de complétude + doublons (hash, `telegram_message_id`). *Remplace l'ancienne génération de fichier pivot.*
-5. **Validation** (étape B) : un Éditeur valide → création des entrées dans le **corpus** + application des règles métier. **Puis effacement du dossier du lot.**
+## atelier → corpus flow (direct integration)
+1. **Collect**: cron collector (Telegram/YouTube/HTML) **or** PDF upload → create `en_attente` **lot** (raw deposited, disposable).
+2. **Process**: per-source steps via `server_jobs` (clean, segment, OCR if available, AI-enrich). Python workers.
+3. **Review** by human in the atelier.
+4. **Lot validation** by Editor → **conformity check** (full set theme+date+author+keywords; duplicates via hash + `telegram_message_id`). Non-conform → blocked, errors shown.
+5. **Auto-integration**: if conform, create corpus entries in a **transaction** (default state `À Corriger`), apply business rules. After verified write → **delete lot folder**. *(Replaces old pivot file + staging.)*
+6. **Publication** (separate): `Publiée` = distinct human act in the library, validating AI-proposed keywords.
 
-## Routes API existantes (réelles, à conserver/adapter)
-Lots : `POST /lots/create` · `POST /lots/{id}/0_raw` · `POST /lots/{id}/take` · `POST /lots/{id}/checkpoint` · `POST /lots/{id}/pivot` (**→ écrire en staging** au lieu d'un fichier) · `GET /lots/waiting` · `GET /lots/{id}` · `GET /lots/{id}/files` · `POST /lots/delete[/preview]`.
-Telegram : `GET|POST /telegram/sources` · `POST /telegram/lots/create-from-buffer` · `POST /telegram/lots/collect-and-create` · `POST /telegram/history/auth/start|confirm`.
-IA : `GET|POST /ia/settings` · `POST /ia/models/refresh|registry/save|test` · `POST /lots/{id}/ia/regenerate`.
+## Existing API routes (real, keep/adapt)
+Lots: `POST /lots/create` · `/lots/{id}/0_raw` · `/take` · `/checkpoint` · `/pivot` (**→ validate & integrate to corpus** instead of writing a file) · `GET /lots/waiting` · `/lots/{id}` · `/lots/{id}/files` · `POST /lots/delete[/preview]`.
+Telegram: `GET|POST /telegram/sources` · `POST /telegram/lots/create-from-buffer` · `/telegram/lots/collect-and-create` · `/telegram/history/auth/start|confirm`.
+AI: `GET|POST /ia/settings` · `POST /ia/models/refresh|registry/save|test` · `/lots/{id}/ia/regenerate`.
 
-**À ajouter** : auth (`/auth/*`), validation du staging (`/staging/*` → promotion vers corpus), consultation/recherche bibliothèque, gestion auteurs/œuvres/thèmes/mots-clés.
+**To add**: auth (`/auth/*`), lot validation/integration to corpus, library consult/search, authors/works/themes/keywords CRUD, `Publiée` transition.
 
-## Côté front (rappel)
-Tout passe par `apiClient.ts` (`fetch`, `credentials: 'include'`). Les services (`mockServices.ts` → à renommer `webServices`) sont l'unique adaptateur. Le pivot affiché devient le **contenu staging**.
+## Front (reminder)
+Everything via `apiClient.ts` (`fetch`, `credentials: 'include'`). Services (`mockServices.ts` → rename `webServices`) = sole adapter. The displayed "pivot" becomes the lot's **prepared content** (before corpus integration).
 
-## Recherche
-MySQL `FULLTEXT` + collation accent-insensible. Filtres : auteur, œuvre, thème, mots-clés (OU/ET), dates, état (admin), droits par rôle. Pagination keyset, debounce 300 ms, virtualisation > 200.
+## Search
+MySQL `FULLTEXT` + accent-insensitive collation. Filters: author, work, theme, keywords (OR/AND), dates, state (admin), per-role rights. Keyset pagination, 300 ms debounce, virtualization > 200.

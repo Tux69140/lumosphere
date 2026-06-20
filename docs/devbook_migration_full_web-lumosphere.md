@@ -12,10 +12,10 @@
 - **Cible** : une application web unique sur o2switch faisant l'**atelier de préparation** (ex-Epuriel) **et** la **bibliothèque éditoriale validée** (ex-Index Lulumineux), **installable en PWA** sur Windows/Linux/Mac/Android.
 - **Stack** : React/Vite (existant Epuriel) + API PHP + **une base MySQL/MariaDB** = source de vérité. **Electron retiré** ; couche d'abstraction conservée pour un éventuel Tauri/natif plus tard.
 - **En ligne** : pas de mode hors-ligne dans cette phase (accès internet requis). L'édition mobile pour 2-3 éditeurs sera un outil tiers séparé, futur, hors périmètre.
-- **Le format pivot fichier disparaît** : remplacé par une **zone de staging interne** (tables MySQL) + un statut de validation. On est en dev sans données de production : casser le pipeline pendant la transition est acceptable.
+- **Le format pivot fichier disparaît** : remplacé par l'**intégration directe au corpus** — la validation d'un lot conforme écrit en corpus en transaction (plus de zone de transit). On est en dev sans données de production : casser le pipeline pendant la transition est acceptable.
 - **Lots jetables** : un lot est un espace de travail temporaire, effacé après import en base (sauf mode débogage). Seuls les repères de collecte (dernier / plus ancien document par source) sont conservés en base.
 - **Nouveau dépôt `lumosphere`** : on y importe le code utile, on archive les deux anciens dépôts. **Renommage technique réduit** : on garde les `epuriel_*` internes (« Epuriel » = nom interne de l'atelier).
-- **Constat technique clé** : l'app Epuriel est **déjà** un client web (tout passe par l'API PHP en `fetch` ; le chemin « navigateur » couvre déjà les 8 services). La migration full-web est donc facile ; le vrai chantier = **authentification serveur** + **conception du schéma corpus/staging**.
+- **Constat technique clé** : l'app Epuriel est **déjà** un client web (tout passe par l'API PHP en `fetch` ; le chemin « navigateur » couvre déjà les 8 services). La migration full-web est donc facile ; le vrai chantier = **authentification serveur** + **conception du schéma corpus**.
 - **Bénéfice inattendu** : le bug « failed to fetch » de l'autrice (Portugal) vient des **uploads multipart** du checkpoint. En full-web, la sauvegarde devient un petit POST de texte → la cause racine (MTU) disparaît probablement.
 
 ---
@@ -26,7 +26,7 @@ Toutes les décisions de cadrage ont été prises avec le chef de projet. Elles 
 
 - [x] **D1 — Stack.** Bâtir l'app unifiée sur **Epuriel : React/Vite + PHP + MySQL** (codé, fonctionnel). Plan SvelteKit/Node/SQLite de l'Index **abandonné** ; ses *spécifications* et son *schéma de données* restent la référence (code Index quasi vide — rien à porter).
 - [x] **D2 — Une base MySQL = source de vérité.**
-- [x] **D3 — Abandon du pivot fichier** → tables de staging internes + statut de validation.
+- [x] **D3 — Abandon du pivot fichier** → **intégration directe au corpus** à la validation d'un lot conforme (écriture en transaction ; plus de staging). *(Révisé : intégration ≠ publication, cf. cahier §9.)*
 - [x] **D4 — Nom.** Application = **Lumosphère** (côté utilisateur) ; **« Epuriel » = nom interne de l'atelier**. → Renommage technique **réduit** : on conserve les ~130 fonctions `epuriel_*` et le nommage interne de l'atelier.
 - [x] **Portabilité — PWA installable, en ligne.** Couvre Windows/Linux/Mac/Android avec un seul code, soumettable Microsoft Store + Google Play via **PWABuilder**. **Electron retiré.**
 - [x] **Abstraction — couche UI/UX + services conservée.** Assurance portabilité : permet Tauri / app native plus tard (dont magasin Apple) sans réécrire l'interface (coût de maintien quasi nul).
@@ -38,7 +38,7 @@ Toutes les décisions de cadrage ont été prises avec le chef de projet. Elles 
 - [x] **D9 — Telegram.** Standardiser `Telegram` partout, corriger les anciennes lignes, **supprimer le code de lecture mixte** `telegram`/`Telegram`.
 - [x] **D10 — Pas de `import_runs`.** Suivi d'import simplifié (repères « dernier / plus ancien » dans `collect_sources`).
 - [x] **D11 — Authentification.** Sessions PHP (cookie `httpOnly`/`Secure` + CSRF).
-- [x] **Tables `import_staging_*`** : conçues par l'IA à partir du modèle pivot 3.4 (décision de méthode actée ; conception détaillée à faire en Phase 3.5).
+- [x] **Plus de tables `import_staging_*`** *(révisé)* : la validation d'un lot conforme écrit **directement** au corpus (transaction). Le modèle ex-pivot 3.4 sert seulement de cartographie atelier→corpus.
 
 ---
 
@@ -46,33 +46,31 @@ Toutes les décisions de cadrage ont été prises avec le chef de projet. Elles 
 
 La documentation est refondue **avant** le code : elle cadre l'IA qui développera. Chaque document est rédigé puis validé.
 
-> ⚠️ **Brouillons NON validés** — les items cochés `[x]` ci-dessous sont *produits*, pas encore *validés* par le chef de projet. Points à valider : `points_a_valider-phase1.md`.
-
-> **Principe de fusion documentaire.** Partir des documents **Lumosphère** comme socle produit (bibliothèque) et y **réintégrer les fonctions d'atelier Epuriel** que le cahier des charges délègue aujourd'hui à un « pipeline annexe séparé » (`cahier_des_charges-index_lulumineux.md` §12, §17.4). Ce qui était « 2 projets reliés par pivot » devient « 2 zones internes reliées par staging ».
+> **Principe de fusion documentaire.** Partir des documents **Lumosphère** comme socle produit (bibliothèque) et y **réintégrer les fonctions d'atelier Epuriel** que le cahier des charges délègue aujourd'hui à un « pipeline annexe séparé » (`cahier_des_charges-index_lulumineux.md` §12, §17.4). Ce qui était « 2 projets reliés par pivot » devient « 2 zones internes reliées par la validation du lot (intégration directe au corpus) ».
 
 - [x] **1.0 — Créer le dépôt neuf `lumosphere`** (cf. D7) — *fait : dépôt + docs poussés sur GitHub ; reste : importer le code applicatif (Phase 2+)*. Et y importer le code utile (app React, API PHP, workers, docs fusionnées). Les anciens dépôts `pretraitement` et `index-lulumineux` seront archivés en fin de migration (Phase 9).
 
 ### Documents-socles à fusionner (entrées primaires)
-- [x] **1.1 — Cahier des charges unifié.** Base = `index-lulumineux/docs/cahier_des_charges-index_lulumineux.md` (v5.1, quasi intégralement repris : 5 rôles, structure d'entrée, états C/R/P, organisation contenu, interface publique, recherche, éditeur, admin, médiathèque/bibliothèque/notifications, Telegram bot, IA, droits par œuvre, sauvegardes, exports, charte, accessibilité, phases). **Étendre** pour absorber les fonctions d'atelier Epuriel absentes : ingestion **multi-sources** (PDF, YouTube, HTML + Telegram), **lots** + dossiers numérotés, **journal**, **checkpoint**, **OCR/nettoyage/extraction**, **collecteurs cron**, **registre des modèles IA**. Réécrire le chapitre 12 (« import de documents préparés ») en **flux interne atelier → staging → corpus**.
-- [ ] **1.2 — Document de spécification produit unifié.** Base = `index-lulumineux/docs/document_specifications-index_lulumineux.md` (PRD v3.0 : vision, 5 profils, objectifs — fiabilité avant rapidité, vie privée, 50 000 entrées). Y intégrer la vision « atelier + bibliothèque dans une seule application ».
-- [ ] **1.3 — Réconciliation des contradictions** (à trancher document par document) :
+- [x] **1.1 — Cahier des charges unifié.** Base = `index-lulumineux/docs/cahier_des_charges-index_lulumineux.md` (v5.1, quasi intégralement repris : 5 rôles, structure d'entrée, états C/R/P, organisation contenu, interface publique, recherche, éditeur, admin, médiathèque/bibliothèque/notifications, Telegram bot, IA, droits par œuvre, sauvegardes, exports, charte, accessibilité, phases). **Étendre** pour absorber les fonctions d'atelier Epuriel absentes : ingestion **multi-sources** (PDF, YouTube, HTML + Telegram), **lots** + dossiers numérotés, **journal**, **checkpoint**, **OCR/nettoyage/extraction**, **collecteurs cron**, **registre des modèles IA**. Réécrire le chapitre 12 (« import de documents préparés ») en **flux interne atelier → intégration directe au corpus**.
+- [x] **1.2 — Document de spécification produit unifié.** — *fait : contenu absorbé dans le cahier (§3–5) + `_contexte-ia/00` (pas de fichier PRD séparé)*. Base = `index-lulumineux/docs/document_specifications-index_lulumineux.md` (PRD v3.0 : vision, 5 profils, objectifs — fiabilité avant rapidité, vie privée, 50 000 entrées). Y intégrer la vision « atelier + bibliothèque dans une seule application ».
+- [x] **1.3 — Réconciliation des contradictions** — *faite : tranchées et reflétées dans cahier / stack / `_contexte-ia`* :
   - **SQLite → MySQL** (le cahier, la spec et l'architecture supposent SQLite partout : règles PRAGMA §9, better-sqlite3, WAL). MySQL = vérité ; SQLite = export local.
   - **Svelte/Node → React/PHP** (la stack Index §5 est rejetée ; LiteLLM, Zod, TanStack Table restent valables côté React/PHP).
-  - **Pivot fichier → staging interne** (le `Format_pivot.md` devient le schéma des tables de staging ; `pivot_version` devient un contrôle de schéma interne).
-  - **« 2 projets séparés » / « ne jamais écrire dans les tables finales » → frontière de staging interne** (l'atelier écrit en staging ; la promotion staging → corpus exige une validation humaine d'Éditeur).
+  - **Pivot fichier → intégration directe au corpus** (plus de fichier pivot ni de tables de staging ; la validation d'un lot conforme écrit en corpus en transaction).
+  - **« 2 projets séparés » / « ne jamais écrire dans les tables finales » → intégration contrôlée** (l'atelier écrit en corpus uniquement à la validation d'un lot conforme ; intégration ≠ publication).
   - **Cible locale Electron/Tauri (Index) → PWA installable, en ligne** (pas d'app Electron ni de consultation hors-ligne dans cette phase ; couche d'abstraction conservée pour un Tauri éventuel).
 
 ### Documents techniques et de cadrage à réécrire
 - [x] **1.4 — Stack technique unifiée** `docs/stack_technique-lumosphere.md` remplaçant `docs/stack_technique-pretraitement.md` et `index-lulumineux/docs/architecture-index_lulumineux.md`. Figer : React/Vite + PHP + MySQL, full-web o2switch, file de jobs + cron (pas de Celery/RQ/Redis — trop lourd pour le mutualisé), abstraction conservée pour le futur local, export SQLite, recherche FULLTEXT MySQL + collation accent-insensible, authentification serveur. **Préserver** les décisions o2switch : pas de VPS, `exec()` + cron, `server_jobs`, contraintes capacités serveur.
-- [ ] **1.5 — README unique.** Décrire un seul produit. **Corriger** : (a) l'incohérence de chemin config `README.md:143` (`/home/sc1phcv1381/...`) vs `bootstrap.php:5` (`/home2/mist2786/...`) ; (b) les **noms d'outils erronés** (`extracteur_bot_telegram`, `extracteur_fichiers_telegram_bot` cités dans le README **n'existent pas** ; les vrais dossiers sont `telechargeur_msg_telegram/` et `telechargeur_fichiers_telegram/`) ; (c) le bloc « Format pivot » et `POST /lots/{id}/pivot` → staging.
-- [ ] **1.6 — CLAUDE.md + AGENTS.md.** Périmètre unifié ; interdictions révisées : « ne plus produire de fichier pivot », « authentification serveur obligatoire », « plus d'écriture directe dans le corpus sans validation » (remplace « ne jamais écrire dans les tables finales de Lumosphère »), conserver « pdfmd jamais app principale ». Transposer les `.cursor/rules/*.mdc` de l'Index (security, database, dal) en règles du CLAUDE.md fusionné. Mettre à jour les chemins de déploiement (`epuriel`→`lumosphere`).
-- [ ] **1.7 — Devbook de développement** suivant les **phases du cahier** (chap. 26 : Phase 1 cœur éditorial web / Phase 2 modules + local / Phase 3 exports), augmentées des modules d'atelier.
-- [ ] **1.8 — format_pivot.md → modèle de données de staging.** Convertir en description des **tables `import_staging_*`**. Réconcilier les versions (Epuriel 3.4 fait foi ; Index 3.1 périmé) et **réintégrer le bloc `media`** (présent dans l'architecture/CDC, absent du pivot 3.1). Résoudre l'incohérence interne `date_debut/date_fin` vs `date_source_debut/date_source_fin`. Porter les enums (`type_document`, `type_segment`, `source.type`) en contraintes base. Porter la règle Telegram (themes + mots_cles validés requis) comme garde de passage à « validé ».
-- [ ] **1.9 — Trame de travail unifiée** `docs/trame_travail-lumosphere.md` fusionnant `docs/trame_travail-pretraitement.md` et `index-lulumineux/docs/trame_travail-index_lulumineux.md`.
-- [ ] **1.10 — Document IA directeur.** Récupérer `docs/archive/E.5 — IaProvider, LiteLLM et Ollama.md` comme référence IA : LiteLLM gateway unique, **cloud only (Ollama local abandonné)**, providers configurables (openai/anthropic/mistral/deepseek/gemini/ollama_cloud), défaut `gemini`, allowlist des modèles, mémorisation serveur du couple provider+modèle, journalisation coût/latence. Récupérer aussi `tableau_modeles_ia_a_valider.md` (règle d'allowlist).
-- [ ] **1.11 — Conventions de traitement à récupérer de l'archive** : `info - Formatage_md_pour_rag.md` (chunking, front-matter, anti-résumé) ; logique YouTube (`Youtube*.md` : yt-dlp + youtube-transcript-api, 2 passes Map/Clean, garde-fou anti-résumé >20 %, timecodes) **en abandonnant** le SDK Google natif (→ LiteLLM) et Celery/RQ/Redis/S3 (→ file de jobs + cron).
-- [ ] **1.12 — Récupération d'artefacts depuis `index-lulumineux` avant archivage** (cf. D7) : `db/schema_T0.2_v4_sources_simple.dbml` + `db/schema_T0.2_v2.sql` (triggers/seeds), `triggers-fts5.txt`, `docs/Charte_couleurs_UI.docx` + CDC §24 (orange / violet-mauve / gris, clair-sombre), `docs/Lumosphere-accueil.excalidraw` (maquette accueil).
-- [ ] **1.13 — pdfmd : clarifier le hors-périmètre.** Les docs `apps/pdfmd/docs/*` visent l'intégration dans **« mktplus »** (éditeur tiers Muya), **hors cible Lumosphère**. Ajouter un encart « cible mktplus = hors périmètre » ; décider archivage de cette piste vs récupération différée des briques OCR. **Ne pas** inclure pdfmd dans la vague de renommage.
+- [x] **1.5 — README unique.** — *fait (`README.md` racine, harmonisé : intégration directe au corpus)*. Décrire un seul produit. **Corriger** : (a) l'incohérence de chemin config `README.md:143` (`/home/sc1phcv1381/...`) vs `bootstrap.php:5` (`/home2/mist2786/...`) ; (b) les **noms d'outils erronés** (`extracteur_bot_telegram`, `extracteur_fichiers_telegram_bot` cités dans le README **n'existent pas** ; les vrais dossiers sont `telechargeur_msg_telegram/` et `telechargeur_fichiers_telegram/`) ; (c) le bloc « Format pivot » et `POST /lots/{id}/pivot` → **intégration directe au corpus**.
+- [x] **1.6 — CLAUDE.md + AGENTS.md.** — *fait : `CLAUDE.md` + `AGENTS.md` (pointeur, source unique) ; règles security/database/dal transposées (interdits + ligne DAL)*. Périmètre unifié ; interdictions révisées : « ne plus produire de fichier pivot », « authentification serveur obligatoire », « plus d'écriture directe dans le corpus sans validation » (remplace « ne jamais écrire dans les tables finales de Lumosphère »), conserver « pdfmd jamais app principale ». Transposer les `.cursor/rules/*.mdc` de l'Index (security, database, dal) en règles du CLAUDE.md fusionné. Mettre à jour les chemins de déploiement (`epuriel`→`lumosphere`).
+- [x] **1.7 — Devbook de développement** suivant les **phases du cahier** (chap. 26 : Phase 1 cœur éditorial web / Phase 2 modules + local / Phase 3 exports), augmentées des modules d'atelier.
+- [x] **1.8 — format_pivot.md → modèle de données de staging.** — *sans objet : pivot ET staging abandonnés (intégration directe) ; le modèle ex-pivot 3.4 sert de cartographie atelier→corpus, cf. `_contexte-ia/02`*. Convertir en description des **tables `import_staging_*`**. Réconcilier les versions (Epuriel 3.4 fait foi ; Index 3.1 périmé) et **réintégrer le bloc `media`** (présent dans l'architecture/CDC, absent du pivot 3.1). Résoudre l'incohérence interne `date_debut/date_fin` vs `date_source_debut/date_source_fin`. Porter les enums (`type_document`, `type_segment`, `source.type`) en contraintes base. Porter la règle Telegram (themes + mots_cles validés requis) comme garde de passage à « validé ».
+- [x] **1.9 — Trame de travail unifiée** `docs/trame_travail-lumosphere.md` fusionnant `docs/trame_travail-pretraitement.md` et `index-lulumineux/docs/trame_travail-index_lulumineux.md`.
+- [x] **1.10 — Document IA directeur.** — *décisions IA actées (cahier §22, stack §8, `_contexte-ia`) : LiteLLM cloud, providers, défaut gemini, allowlist, journalisation*. Récupérer `docs/archive/E.5 — IaProvider, LiteLLM et Ollama.md` comme référence IA : LiteLLM gateway unique, **cloud only (Ollama local abandonné)**, providers configurables (openai/anthropic/mistral/deepseek/gemini/ollama_cloud), défaut `gemini`, allowlist des modèles, mémorisation serveur du couple provider+modèle, journalisation coût/latence. Récupérer aussi `tableau_modeles_ia_a_valider.md` (règle d'allowlist).
+- [x] **1.11 — Conventions de traitement à récupérer de l'archive** — *fait : `docs/conventions_traitement-lumosphere.md` (formatage RAG, garde-fou anti-résumé, chaîne YouTube ; SDK Google→LiteLLM, Celery/Redis/S3→jobs+cron, pivot→intégration directe)*. Sources : `info - Formatage_md_pour_rag.md` (chunking, front-matter, anti-résumé) ; logique YouTube (`Youtube*.md` : yt-dlp + youtube-transcript-api, 2 passes Map/Clean, garde-fou anti-résumé >20 %, timecodes) **en abandonnant** le SDK Google natif (→ LiteLLM) et Celery/RQ/Redis/S3 (→ file de jobs + cron).
+- [x] **1.12 — Récupération d'artefacts depuis `index-lulumineux` avant archivage** (cf. D7) — *fait : schémas Index copiés dans `docs/_reference/index-corpus-schema/` (v4 dbml + v2 sql + triggers-fts5) ; charte intégrée (cahier §28) ; maquette = démo AIStudio*. Sources : `db/schema_T0.2_v4_sources_simple.dbml` + `db/schema_T0.2_v2.sql` (triggers/seeds), `triggers-fts5.txt`, `docs/Charte_couleurs_UI.docx` + CDC §24 (orange / violet-mauve / gris, clair-sombre), `docs/Lumosphere-accueil.excalidraw` (maquette accueil).
+- [x] **1.13 — pdfmd : clarifier le hors-périmètre.** — *acté : `apps/pdfmd/` = atelier de référence, jamais l'app principale (CLAUDE.md) ; récupération OCR différée*. Les docs `apps/pdfmd/docs/*` visent l'intégration dans **« mktplus »** (éditeur tiers Muya), **hors cible Lumosphère**. Ajouter un encart « cible mktplus = hors périmètre » ; décider archivage de cette piste vs récupération différée des briques OCR. **Ne pas** inclure pdfmd dans la vague de renommage.
 
 ---
 
@@ -80,12 +78,12 @@ La documentation est refondue **avant** le code : elle cadre l'IA qui développe
 
 Objectif : éviter de faire ingérer ~70 fichiers (dont l'archive redondante et contradictoire) à l'IA qui codera, et **économiser les tokens**. Se place **après** la fusion documentaire (Phase 1, dont elle est le condensé) et **avant** le codage.
 
-- [x] **1bis.1 — Produire un dossier `docs/_contexte-ia/`** : 3 à 5 documents de référence **courts, dédupliqués, sans contradictions, faisant autorité**, par exemple :
+- [x] **1bis.1 — Produire un dossier `docs/_contexte-ia/`** : 3 à 5 documents de référence **courts, dédupliqués, sans contradictions, faisant autorité** (6 fichiers produits, en anglais, token-optimisés) :
   - `00_contexte-produit.md` — vision, périmètre, **décisions Phase 0 verrouillées** (1 page).
   - `01_architecture.md` — stack React/Vite + PHP + MySQL, full-web/PWA, abstraction, file de jobs + cron, contraintes o2switch (capacités, venv Python, OCR absent).
-  - `02_schema-donnees.md` — schéma cible unifié (atelier + corpus + staging + auth), conventions (FK par `lot_id`, collation accent-insensible, FULLTEXT), repères de collecte, cycle de vie jetable des lots.
+  - `02_schema-donnees.md` — schéma cible unifié (atelier + corpus + auth), conventions (FK par `lot_id`, collation accent-insensible, FULLTEXT), repères de collecte, cycle de vie jetable des lots.
   - `03_conventions-et-regles.md` — règles métier (états, droits par œuvre, suppression douce…), conventions de code, interdits.
-  - `04_flux-et-api.md` — routes API, flux atelier → staging → corpus, auth session.
+  - `04_flux-et-api.md` — routes API, flux atelier → corpus (intégration directe), auth session.
 - [x] **1bis.2 — Principes** : autorité unique (un seul endroit par sujet), **exclusion de l'archive** du contexte de codage, liens vers les docs détaillées seulement si nécessaire. C'est ce pack que l'IA codeuse lit en priorité.
 
 ---
@@ -120,9 +118,9 @@ Objectif : éviter de faire ingérer ~70 fichiers (dont l'archive redondante et 
 
 ---
 
-## Phase 3 — Schéma unifié : corpus + staging + auth (chantier base de données)
+## Phase 3 — Schéma unifié : corpus + auth (chantier base de données)
 
-C'est ici qu'on fusionne réellement les données. La base atelier (7 tables) existe ; il faut **ajouter** la zone corpus, la zone staging et l'auth. Source : schémas `index-lulumineux/db/schema_T0.2_v4_sources_simple.dbml` (tables) + `schema_T0.2_v2.sql` (triggers/seeds concrets). **Adaptation SQLite → MySQL** détaillée en Annexe C.
+C'est ici qu'on fusionne réellement les données. La base atelier (7 tables) existe ; il faut **ajouter** la zone corpus et l'auth (**pas de zone staging**). Source : schémas `index-lulumineux/db/schema_T0.2_v4_sources_simple.dbml` (tables) + `schema_T0.2_v2.sql` (triggers/seeds concrets). **Adaptation SQLite → MySQL** détaillée en Annexe C.
 
 ### 3.1 — Tables corpus éditorial (à créer en MySQL)
 - [ ] `auteurs`, `oeuvres` (FK→auteurs RESTRICT, `auteur_id NOT NULL`), `themes` (auto-référence `parent_id`, `chemin` matérialisé, **max 2 niveaux** appliqué en PHP), `etats` (seed C/R/P, `est_modifiable=0`), `citations` (`oeuvre_id NOT NULL`, `theme_id` nullable, `etat_id NOT NULL`, `telegram_message_id`, provenance `import_source_id`/`source_item_id`/`source_item_date`, **soft-delete `deleted_at`**, index composites), `keywords` (unicité insensible casse), `citation_keywords` (PK composite, CASCADE).
@@ -136,9 +134,9 @@ C'est ici qu'on fusionne réellement les données. La base atelier (7 tables) ex
 ### 3.4 — Tables modules
 - [ ] `mediatheque`, `bibliotheque`, `notifications`, `telegram_channels` (**à réconcilier** avec le bloc Telegram déjà codé côté atelier — `collect_sources`), `import_sources` (carnet de sources générique ; **pas de `import_runs`** — D10), `config`, `emojis`, `export_jobs` (phase 3), `schema_version`, `user_favorites`, `local_favorites`.
 
-### 3.5 — Tables de staging (À CONCEVOIR — n'existent nulle part)
-- [ ] Concevoir `import_staging_documents`, `import_staging_segments`, `import_staging_media`, `import_staging_events` — **nommées dans l'architecture §8.1 mais jamais définies**. Structure dérivée du modèle pivot 3.4 (`document`/`source`/`segments`/`indexation` + `media`) et de `Format_pivot_v2.md` (champs typés : `id_document`, `auteurs[]`, `langue` ISO 639-1, `segments[]` avec `ordre`/`type_segment`/`texte` Markdown/`hash_segment`/timecodes, état, 3 hashes de dédup).
-- [ ] **Re-rôler** `pivot_exports` : de « traçabilité d'export fichier » (`genere`/`importe_lumosphere`/`erreur`) vers « traçabilité de passage en staging et validation » (statuts type `brouillon`/`en_staging`/`valide`/`rejete`) ; conserver `imported_in_lumosphere_at` re-sémantisé en « validé le ».
+### 3.5 — Pas de zone staging (intégration directe) *(révisé)*
+- [ ] **Aucune table de staging** : la validation d'un lot conforme (jeu complet thème+date+auteur+mots-clés, sans doublon) écrit **directement** au corpus, en **transaction** (tout ou rien), puis le lot est supprimé. Le modèle ex-pivot 3.4 (`document`/`source`/`segments`/`indexation`/`media`) sert de **cartographie atelier→corpus** (cf. `_contexte-ia/02`).
+- [ ] **Abandonner `pivot_exports`** : plus de pivot ni de staging ; la traçabilité des intégrations s'appuie sur `journal_events` + la **provenance d'import** portée par `citations`.
 - [ ] **Abandonner `sync_files`** (cf. D5 / Phase 3bis) : caduque en full-web (plus de synchro fichiers locaux ↔ serveur).
 
 ### 3.6 — Règles métier à porter dans la couche PHP (architecture Index §10)
@@ -153,7 +151,7 @@ C'est ici qu'on fusionne réellement les données. La base atelier (7 tables) ex
 
 Décision du chef de projet : **ne conserver aucune trace des étapes**, sauf en mode débogage. Un lot devient un espace de travail temporaire.
 
-- [ ] Après import réussi en staging/corpus, **effacer tout le dossier du lot** : `0_raw/` (source brute incluse), dossiers d'étapes intermédiaires, `*_exports/`, `manifest.json`, `journal.csv`.
+- [ ] Après intégration réussie au corpus (écriture vérifiée), **effacer tout le dossier du lot** : `0_raw/` (source brute incluse), dossiers d'étapes intermédiaires, `*_exports/`, `manifest.json`, `journal.csv`.
 - [ ] **Mode débogage** (réglage global + override par lot, **défaut désactivé**) : conserve l'intégralité du dossier du lot (brut + intermédiaires) pour le dev/diagnostic.
 - [ ] **Persister en base, par source auto-collectée** (Telegram, YouTube, HTML — pas le PDF manuel) : `collect_sources.last_marker` (date du dernier document collecté → reprise) et `first_marker` (date du plus ancien → rattrapage historique). **Déjà présents** au schéma.
 - [ ] Supprimer la production de `manifest.json` + `journal.csv` par lot (la base est la vérité) et des dossiers `*_exports/`.
@@ -211,11 +209,11 @@ L'app est **déjà presque navigateur-ready** : tout le métier passe par `fetch
 - [ ] Implémenter les **rôles** (Phase 3.3) et **mettre fin au « tout utilisateur admin » V1** (bloc-e-telegram.plan §21). Mot de passe admin initial à changer au premier démarrage.
 - [ ] Étendre Gitleaks aux secrets d'auth/session.
 
-### 6.3 — Abandon du fichier pivot → écriture en staging MySQL
-- [ ] Réécrire `epuriel_handle_lot_pivot` (`epuriel.php:2307`) et `epuriel_register_generated_pivot_export` (`:2593`) : **INSÉRER dans les tables de staging** au lieu d'écrire `4_exports/*.pivot.json` + `pivot_exports`. Les deux origines actuelles (upload de fichier `.pivot.json` `:2315-2431` ; génération depuis révision `mode=generate_from_revision` `:2436`) convergent vers le staging.
-- [ ] Adapter le worker `process_telegram_v1.py` (lancé `:2521` avec `--export-pivot`) : écrire en base, **ou** parser sa sortie JSON côté PHP et insérer en staging. **Nouvelle capacité** : les workers Python ne se connectent pas à MySQL aujourd'hui → ajouter PDO/MySQL au worker, ou conserver le parsing côté PHP.
-- [ ] Conserver les validateurs (`epuriel_validate_minimal_pivot:3241`, `epuriel_validate_telegram_pivot:3269`) comme garde **avant insertion** ; porter la règle Telegram (thèmes + mots-clés validés requis avant passage à « validé »).
-- [ ] Frontend : `exportTelegramPivot`/`generateTelegramPivotFromRevision` gardent la même route mais ne manipulent plus de fichier ; `pivotSummary.ts` affiche le contenu staging ; l'onglet « Erreurs et export pivot » (`UI Epuriel.md` §4.4) devient onglet « Staging / validation ».
+### 6.3 — Abandon du fichier pivot → intégration directe au corpus
+- [ ] Réécrire `epuriel_handle_lot_pivot` (`epuriel.php:2307`) et `epuriel_register_generated_pivot_export` (`:2593`) : à la validation d'un lot conforme, **INSÉRER directement dans le corpus** (transaction) au lieu d'écrire `4_exports/*.pivot.json` + `pivot_exports`. Les deux origines actuelles (upload de fichier `.pivot.json` `:2315-2431` ; génération depuis révision `mode=generate_from_revision` `:2436`) convergent vers l'intégration corpus.
+- [ ] Adapter le worker `process_telegram_v1.py` (lancé `:2521` avec `--export-pivot`) : écrire en base, **ou** parser sa sortie JSON côté PHP et insérer au corpus. **Nouvelle capacité** : les workers Python ne se connectent pas à MySQL aujourd'hui → ajouter PDO/MySQL au worker, ou conserver le parsing côté PHP.
+- [ ] Conserver les validateurs (`epuriel_validate_minimal_pivot:3241`, `epuriel_validate_telegram_pivot:3269`) comme **garde de conformité avant intégration** ; porter la règle Telegram (thèmes + mots-clés requis). *(L'entrée intégrée arrive en « À Corriger » ; passage à « Publiée » = acte humain distinct, cf. cahier §11.)*
+- [ ] Frontend : `exportTelegramPivot`/`generateTelegramPivotFromRevision` gardent la même route mais ne manipulent plus de fichier ; `pivotSummary.ts` affiche le **contenu préparé du lot** ; l'onglet « Erreurs et export pivot » (`UI Epuriel.md` §4.4) devient onglet « Validation / intégration ».
 
 ### 6.4 — Retirer Electron, garder l'abstraction
 - [ ] Supprimer `src/main/`, `src/preload/`, `services/electronServices.ts`, le type natif (`vite-env.d.ts`). Nettoyer `package.json` (retirer `electron`, `electron-vite`, scripts `dist:win:portable`), migrer `electron.vite.config` → config Vite pure.
@@ -243,9 +241,9 @@ La consultation hors-ligne et l'app locale Electron **ne sont plus au périmètr
 
 ## Phase 8 — Outils Python et `apps/pdfmd`
 
-- [ ] **8.1 — Workers Telegram serveur** (`serveur/epuriel/workers/collect_telegram_history.py`, `telegram_history_auth.py`) : **workers atelier officiels** (déjà intégrés, appelés par PHP via `exec()`, sortie JSON par stdout, session Telethon serveur). Rediriger leur sortie vers le **staging** (6.3). Renommer dossier `serveur/lumosphere/workers/`. (Ils n'ont aucun chemin/DB en dur — purement CLI.)
+- [ ] **8.1 — Workers Telegram serveur** (`serveur/epuriel/workers/collect_telegram_history.py`, `telegram_history_auth.py`) : **workers atelier officiels** (déjà intégrés, appelés par PHP via `exec()`, sortie JSON par stdout, session Telethon serveur). Rediriger leur sortie vers l'**intégration corpus** (6.3). Renommer dossier `serveur/lumosphere/workers/`. (Ils n'ont aucun chemin/DB en dur — purement CLI.)
 - [ ] **8.2 — `outils/telechargeur_msg_telegram/main-v3.py`** : **archiver** (doublon/ancêtre du worker serveur).
-- [ ] **8.3 — `outils/telechargeur_fichiers_telegram/`** (téléchargeur de PDF Telegram, SQLite local autonome `telegram_downloads.db`) : **autonome, hors périmètre immédiat** ; candidat à devenir un worker d'ingestion PDF plus tard (remplacer son SQLite par la base unique, rediriger vers `0_raw`/staging).
+- [ ] **8.3 — `outils/telechargeur_fichiers_telegram/`** (téléchargeur de PDF Telegram, SQLite local autonome `telegram_downloads.db`) : **autonome, hors périmètre immédiat** ; candidat à devenir un worker d'ingestion PDF plus tard (remplacer son SQLite par la base unique, rediriger vers `0_raw` puis intégration corpus).
 - [ ] **8.4 — `outils/deduplicateur_pdf/dedup_md.py`** : **autonome, poste local** (dépend d'Ollama local, non portable o2switch). **Aligner README ↔ code** (le README décrit du PDF, le code travaille en Markdown via rapidfuzz + Ollama).
 - [ ] **8.5 — `outils/diagnostic_post_epuriel/`** : teste le header `X-Epuriel-Token` (caduc avec l'auth session) → **archiver ou refondre** pour tester login/session.
 - [ ] **8.6 — `apps/pdfmd/`** : **reste atelier/référence, jamais app principale** (CLAUDE.md). Cible documentée « mktplus » = hors périmètre Lumosphère. Récupération différée possible des briques OCR (`1.ocr_pdf.sh`, EasyOCR, `pdf_extractor.py`) comme futurs workers PDF, **sous réserve** de valider OCR sur o2switch (absent aujourd'hui). Ne pas renommer dans la vague `epuriel→lumosphere`.
@@ -255,9 +253,9 @@ La consultation hors-ligne et l'app locale Electron **ne sont plus au périmètr
 ## Phase 9 — Vérification, bascule et nettoyage
 
 - [ ] **9.1** — `pnpm lint` + `pnpm build` verts (dossier app). Conserver le socle qualité (Vitest, Playwright, Ruff, PHPStan, PHPCS, Gitleaks).
-- [ ] **9.2** — Tests des nouveaux endpoints : login/session, staging, validation. Conserver les tests destructifs préfixés (`TEST_E0B3_`), migrer URL/vars de test.
-- [ ] **9.3** — Vérification manuelle ciblée : login, liste des lots, révision, passage en staging, validation vers corpus, recherche accent-insensible.
-- [ ] **9.4** — Mettre à jour le runbook Telegram (`bloc-e-telegram.runbook.md`, `bloc-e-telegram-proof.sh`) : variables/chemins (`DB`, `BASE_DIR`, `BOOTSTRAP`, `EPURIEL_CONFIG`, crons, reports) ; remplacer les assertions « fichier pivot présent » par « entrée staging validée ».
+- [ ] **9.2** — Tests des nouveaux endpoints : login/session, validation/intégration corpus. Conserver les tests destructifs préfixés (`TEST_E0B3_`), migrer URL/vars de test.
+- [ ] **9.3** — Vérification manuelle ciblée : login, liste des lots, révision, validation → intégration au corpus, recherche accent-insensible.
+- [ ] **9.4** — Mettre à jour le runbook Telegram (`bloc-e-telegram.runbook.md`, `bloc-e-telegram-proof.sh`) : variables/chemins (`DB`, `BASE_DIR`, `BOOTSTRAP`, `EPURIEL_CONFIG`, crons, reports) ; remplacer les assertions « fichier pivot présent » par « entrée intégrée au corpus ».
 - [ ] **9.5** — Suppression de l'ancienne base et de l'ancien dossier serveur (après période de test).
 - [ ] **9.6** — Archivage des **deux anciens dépôts** `pretraitement` et `index-lulumineux` (le dépôt actif devient `lumosphere`, cf. 1.0 ; après récupération des artefacts 1.12).
 - [ ] **9.7** — Mise à jour de la mémoire projet.
@@ -283,7 +281,7 @@ La consultation hors-ligne et l'app locale Electron **ne sont plus au périmètr
 
 ## Annexe B — Inventaire des routes API et tables touchées (`epuriel.php`)
 
-`/lots/create` (lots, journal_events) · `/lots/{id}/0_raw` (lots, documents, server_jobs, journal_events) · `/lots/{id}/take` (lots, journal_events) · `/lots/delete/preview` + `/lots/delete` (DELETE dynamique sur toutes tables à `lot_id`) · `/lots/{id}/checkpoint` (sync_files, documents, journal_events) · `/lots/{id}/pivot` (**pivot_exports → staging**, lots, documents, journal_events) · `/ia/settings` GET/POST · `/ia/models/refresh|registry/save|test` (ia_model_registry, ia_model_catalog_cache) · `/lots/{id}/ia/regenerate` (server_jobs, documents, journal_events) · `/lots/waiting` · `/telegram/sources` GET/POST (collect_sources) · `/telegram/lots/create-from-buffer` + `collect-and-create` (telegram_updates_buffer, lots, documents, server_jobs) · `/telegram/history/auth/start|confirm` (script Python) · `/lots/{id}/files` + `/files/read` · `/lots/{id}` (détail).
+`/lots/create` (lots, journal_events) · `/lots/{id}/0_raw` (lots, documents, server_jobs, journal_events) · `/lots/{id}/take` (lots, journal_events) · `/lots/delete/preview` + `/lots/delete` (DELETE dynamique sur toutes tables à `lot_id`) · `/lots/{id}/checkpoint` (sync_files, documents, journal_events) · `/lots/{id}/pivot` (**→ intégration directe au corpus**, lots, documents, journal_events) · `/ia/settings` GET/POST · `/ia/models/refresh|registry/save|test` (ia_model_registry, ia_model_catalog_cache) · `/lots/{id}/ia/regenerate` (server_jobs, documents, journal_events) · `/lots/waiting` · `/telegram/sources` GET/POST (collect_sources) · `/telegram/lots/create-from-buffer` + `collect-and-create` (telegram_updates_buffer, lots, documents, server_jobs) · `/telegram/history/auth/start|confirm` (script Python) · `/lots/{id}/files` + `/files/read` · `/lots/{id}` (détail).
 **Tables :** lots, documents, journal_events, server_jobs, sync_files, pivot_exports, collect_sources, telegram_updates_buffer, ia_model_registry, ia_model_catalog_cache, + réglages IA. **Config lue :** api_token, db_*, lots_root, python_bin, timezone, clés IA.
 
 ## Annexe C — Adaptation schéma SQLite → MySQL (zone corpus)
@@ -308,7 +306,7 @@ La consultation hors-ligne et l'app locale Electron **ne sont plus au périmètr
 
 | Élément | Sort |
 | --- | --- |
-| `serveur/epuriel/workers/*.py` (Telegram) | Workers atelier officiels → rediriger vers staging, renommer dossier |
+| `serveur/epuriel/workers/*.py` (Telegram) | Workers atelier officiels → rediriger vers intégration corpus, renommer dossier |
 | `outils/telechargeur_msg_telegram/` | Archiver (doublon du worker serveur) |
 | `outils/telechargeur_fichiers_telegram/` | Autonome ; candidat worker PDF différé (remplacer SQLite local par base unique) |
 | `outils/deduplicateur_pdf/dedup_md.py` | Autonome poste local (Ollama) ; aligner README↔code |
@@ -322,4 +320,4 @@ PHP web+cli 8.1.34 · MariaDB 11.4.12 · `exec()`/`shell_exec()` OK · cron cPan
 
 ## Annexe F — Décisions verrouillées
 
-Toutes les décisions de cadrage sont **fermées** — voir **Phase 0** (D1–D11, portabilité PWA, abstraction conservée, hors-ligne aucun, lots jetables). Seul travail de **conception** restant (technique, assigné à l'IA) : le **schéma exact des 4 tables `import_staging_*`** (Phase 3.5).
+Toutes les décisions de cadrage sont **fermées** — voir **Phase 0** (D1–D11, portabilité PWA, abstraction conservée, hors-ligne aucun, lots jetables, **intégration directe au corpus** sans staging). Seul travail de **conception** restant (technique, assigné à l'IA) : le **schéma exact des zones corpus + auth** (Phase 3).

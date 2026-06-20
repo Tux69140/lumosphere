@@ -1,49 +1,44 @@
 # CLAUDE.md — Lumosphère
 
-Guidage pour Claude Code (et toute IA) travaillant sur ce dépôt.
+Guide pour toute IA travaillant sur ce dépôt. **Réponses concises** (économie de tokens), vulgarisées pour un **chef de projet non codeur**.
 
-Produire des réponses **concises** pour économiser des tokens, en vulgarisant pour un **chef de projet non codeur** (compréhension par un non-informaticien).
+## État (IMPORTANT)
 
-## État du projet (IMPORTANT)
+**Migration en cours, rien n'est validé ni codé.** Phase 1 = documentation. Aucune étape acquise sans **validation explicite** du chef de projet (cases `- [x]` du devbook = après validation seulement).
 
-Projet **en migration**, **rien n'est encore validé ni codé**. Phase en cours : **Phase 1 — documentation**. Ne jamais considérer une étape comme acquise sans **validation explicite** du chef de projet. Les cases `- [x]` du devbook ne sont cochées qu'après validation.
+Lumosphère = fusion en **une seule app web** de : `pretraitement`/Epuriel (**atelier** de préparation) + `index-lulumineux` (**bibliothèque** éditoriale).
 
-Lumosphère est la fusion de deux anciens projets en **une seule application web** :
-- `pretraitement` (Epuriel) = l'**atelier** de préparation documentaire ;
-- `index-lulumineux` = la **bibliothèque** éditoriale.
+## Références (lire AVANT d'agir)
 
-## Documents de référence (à lire AVANT toute action)
-
-1. **`docs/_contexte-ia/`** — pack condensé faisant autorité (à lire en priorité, optimisé tokens) : contexte produit, architecture, schéma de données, conventions/règles, flux/API.
+1. **`docs/_contexte-ia/`** — pack condensé faisant autorité (priorité, en anglais, optimisé tokens).
 2. `docs/cahier_des_charges-lumosphere.md` — exigences fonctionnelles détaillées.
 3. `docs/stack_technique-lumosphere.md` — décisions techniques.
-4. `docs/_reference/` — instantané réel du serveur (schéma SQL, arborescence).
+4. `docs/_reference/` — sauvegarde réelle du serveur Epuriel avant fusion (schéma SQL, arbo).
 
-Le **devbook de migration** détaillé est dans l'ancien dépôt : `pretraitement/docs/devbook_migration_full_web-lumosphere.md`.
+Devbook détaillé : `pretraitement/docs/devbook_migration_full_web-lumosphere.md`. **Ne pas** se baser sur l'archive des anciens dépôts (redondante, contradictoire).
 
-**Ne pas** se fonder sur l'archive des anciens dépôts (redondante, contradictoire).
+## Stack
 
-## Stack (résumé)
-
-React/Vite + **PWA** (installable, en ligne) · API **PHP** · **une base MySQL/MariaDB** = vérité · traitements longs via `server_jobs` + cron · IA **LiteLLM cloud** · auth **sessions PHP**. Hébergement o2switch mutualisé (pas de VPS), site à la racine `/home2/mist2786/public_html/`, accès `ssh lumosphere`.
+React/Vite + **PWA** (installable, en ligne) · API **PHP** · **une base MySQL/MariaDB** = vérité · traitements longs `server_jobs` + cron · IA **LiteLLM cloud** · auth **sessions PHP forte**. Hébergement o2switch mutualisé (pas de VPS), racine `/home2/mist2786/public_html/`, `ssh lumosphere`.
 
 ## Interdits absolus
 
-- Jamais d'URL d'API ni de secret en dur ; jamais de secret côté navigateur.
-- Jamais d'écriture directe dans le **corpus** depuis l'atelier (passer par le **staging** + validation humaine).
-- Jamais de traitement long dans une requête web (→ `server_jobs` + cron).
-- Ne pas produire de fichier pivot `.pivot.json` (remplacé par le staging interne).
-- Ne jamais importer le runtime (Electron/Tauri) directement dans un composant React (passer par les services d'abstraction).
+- Aucun secret/URL d'API en dur ; aucun secret côté navigateur.
+- Accès données (DAL) : tout passe par l'API PHP en **PDO paramètres liés** (jamais de SQL côté front) ; **droits par œuvre appliqués à toutes les lectures** ; suppression douce filtrée systématiquement.
+- Écriture corpus **uniquement** à la validation d'un lot conforme, en **transaction** (tout ou rien), puis suppression du lot. Pas de staging ni de seconde relecture. **Intégration ≠ publication** : le passage à `Publiée` reste un acte humain distinct (valide les mots-clés proposés par l'IA).
+- Aucun traitement long en requête web (→ `server_jobs` + cron).
+- Pas de fichier pivot `.pivot.json` (→ intégration directe en corpus).
+- Ne pas importer le runtime (Electron/Tauri) dans un composant React (passer par les services d'abstraction).
 - Ne jamais versionner : `config/config.php`, `.env`, `.session`, bases locales, `lots/`, `data/`, `node_modules/`, venvs.
-- `apps/pdfmd/` reste un atelier de référence, jamais l'application principale.
+- `apps/pdfmd/` = atelier de référence, jamais l'app principale.
 
 ## Conventions
 
 - Identifiants techniques en anglais ; libellés utilisateur en **français** (accents corrects).
-- TypeScript/React : `PascalCase` composants, `camelCase` fonctions. PHP : simple, sans framework lourd, fonctions internes `epuriel_*` conservées, PDO paramètres liés. Python : PEP8, venv py311.
-- Commits conventionnels (`feat(scope):`, `fix(scope):`, `docs(scope):`). Mentionner tout impact sur les données.
+- React : `PascalCase` composants, `camelCase` fonctions. PHP : sans framework lourd, fonctions `epuriel_*` conservées, PDO paramètres liés. Python : PEP8, venv py311.
+- Commits conventionnels (`feat/fix/docs(scope):`) ; signaler tout impact données.
 - **Commiter/pousser uniquement sur demande explicite.**
 
 ## Commandes
 
-Aucune chaîne de build n'est encore en place (Phase documentation). Elles seront ajoutées avec le code (Phase 2+).
+Aucun build en place (phase documentation) ; ajoutés avec le code (Phase 2+).

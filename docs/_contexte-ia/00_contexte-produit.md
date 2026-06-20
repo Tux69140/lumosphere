@@ -1,27 +1,27 @@
-# 00 — Contexte produit
+# 00 — Product context
 
-## Ce qu'est Lumosphère
-Application web unique (installable en PWA) qui **prépare** des sources documentaires puis sert une **bibliothèque éditoriale** de citations/textes spirituels. Deux zones dans une même app :
-- **Atelier** (ex-Epuriel) : importe PDF/Telegram/YouTube/HTML, nettoie, segmente, enrichit (IA), fait réviser.
-- **Bibliothèque** (ex-Index Lulumineux) : conserve les entrées validées, gère auteurs/œuvres/thèmes/mots-clés/droits, sert consultation et recherche.
+## What it is
+Single web app (installable PWA): **prepares** document sources, then serves an **editorial library** of spiritual quotes/texts. Two zones, one app:
+- **Atelier** (ex-Epuriel): import PDF/Telegram/YouTube/HTML, clean, segment, AI-enrich, review.
+- **Library** (ex-Index Lulumineux): validated entries; authors/works/themes/keywords/rights; consultation + search.
 
-Entre les deux : une **frontière de validation**. L'atelier écrit en **staging** ; un Éditeur valide ; la bibliothèque intègre. **Rien n'entre au corpus sans validation humaine.**
+**Validation rule**: at end of review the Editor **validates the lot**; if conform, the entry is **auto-integrated into the corpus** (direct write in a transaction, then lot deleted). **Integration ≠ publication**: entry lands as `À Corriger`; moving to `Publiée` is a **separate human act** (validates AI-proposed keywords).
 
-## Décisions verrouillées (ne pas remettre en cause)
-- **Stack** : React/Vite + API PHP + **une base MySQL/MariaDB** = source de vérité. (Le plan SvelteKit/Node/SQLite de l'ancien Index est abandonné.)
-- **PWA installable, en ligne** : Windows/Linux/Mac/Android, un seul code, magasins via PWABuilder. **Pas d'Electron.** Couche d'abstraction conservée (Tauri possible plus tard).
-- **Pas de hors-ligne** dans cette phase (internet requis).
-- **Pas de format pivot fichier** : remplacé par des **tables de staging** + statut de validation.
-- **Lots jetables** : un lot est un espace de travail effacé après import en base (sauf mode débogage) ; seuls les repères de collecte par source sont conservés.
-- **Auth serveur** : sessions PHP (cookie httpOnly/Secure + CSRF). Aucun secret côté navigateur.
-- **IA** : LiteLLM cloud, providers configurables (Ollama local abandonné).
-- **Nom** : app = Lumosphère ; « Epuriel » = nom interne de l'atelier (les fonctions `epuriel_*` restent).
+## Locked decisions (do not reopen)
+- **Stack**: React/Vite + PHP API + **single MySQL/MariaDB** = source of truth. (Old Index SvelteKit/Node/SQLite plan dropped.)
+- **PWA installable, online**: Win/Linux/Mac/Android, one codebase, stores via PWABuilder. **No Electron.** Abstraction layer kept (Tauri possible later).
+- **No offline** this phase (internet required).
+- **No pivot file, no staging zone**: lot validation writes directly to corpus, in a transaction.
+- **Disposable lots**: a lot is a temp workspace deleted after corpus integration (unless debug mode); only per-source collection markers kept.
+- **Strong server auth**: PHP sessions (httpOnly/Secure cookie + CSRF), bcrypt, rate-limit + lockout, robust password policy (no 2FA this phase). No secret browser-side.
+- **AI**: LiteLLM cloud, configurable providers (local Ollama dropped).
+- **Name**: app = Lumosphère; "Epuriel" = atelier internal name (`epuriel_*` functions kept).
 
-## Profils
-Visiteur, Abo3, Abo4 (consultation, droits par œuvre) · Éditeur (édite + valide le staging) · Administrateur (tout). L'atelier est réservé Éditeur/Admin.
+## Roles
+Visiteur, Abo3, Abo4 (read, per-work rights) · Éditeur (edits, validates lots → corpus integration, decides `Publiée`) · Administrateur (all). Atelier = Éditeur/Admin only.
 
-## Hors périmètre
-Hors-ligne/cache ; édition hors-ligne synchronisée ; outil mobile d'édition pour 2-3 éditeurs (séparé, futur) ; app native magasin (Tauri) ; App Store Apple ; RAG/embeddings ; exports PDF/EPUB (phase 3).
+## Out of scope
+Offline/cache; offline editing w/ sync; mobile editing tool for 2-3 editors (separate, future); native store app (Tauri); Apple App Store; RAG/embeddings; PDF/EPUB exports (phase 3).
 
-## Cible
-~50 000 entrées. Fiabilité avant rapidité. Vie privée (pas d'analytics tiers).
+## Target
+~50k entries. Reliability over speed. Privacy (no third-party analytics).

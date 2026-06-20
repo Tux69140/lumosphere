@@ -1,0 +1,344 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Index Lulumineux — Schéma DBML T0.2 v4
+// Modifications du 17/05/2026 :
+//   1. carnet d'import générique simplifié : import_sources
+//   2. telegram_channels recentré sur la configuration Telegram
+//   3. suivi limité à la date du dernier élément source importé
+//   4. citations enrichi avec une provenance d'import générique
+//   5. role_oeuvre_access ajouté pour coller aux documents de référence récents
+//   6. schema_version ajouté pour versionner le schéma SQLite
+//   7. themes.chemin, etats.est_modifiable, citations_fts conservés
+//
+// Décisions validées : A (1 thème/citation), B (auteur via oeuvre), C (permissions table)
+// États init : À Corriger (défaut création), À Réviser, Publiée — tous non supprimables
+// theme_id nullable : NULL = "non classé thématiquement"
+// telegram_channels.oeuvre_id → oeuvres (canal lié à une oeuvre, ex: "Telegram Lulumineuse Actualis")
+// ─────────────────────────────────────────────────────────────────────────────
+
+Table auteurs {
+  id           integer  [pk, increment]
+  nom          text     [not null]
+  site         text
+  informations text
+  created_at   datetime [default: `CURRENT_TIMESTAMP`]
+  updated_at   datetime [default: `CURRENT_TIMESTAMP`]
+  indexes {
+    nom [name: 'idx_auteurs_nom']
+  }
+}
+
+Table oeuvres {
+  id           integer  [pk, increment]
+  auteur_id    integer  [not null]
+  nom          text     [not null]
+  abreviation  text     [note: 'Libellé court pour affichage compact (badges, en-têtes de carte). Ex: TLA pour Telegram Lulumineuse Actualis']
+  url          text
+  ref_libraire text
+  description  text
+  created_at   datetime [default: `CURRENT_TIMESTAMP`]
+  updated_at   datetime [default: `CURRENT_TIMESTAMP`]
+  indexes {
+    auteur_id    [name: 'idx_oeuvres_auteur']
+    ref_libraire [name: 'idx_oeuvres_ref_libraire']
+  }
+}
+
+// MODIFICATION 1 : ajout de themes.chemin
+// Champ calculé automatiquement — aucune saisie manuelle par l'éditeur.
+// Triggers (INSERT et UPDATE sur nom/parent_id) gèrent la synchronisation.
+// À l'insertion : chemin = nom si racine, chemin_parent || '/' || nom si enfant.
+// À la modification : recalcul du thème modifié + propagation aux sous-thèmes enfants.
+// Utile pour les badges, en-têtes de carte et sommaires PDF/EPUB sans jointure.
+Table themes {
+  id          integer  [pk, increment]
+  nom         text     [not null]
+  parent_id   integer  [note: 'NULL = thème racine. Max 2 niveaux enforced par la DAL, pas par SQLite']
+  chemin      text     [note: 'NOUVEAU — calculé par trigger. Ex: "Spiritualité/Cosmologie". Ne jamais écrire manuellement']
+  description text
+  created_at  datetime [default: `CURRENT_TIMESTAMP`]
+  updated_at  datetime [default: `CURRENT_TIMESTAMP`]
+  indexes {
+    parent_id [name: 'idx_themes_parent']
+    nom       [name: 'idx_themes_nom']
+  }
+}
+
+// MODIFICATION 3 : ajout de etats.est_modifiable
+// Valeur informative pour l'interface d'admin et le développeur.
+// La protection réelle des états système (ids 1, 2, 3) reste enforced par la DAL
+// (blocage DELETE sur ces ids). Ce champ documente l'intention dans le schéma.
+// 0 = état système non supprimable, 1 = état personnalisé modifiable (défaut).
+Table etats {
+  id             integer [pk, increment]
+  nom            text    [not null, unique]
+  code           text    [not null, unique, note: 'C=À Corriger (défaut création), R=À Réviser, P=Publiée']
+  couleur        text    [not null, note: 'Code couleur fond badge']
+  est_modifiable integer [not null, default: 1, note: 'NOUVEAU — 0 = état système non supprimable (C, R, P). 1 = état personnalisé']
+  note: 'Données initiales insérées au script init avec est_modifiable=0. États C, R, P non supprimables (contrôle applicatif DAL)'
+}
+
+Table citations {
+  id                  integer  [pk, increment]
+  contenu             text     [not null, note: 'Champ conservé dans cette version. À faire évoluer plus tard vers un stockage Markdown source si vous alignez complètement le schéma sur les docs récents']
+  notes               text     [note: 'Contenu complémentaire affiché sous l entrée. Indexé en FTS5']
+  oeuvre_id           integer  [not null, note: 'Décision B : auteur accessible via oeuvres.auteur_id']
+  theme_id            integer  [note: 'Nullable : NULL = non classé thématiquement. Attribué à la révision']
+  etat_id             integer  [not null, note: 'Défaut insertion = id état code C (À Corriger). Enforced par la DAL']
+  telegram_message_id text     [note: 'Conservé pour compatibilité Telegram et dédoublonnage ciblé']
+  import_source_id    integer  [note: 'NOUVEAU — source d import générique : canal Telegram, transcription YouTube, PDF, etc.']
+  source_item_id      text     [note: 'NOUVEAU — identifiant externe libre pour dédoublonnage générique']
+  source_item_date    datetime [note: 'NOUVEAU — date du message/document/segment source']
+  deleted_at          datetime [note: 'Suppression douce : NULL = actif. Filtre WHERE deleted_at IS NULL dans toutes les requêtes']
+  date_entree         date
+  created_at          datetime [default: `CURRENT_TIMESTAMP`]
+  updated_at          datetime [default: `CURRENT_TIMESTAMP`]
+  indexes {
+    oeuvre_id                        [name: 'idx_citations_oeuvre']
+    theme_id                         [name: 'idx_citations_theme']
+    etat_id                          [name: 'idx_citations_etat']
+    import_source_id                 [name: 'idx_citations_import_source']
+    source_item_date                 [name: 'idx_citations_source_item_date']
+    date_entree                      [name: 'idx_citations_date']
+    deleted_at                       [name: 'idx_citations_deleted']
+    telegram_message_id              [name: 'idx_citations_tg_msg', unique, note: 'WHERE telegram_message_id IS NOT NULL']
+    (import_source_id, source_item_id) [name: 'idx_citations_import_item', unique, note: 'Dédoublonnage générique quand source_item_id est renseigné']
+    (etat_id, theme_id, date_entree) [name: 'idx_citations_etat_theme_date']
+  }
+}
+
+Table keywords {
+  id  integer [pk, increment]
+  mot text    [not null, unique, note: 'COLLATE NOCASE — un mot-clé unique = une ligne']
+}
+
+Table citation_keywords {
+  citation_id integer [not null]
+  keyword_id  integer [not null]
+  indexes {
+    (citation_id, keyword_id) [pk]
+    keyword_id [name: 'idx_citation_keywords_keyword']
+  }
+}
+
+// MODIFICATION 4 : citations_fts — notes ajoutées à l'index FTS5
+// Table virtuelle FTS5, mode autonome (sans content= ni content_rowid=).
+// Colonnes indexées : contenu, notes, auteur_nom.
+// keywords délibérément exclus : ils ont leur propre filtre SQL dédié (logique OU/ET).
+// Les triggers INSERT/UPDATE/DELETE sur citations alimentent cette table.
+// contenu et notes = texte brut strippé du HTML par la DAL (COALESCE(notes, '') si NULL).
+// auteur_nom = dénormalisé via jointure oeuvres→auteurs au moment de l'insertion.
+// Tokenizer unicode61 remove_diacritics 2 : recherche insensible à la casse et aux accents.
+//
+// CREATE VIRTUAL TABLE citations_fts USING fts5(
+//   contenu,
+//   notes,
+//   auteur_nom,
+//   tokenize = 'unicode61 remove_diacritics 2'
+// );
+
+Table roles {
+  id         integer  [pk, increment]
+  nom        text     [not null, unique]
+  created_at datetime [default: `CURRENT_TIMESTAMP`]
+  updated_at datetime [default: `CURRENT_TIMESTAMP`]
+  note: 'Rôle Administrateur (id=1) non modifiable et non supprimable : enforced par la DAL'
+}
+
+Table permissions {
+  id          integer [pk, increment]
+  code        text    [not null, unique, note: 'Ex: citations.read, citations.write, admin.users']
+  description text
+}
+
+Table role_permissions {
+  role_id       integer [not null]
+  permission_id integer [not null]
+  indexes {
+    (role_id, permission_id) [pk]
+    permission_id [name: 'idx_role_permissions_permission']
+  }
+}
+
+
+Table role_oeuvre_access {
+  role_id    integer [not null, note: 'Accès de lecture à une oeuvre pour un rôle donné']
+  oeuvre_id  integer [not null]
+  indexes {
+    (role_id, oeuvre_id) [pk]
+    oeuvre_id [name: 'idx_role_oeuvre_access_oeuvre']
+  }
+}
+
+Table users {
+  id            integer  [pk, increment]
+  nom           text     [not null]
+  email         text     [not null, unique]
+  password_hash text     [not null, note: 'Hash bcrypt. Champ nommé password_hash et non password pour clarté']
+  role_id       integer  [not null]
+  created_at    datetime [default: `CURRENT_TIMESTAMP`]
+  updated_at    datetime [default: `CURRENT_TIMESTAMP`]
+  indexes {
+    role_id [name: 'idx_users_role']
+  }
+}
+
+// Favoris utilisateurs connectés — desktop (Tauri session) et web indépendants
+Table user_favorites {
+  user_id     integer  [not null]
+  citation_id integer  [not null]
+  created_at  datetime [default: `CURRENT_TIMESTAMP`]
+  indexes {
+    (user_id, citation_id) [pk]
+  }
+}
+
+// Favoris visiteur desktop non connecté uniquement
+// Équivalent du localStorage côté SQLite local Tauri
+// Pas de user_id : un seul "profil visiteur" par installation desktop
+Table local_favorites {
+  citation_id integer  [not null, pk]
+  created_at  datetime [default: `CURRENT_TIMESTAMP`]
+}
+
+// Sessions actives éditeurs — bandeau de présence simultanée (Phase 2a)
+Table active_sessions {
+  user_id   integer  [not null, pk]
+  prenom    text     [not null]
+  last_seen datetime [default: `CURRENT_TIMESTAMP`]
+}
+
+Table mediatheque {
+  id         integer  [pk, increment]
+  filename   text     [not null, note: 'Chemin relatif depuis dossier media/ ex: portraits/lulumineuse.jpg. Convention définie et figée en T0.2']
+  alt        text     [note: 'Texte alternatif accessibilité — obligatoire à l import']
+  infos      text
+  created_at datetime [default: `CURRENT_TIMESTAMP`]
+  updated_at datetime [default: `CURRENT_TIMESTAMP`]
+}
+
+Table bibliotheque {
+  id          integer  [pk, increment]
+  titre       text     [not null, note: 'Bibliothèque réservée aux exports générés par l application']
+  description text
+  type        text     [not null, note: "pdf ou epub — CHECK enforced par SQLite : CHECK(type IN ('pdf','epub'))"]
+  filename    text     [not null]
+  created_at  datetime [default: `CURRENT_TIMESTAMP`]
+  updated_at  datetime [default: `CURRENT_TIMESTAMP`]
+}
+
+Table notifications {
+  id          integer  [pk, increment]
+  email       text     [not null]
+  message     text     [not null]
+  statut      text     [not null, default: 'Nouveau', note: "Nouveau | En cours | Traité — CHECK enforced SQLite"]
+  notes_suivi text
+  created_at  datetime [default: `CURRENT_TIMESTAMP`]
+  updated_at  datetime [default: `CURRENT_TIMESTAMP`]
+  indexes {
+    statut [name: 'idx_notifications_statut']
+  }
+}
+
+// Telegram reste un module spécialisé.
+// Cette table porte uniquement la configuration métier propre aux canaux Telegram.
+// Le suivi du dernier document source importé est centralisé dans import_sources.
+Table telegram_channels {
+  id          integer  [pk, increment]
+  nom         text     [not null, note: 'Libellé lisible affiché dans les menus. Ex: Canal Lulumineuse']
+  channel_id  text     [not null, unique, note: 'Identifiant Telegram ex: -1001234567890']
+  oeuvre_id   integer  [not null, note: 'Un canal Telegram reste lié à une œuvre']
+  is_active   integer  [not null, default: 1, note: '1 = actif, 0 = désactivé sans suppression']
+  created_at  datetime [default: `CURRENT_TIMESTAMP`]
+  updated_at  datetime [default: `CURRENT_TIMESTAMP`]
+}
+
+
+// Carnet des sources d'import — générique.
+// Une ligne = une source concrète rattachée à une oeuvre.
+// Exemples : un canal Telegram, une transcription YouTube, un PDF externe.
+// On ne suit pas ici la date à laquelle l'import a été lancé,
+// mais la date du dernier élément source réellement importé.
+Table import_sources {
+  id                      integer  [pk, increment]
+  oeuvre_id               integer  [not null]
+  source_type             text     [not null, note: "telegram | youtube_transcript | pdf | other"]
+  label                   text     [not null, note: 'Nom lisible dans l interface. Ex: Canal Z, Vidéo YT X, PDF Y']
+  telegram_channel_id     integer  [note: 'Renseigné si source_type = telegram']
+  source_ref              text     [note: 'Identifiant externe libre : video id YouTube, empreinte PDF, id métier, etc.']
+  source_url              text
+  is_active               integer  [not null, default: 1]
+  notes                   text
+  last_imported_item_id   text     [note: 'Identifiant du dernier élément source réellement importé si disponible']
+  last_imported_item_date datetime [note: 'Date de création/publication du dernier élément source importé']
+  created_at              datetime [default: `CURRENT_TIMESTAMP`]
+  updated_at              datetime [default: `CURRENT_TIMESTAMP`]
+  indexes {
+    oeuvre_id                           [name: 'idx_import_sources_oeuvre']
+    source_type                         [name: 'idx_import_sources_type']
+    telegram_channel_id                 [name: 'idx_import_sources_tg_channel', unique]
+    last_imported_item_date             [name: 'idx_import_sources_last_item_date']
+    (oeuvre_id, source_type)            [name: 'idx_import_sources_oeuvre_type']
+  }
+}
+
+Table config {
+  cle    text [pk, note: 'Clé de configuration']
+  valeur text
+}
+
+Table emojis {
+  id   integer [pk, increment]
+  code text    [not null, unique]
+}
+
+// File d'attente exports asynchrones — implémentée en Phase 3
+// Créée dès l'init pour éviter une migration ultérieure
+Table export_jobs {
+  id           integer  [pk, increment]
+  statut       text     [not null, default: 'en_attente', note: "en_attente | en_cours | termine | erreur — CHECK enforced SQLite"]
+  format       text     [not null, note: "pdf ou epub — CHECK enforced SQLite : CHECK(format IN ('pdf','epub'))"]
+  filtres      text     [note: 'JSON snapshot des filtres actifs au moment de la demande']
+  output_path  text
+  created_at   datetime [default: `CURRENT_TIMESTAMP`]
+  completed_at datetime
+}
+
+
+Table schema_version {
+  version     integer  [pk, note: 'Version entière croissante du schéma']
+  description text
+  applied_at  datetime [default: `CURRENT_TIMESTAMP`]
+}
+
+// ─── Relations ───────────────────────────────────────────────────────────────
+
+Ref: oeuvres.auteur_id   > auteurs.id  [delete: restrict, update: no action]
+
+Ref: citations.oeuvre_id > oeuvres.id  [delete: restrict, update: no action]
+Ref: citations.theme_id  > themes.id   [delete: set null, update: no action]
+Ref: citations.etat_id   > etats.id    [delete: restrict, update: no action]
+Ref: citations.import_source_id > import_sources.id [delete: set null, update: no action]
+
+Ref: themes.parent_id    > themes.id   [delete: set null, update: no action]
+
+Ref: citation_keywords.citation_id > citations.id [delete: cascade, update: no action]
+Ref: citation_keywords.keyword_id  > keywords.id  [delete: cascade, update: no action]
+
+Ref: role_permissions.role_id       > roles.id       [delete: cascade, update: no action]
+Ref: role_permissions.permission_id > permissions.id [delete: cascade, update: no action]
+Ref: role_oeuvre_access.role_id > roles.id [delete: cascade, update: no action]
+Ref: role_oeuvre_access.oeuvre_id > oeuvres.id [delete: cascade, update: no action]
+
+Ref: users.role_id > roles.id [delete: restrict, update: no action]
+
+Ref: user_favorites.user_id     > users.id     [delete: cascade, update: no action]
+Ref: user_favorites.citation_id > citations.id [delete: cascade, update: no action]
+
+Ref: local_favorites.citation_id > citations.id [delete: cascade, update: no action]
+
+Ref: active_sessions.user_id > users.id [delete: cascade, update: no action]
+
+// Sources d import : telegram_channels reste lié directement à oeuvres ; import_sources centralise le suivi générique
+Ref: telegram_channels.oeuvre_id > oeuvres.id [delete: restrict, update: no action]
+Ref: import_sources.oeuvre_id > oeuvres.id [delete: restrict, update: no action]
+Ref: import_sources.telegram_channel_id > telegram_channels.id [delete: restrict, update: no action]

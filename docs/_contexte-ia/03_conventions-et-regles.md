@@ -1,37 +1,37 @@
-# 03 — Conventions et règles
+# 03 — Conventions & rules
 
-## Règles métier (couche PHP, à appliquer côté serveur — pas seulement UI)
-- État par défaut d'une citation : **À Corriger**.
-- **Publiée interdite sans thème** renseigné.
-- États système (C/R/P) non supprimables ; rôle Administrateur non supprimable/non réductible.
-- Thèmes : **2 niveaux maximum**.
-- Mots-clés : **normalisés**, unicité insensible à la casse.
-- **Suppression douce** (`deleted_at`) filtrée systématiquement sur toutes les lectures.
-- **Droits par œuvre** (`role_oeuvre_access`) appliqués à **toutes** les requêtes de lecture (pas un masquage visuel).
-- Validation des entrées avant écriture (côté React + revalidation PHP).
-- Édition concurrente : verrou `SELECT … FOR UPDATE` ; un lot = un responsable (`assigned_to`).
+## Business rules (PHP server-side, not UI-only)
+- **Corpus integration**: on validating a **conform** lot (full set theme+date+author+keywords, no duplicate), write in a **transaction** (all-or-nothing), verify, then delete the lot. Atelier never writes partially to corpus.
+- **Theme required for integration**.
+- Default state at integration: **À Corriger** (integration ≠ publication).
+- **`Publiée` forbidden without the full set** (theme, publication date, author, keywords) **and without human validation** (notably AI-proposed keywords) after review.
+- System states (C/R/P) non-deletable; Administrateur role non-deletable/non-reducible.
+- Themes: **2 levels max**. Keywords: **normalized**, case-insensitive unique.
+- **Soft-delete** (`deleted_at`) filtered on all reads.
+- **Per-work rights** (`role_oeuvre_access`) applied to **all** read queries (not visual masking).
+- Validate before write (React + PHP re-validation). Concurrent edit: `SELECT … FOR UPDATE`; one lot = one owner (`assigned_to`).
 
-## Cycle de vie des lots (jetables)
-- Un lot = espace de travail **temporaire**. Après import réussi en staging/corpus → **effacer tout le dossier du lot** (source brute + intermédiaires).
-- **Mode débogage** (réglage global + override par lot, **défaut OFF**) : conserve le dossier pour diagnostic.
-- Conserver en base : `collect_sources.last_marker` (dernier) + `first_marker` (plus ancien), par source auto-collectée (pas le PDF manuel).
-- Pas de `manifest.json`/`journal.csv` par lot ; pas de dossier `*_exports/`. Journal léger en base, élagué. `telegram_updates_buffer` purgé.
+## Disposable lots
+- Lot = temp workspace. After successful corpus integration (verified write) → **delete the whole lot folder** (raw + intermediates).
+- **Debug mode** (global setting + per-lot override, **default OFF**): keeps the folder for diagnosis.
+- Keep in DB: `collect_sources.last_marker` + `first_marker`, per auto-collected source (not manual PDF).
+- No per-lot `manifest.json`/`journal.csv`, no `*_exports/`. Light DB log, pruned. `telegram_updates_buffer` purged.
 
-## Conventions de code
-- **TypeScript/React** : composants `PascalCase`, hooks/fonctions `camelCase`. UI **sans** dépendance runtime (passe par les services). Pas d'Electron.
-- **PHP** : simple, lisible, compatible o2switch, sans framework lourd ; fonctions internes `epuriel_*` (conservées) ; PDO paramètres liés.
-- **Python** : PEP8, `snake_case`, venv py311. Workers CLI (stdin/stdout JSON), lancés par PHP via `exec()`.
-- Identifiants techniques en anglais ; libellés utilisateur en **français** (accents corrects).
-- Vocabulaire métier : lot, source, brut, étape, révision, enrichissement, staging, validation, journal.
+## Code conventions
+- **TS/React**: `PascalCase` components, `camelCase` hooks/funcs. UI **no** runtime dependency (via services). No Electron.
+- **PHP**: simple, o2switch-compatible, no heavy framework; `epuriel_*` internal functions kept; PDO bound params.
+- **Python**: PEP8, `snake_case`, venv py311. CLI workers (stdin/stdout JSON), launched by PHP via `exec()`.
+- Tech identifiers in English; user labels in **French** (correct accents).
+- Business vocabulary (French): lot, source, brut, étape, révision, enrichissement, validation, intégration, publication, journal. (No "staging".)
 
-## Interdits
-- Jamais d'URL d'API ni de secret en dur.
-- Jamais d'écriture directe dans le **corpus** depuis l'atelier (passer par le staging + validation humaine).
-- Jamais de secret côté navigateur (jetons, clés IA, identifiants Telegram).
-- Jamais de traitement long dans une requête web (→ `server_jobs` + cron).
-- Ne pas produire de fichier pivot `.pivot.json` (remplacé par le staging).
-- `apps/pdfmd/` reste un atelier de référence, **jamais l'app principale**.
-- Ne pas se baser sur l'archive des anciens dépôts.
+## Prohibitions
+- No hardcoded API URL/secret.
+- No **partial/uncontrolled** corpus write: atelier writes only on **conform-lot validation**, in a **transaction**, then deletes the lot. No staging, no second review (integration ≠ publication).
+- No browser-side secret (tokens, AI keys, Telegram creds).
+- No long task in a web request (→ `server_jobs` + cron).
+- No `.pivot.json` file (→ direct corpus integration).
+- `apps/pdfmd/` = reference atelier, **never the main app**.
+- Don't rely on the old repos' archive.
 
-## Qualité (avant commit)
-`pnpm lint` + `pnpm build` verts + vérification manuelle. Vitest/Playwright (front), Ruff (Python), PHPStan/PHPCS (PHP), Gitleaks (secrets, incl. auth).
+## Quality (pre-commit)
+`pnpm lint` + `pnpm build` green + targeted manual check. Vitest/Playwright (front), Ruff (Python), PHPStan/PHPCS (PHP), Gitleaks (secrets incl. auth).
