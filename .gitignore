@@ -30,6 +30,9 @@ release/
 .cache/
 tmp/
 
+# Outillage IA local (Claude Code, etc.) — non versionné
+.claude/
+
 # Divers
 .DS_Store
 Thumbs.db

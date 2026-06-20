@@ -4,7 +4,11 @@
 
 ## 1. Rôle du document
 
-Décrit **comment on travaille** (méthode, règles d'exécution, qualité), pas **quoi** faire ni dans quel ordre — ça, c'est le **devbook** (`devbook_migration_full_web-lumosphere.md`) et les **phases** du cahier (§30). Source d'autorité pour coder : `docs/_contexte-ia/`.
+Décrit **comment on travaille** (méthode, règles d'exécution, qualité), pas **quoi** faire ni dans quel ordre. Le **quoi/quand** vit dans les deux devbooks :
+- `devbook_migration_full_web-lumosphere.md` — rendre l'atelier Epuriel full-web + poser le socle base/auth/serveur ;
+- `devbook_developpement-lumosphere.md` — **construire la bibliothèque / UI documentaire complète et toutes les chaînes de préparation** (prend le relais).
+
+Source d'autorité pour coder : `docs/_contexte-ia/`.
 
 ## 2. Principes de travail
 
@@ -55,7 +59,7 @@ Le **devbook** est l'outil de pilotage : une case `- [x]` n'est cochée qu'**apr
 
 ## 8. Feuille de route (renvoi)
 
-Séquencement détaillé : **devbook**. Récapitulatif des phases (cahier §30) :
+Séquencement détaillé : **les deux devbooks** (migration + développement). Récapitulatif des phases (cahier §30) :
 
 | Phase | Périmètre | Livrable principal |
 | --- | --- | --- |
