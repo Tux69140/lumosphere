@@ -1,0 +1,35 @@
+# Secrets et configuration sensible — jamais versionnés
+config/config.php
+**/config.php
+.env
+.env.*
+!.env.example
+*.session
+*.session-journal
+
+# Données locales et serveur — régénérables / volumineuses
+lots/
+data/
+reports/
+refs/
+*.db
+*.sqlite
+*.sqlite3
+*.log
+
+# Dépendances et artefacts de build
+node_modules/
+.venv/
+.venv-win/
+venvs/
+__pycache__/
+dist/
+build/
+out/
+release/
+.cache/
+tmp/
+
+# Divers
+.DS_Store
+Thumbs.db
