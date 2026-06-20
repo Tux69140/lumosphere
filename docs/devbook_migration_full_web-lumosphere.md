@@ -93,28 +93,42 @@ Objectif : éviter de faire ingérer ~70 fichiers (dont l'archive redondante et 
 **Faits techniques :** MySQL **ne renomme pas une base en place** ; cPanel/o2switch n'a pas de bouton « renommer ». Voie fiable : sauvegarde → création nouvelle base → import → bascule config → nettoyage. **Préfixe de compte imposé** → le nom réel est `mist2786_lumosphere`. **Bonne nouvelle code** : `bootstrap.php` lit `db_name` depuis `config.php` (`epuriel_pdo`, `bootstrap.php:83-95`) → la **connexion** ne change pas ; seuls la migration des données et les **références littérales** changent.
 
 ### 2.1 — Sauvegarde et préparation
-- [ ] Sauvegarde complète (SSH lumosphere ouverte) : `mysqldump --defaults-extra-file=/home2/mist2786/.my.cnf mist2786_epuriel > ~/backup_epuriel_AAAAMMJJ.sql`. Vérifier taille/intégrité.
+- [x] Sauvegarde complète (SSH lumosphere ouverte) : `mysqldump --defaults-extra-file=/home2/mist2786/.my.cnf mist2786_epuriel > ~/backup_epuriel_AAAAMMJJ.sql`. Vérifier taille/intégrité.
+  - Fichier : `~/backup_epuriel_20260620.sql` — 301 Ko — `Dump completed on 2026-06-20 17:45:08` ✓
+  - `.my.cnf` créé (`chmod 600`) — connexion testée (11 tables visibles) ✓
 
 ### 2.2 — Création de la nouvelle base
-- [ ] Créer `mist2786_lumosphere` via cPanel (préfixe auto `mist2786_`).
-- [ ] Créer l'utilisateur applicatif `mist2786_lumo_usr` (cohérence), **droits restreints SELECT/INSERT/UPDATE/DELETE uniquement** (jamais ALTER/CREATE/DROP — décision actée Bloc B / trame §858).
-- [ ] Affecter l'utilisateur à la base.
+- [x] Créer `mist2786_lumosphere` via cPanel (préfixe auto `mist2786_`).
+- [x] Créer l'utilisateur applicatif `mist2786_lumo_usr` (cohérence), **droits restreints SELECT/INSERT/UPDATE/DELETE uniquement** (jamais ALTER/CREATE/DROP — décision actée Bloc B / trame §858).
+- [x] Affecter l'utilisateur à la base.
 
 ### 2.3 — Transfert des données (préserver le schéma acté)
-- [ ] Importer le dump : `mysql ... mist2786_lumosphere < ~/backup_epuriel_AAAAMMJJ.sql`. Vérifier nombre de tables/lignes.
-- [ ] **Préserver intégralement le schéma de `mysql_schema_final_epuriel.sql`** : 7 tables (`lots`, `documents`, `journal_events`, `pivot_exports`, `collect_sources`, `sync_files`, `server_jobs`), MariaDB 11.4.12, utf8mb4/InnoDB, **FK par `lot_id` VARCHAR** (pas par `id` — contrainte de compat code/cron), `config_json` LONGTEXT + `JSON_VALID`, statut défaut `importe_raw`, ENUM de statuts (liste fermée), `date_source_debut` obligatoire pour tous, `run_every_hours`/`first_marker`/`enabled=non` sur `collect_sources`, hashes SHA-256, index actés.
-- [ ] **Corriger** le `SET time_zone='+02:00'` codé en dur (heure d'été figée, archive Bloc B) → `Europe/Paris` dynamique.
+- [x] Importer le dump : `mysql ... mist2786_lumosphere < ~/backup_epuriel_AAAAMMJJ.sql`. Vérifier nombre de tables/lignes.
+  - 11 tables importées, comptages cohérents (lots:22, documents:22, server_jobs:73, ia_model_registry:133…) ✓
+- [x] **Préserver intégralement le schéma de `mysql_schema_final_epuriel.sql`** : 7 tables (`lots`, `documents`, `journal_events`, `pivot_exports`, `collect_sources`, `sync_files`, `server_jobs`), MariaDB 11.4.12, utf8mb4/InnoDB, **FK par `lot_id` VARCHAR** (pas par `id` — contrainte de compat code/cron), `config_json` LONGTEXT + `JSON_VALID`, statut défaut `importe_raw`, ENUM de statuts (liste fermée), `date_source_debut` obligatoire pour tous, `run_every_hours`/`first_marker`/`enabled=non` sur `collect_sources`, hashes SHA-256, index actés.
+  - Schéma préservé intégralement depuis le dump de `mist2786_epuriel` ✓
+- [x] **Corriger** le `SET time_zone='+02:00'` codé en dur (heure d'été figée, archive Bloc B) → `Europe/Paris` dynamique.
+  - Vérifié : `bootstrap.php:76` utilise déjà `$config['timezone'] ?? 'Europe/Paris'` ; PDO sans `SET time_zone` codé en dur ; dump standard `+00:00`. Aucune correction nécessaire ✓
 
 ### 2.4 — Bascule de la configuration
-- [ ] Éditer `/home2/mist2786/epuriel/config/config.php` (hors Git) : `db_name`→`mist2786_lumosphere`, `db_user`/`db_pass`. Test de connexion (runbook `bloc-e-telegram.runbook.md:46`).
+- [x] Éditer `/home2/mist2786/epuriel/config/config.php` (hors Git) : `db_name`→`mist2786_lumosphere`, `db_user`/`db_pass`.
+  - Connexion PDO testée : `db=mist2786_lumosphere user=mist2786_lumo_usr lots=22` ✓
 
 ### 2.5 — Références littérales à renommer (voir Annexe A pour l'inventaire complet)
-- [ ] Nom de base `mist2786_epuriel` et **ancien `sc1phcv1381_epuriel`** : runbook, `mysql_schema_decisions_epuriel.md`, archives Bloc B, scripts.
-- [ ] Utilisateur `mist2786_epur_usr` / **ancien `sc1phcv1381_epuriel_usr`** → `mist2786_lumo_usr` + GRANTs.
-- [ ] `grep -rn "mist2786_epuriel\|mist2786_epur_usr\|sc1phcv1381"` jusqu'à zéro résidu (hors archives volontairement conservées).
+- [x] Nom de base `mist2786_epuriel` et **ancien `sc1phcv1381_epuriel`** : runbook, `mysql_schema_decisions_epuriel.md`, archives Bloc B, scripts.
+  - Côté serveur : 1 seul résidu opérationnel (`tools/bloc-e-telegram-proof.sh:13` défaut `DB`) → corrigé en `mist2786_lumosphere` (sauvegarde `.bak`). Les crons lisent `config.php` (aucun nom en dur). ✓
+  - Les autres fichiers de l'Annexe A (`bloc-e-telegram.runbook.md`, `mysql_schema_decisions_epuriel.md`, `trame_travail-pretraitement.md`, archives Bloc B) sont dans l'**ancien dépôt `pretraitement`** — non opérationnels, archivés en Phase 9. Aucune trace `sc1phcv1381` côté serveur.
+- [x] Utilisateur `mist2786_epur_usr` / **ancien `sc1phcv1381_epuriel_usr`** → `mist2786_lumo_usr` + GRANTs.
+  - `config.php` bascule sur `mist2786_lumo_usr` (Phase 2.4). Aucun nom d'utilisateur en dur côté serveur.
+- [x] `grep -rn "mist2786_epuriel\|mist2786_epur_usr\|sc1phcv1381"` jusqu'à zéro résidu (hors archives volontairement conservées).
+  - Contrôle serveur (hors `/venvs/` et `.bak`) : **zéro résidu** ✓
 
 ### 2.6 — Validation et nettoyage
-- [ ] Faire tourner API + crons sur la nouvelle base en test. **Puis seulement** supprimer l'ancienne base et l'ancien utilisateur.
+- [x] Faire tourner API + crons sur la nouvelle base en test.
+  - API live `GET /lots/waiting` → HTTP 200, données réelles depuis `mist2786_lumosphere` ✓
+  - Cron `run_jobs.php` → connexion OK, file traitée sans erreur ✓
+- [ ] **Puis seulement** supprimer l'ancienne base et l'ancien utilisateur. → **Différé volontairement** (filet de sécurité pendant la période de test ; suppression finale en Phase 9.5).
+- [x] **Sécurité (cPanel)** : révoquer les `ALL PRIVILEGES` accordés à `mist2786_lumo_usr` pour l'import, revenir à `SELECT/INSERT/UPDATE/DELETE` uniquement (cf. 2.2). ✓ Fait. ⚠️ La création des tables corpus/auth (Phase 3) se fera via phpMyAdmin (compte cPanel), pas via l'utilisateur applicatif.
 
 ---
 

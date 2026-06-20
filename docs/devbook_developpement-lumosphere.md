@@ -61,6 +61,7 @@ But : **s'assurer que les bons composants sont présents** et **figer/valider le
 ### I.7 — Données de test + squelette React
 - [ ] **Jeu de citations de test** dans le corpus (convertir les données de test déjà en base atelier, ou seed dédié) → matière à **afficher** dès la Phase II.
 - [ ] Squelette React : layout, routage, **thème clair/sombre**, charte + Phosphor ; services (`EpurielServices`, adaptateur Web `fetch`/`credentials:'include'`).
+- [ ] **Nettoyage post-migration** (une fois les données de test reversées au corpus et le bout-en-bout validé) : supprimer l'**ancienne base `mist2786_epuriel`** (filet de sécurité conservé pendant la bascule Phase 2, cf. migration §2.6 / §9.5) et purger les **anciens lots** de l'atelier (dossiers `lots/` devenus inutiles ; les lots sont jetables, cf. migration Phase 3bis). ⚠️ Action **destructive et irréversible** : seulement après validation explicite du chef de projet.
 
 ---
 
