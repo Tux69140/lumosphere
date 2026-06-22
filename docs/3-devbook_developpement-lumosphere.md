@@ -1,7 +1,7 @@
 # Devbook de développement — Lumosphère
 
 > **Version 1.2.** Construit **Lumosphère** : la **bibliothèque / UI documentaire** complète **et** l'intégration de **toutes les chaînes de préparation** vers le corpus.
-> **Prend le relais** du `devbook_migration_full_web-lumosphere.md` (qui rend l'atelier Epuriel full-web et pose le socle base/auth/serveur). Jonctions : **schéma corpus + auth** (migration Phase 3) et **intégration directe atelier→corpus** (migration Phase 6.3).
+> **Prend le relais** du `4-devbook_migration_full_web-lumosphere.md` (qui rend l'atelier Epuriel full-web et pose le socle base/auth/serveur). Jonctions : **schéma corpus + auth** (migration Phase 3) et **intégration directe atelier→corpus** (migration Phase 6.3).
 > **Stack imposée** : React/Vite + PHP + **MySQL** + PWA. Transposition des deux anciennes trames (Index SvelteKit/SQLite/Electron **et** Epuriel) → vocabulaire et composants adaptés. **Plus de pivot ni de staging** : validation d'un lot conforme → écriture **directe** au corpus, en transaction ; **intégration ≠ publication**.
 
 > **Convention de numérotation** (extensible, sans « bis ») :
@@ -43,6 +43,30 @@ But : **s'assurer que les bons composants sont présents** et **figer/valider le
 - [ ] **Soumettre les choix structurants au chef de projet** ; puis **migration initiale + seed** (rôles, états, administrateur initial à changer, thèmes/sous-thèmes).
 - [ ] **Livrable** : schéma corpus+auth validé + script de migration + seed.
 
+#### Complément I.3 — Matrice RBAC (droits par rôle × état × action)
+
+| Action | Visiteur | Abo3 | Abo4 | Éditeur | Admin |
+|--------|----------|------|------|---------|-------|
+| **Voir citations `Publiée`** | ✓ (œuvres publiques) | ✓ (ses œuvres) | ✓ (ses œuvres) | ✓ (toutes) | ✓ (toutes) |
+| **Voir citations `À Réviser`** | ✗ | ✗ | ✗ | ✓ | ✓ |
+| **Voir citations `À Corriger`** | ✗ | ✗ | ✗ | ✓ | ✓ |
+| **Recherche fulltext** | ✓ (filtré rôle) | ✓ (filtré œuvres) | ✓ (filtré œuvres) | ✓ | ✓ |
+| **Favoris** | ✓ (local browser) | ✓ (local) | ✓ (local) | ✓ (liés compte) | ✓ |
+| **Éditer citation** | ✗ | ✗ | ✗ | ✓ | ✓ |
+| **Changer état → Publiée** | ✗ | ✗ | ✗ | ✓ (validation humaine) | ✓ |
+| **Supprimer (soft-delete)** | ✗ | ✗ | ✗ | ✓ | ✓ |
+| **Voir soft-deleted** | ✗ | ✗ | ✗ | ✗ | ✓ |
+| **CRUD référentiels** | ✗ | ✗ | ✗ | ✓ (limité) | ✓ |
+| **Gérer utilisateurs/rôles** | ✗ | ✗ | ✗ | ✗ | ✓ |
+| **Atelier (lots)** | ✗ | ✗ | ✗ | ✓ | ✓ |
+| **Config système** | ✗ | ✗ | ✗ | ✗ | ✓ |
+
+**Règles de filtrage DAL** :
+- `role_oeuvre_access` filtre Abo3/Abo4 : seules les œuvres explicitement accordées sont visibles
+- Visiteur sans compte : ne voit que les citations `Publiée` des œuvres marquées publiques
+- Éditeur voit tous les états de toutes les œuvres
+- Le filtre s'applique **dans la requête SQL** (WHERE), jamais en post-fetch côté PHP
+
 ### I.4 — Définir la DAL (couche d'accès données, ex-T0.5)
 - [ ] **Module unique** d'accès MySQL en **PDO paramètres liés** ; **aucun SQL côté front**.
 - [ ] **Règles métier centralisées** : état défaut `À Corriger` ; `Publiée` interdit sans jeu complet **ni validation humaine** (mots-clés IA) ; états système non supprimables ; thèmes ≤ 2 niveaux ; mots-clés normalisés (unicité insensible casse) ; **suppression douce filtrée** ; **droits par œuvre sur TOUTES les lectures** ; verrous `SELECT … FOR UPDATE` ; **pagination keyset**.
@@ -53,6 +77,26 @@ But : **s'assurer que les bons composants sont présents** et **figer/valider le
 - [ ] Trancher l'**architecture de l'éditeur** avant de l'implémenter : Markdown enrichi comme source, rendu visuel confortable, toolbar non technique, tableaux/images/liens/notes/emojis, bascule source optionnelle.
 - [ ] **Livrable** : note technique de choix de bibliothèque + **prototype court**.
 
+#### Complément I.5 — Critères de sélection éditeur Markdown
+
+**Contraintes** :
+- Source = Markdown (pas HTML propriétaire) → export/import portable
+- Rendu WYSIWYG (pas CodeMirror brut) pour un utilisateur non-technique
+- Tableaux éditables visuellement (drag, add/remove rows)
+- Images via médiathèque interne (upload → URL serveur, pas de DataURI)
+- Compatible React 19 + TypeScript
+- Licence MIT/Apache (pas de licence virale)
+
+**Candidats à évaluer** :
+| Librairie | Type | Markdown natif | Tables visuelles | Maturité |
+|-----------|------|----------------|-----------------|----------|
+| **TipTap** (ProseMirror) | WYSIWYG | Via extension `markdown` | ✓ | Élevée |
+| **Milkdown** (ProseMirror) | WYSIWYG/hybride | Natif | ✓ | Moyenne |
+| **MDXEditor** | WYSIWYG | Natif | ✓ | Moyenne |
+| **BlockNote** (ProseMirror) | Blocs | Via sérialisation | ✓ | Récente |
+
+**Critère décisif** : la librairie doit sérialiser/désérialiser du Markdown standard (CommonMark + tables GFM) sans perte. Tester : bold, italic, headings, listes, blockquotes, tables, liens, images, notes de bas de page.
+
 ### I.6 — Spécifier le mapping atelier → corpus (remplace l'ex-T0.7 hybride)
 - [ ] **Contrat de mapping** : modèle ex-pivot 3.4 (`document`/`source`/`segments`/`indexation`/`media`) → `citations`/`segments`/`keywords`/`citation_keywords`/`mediatheque`.
 - [ ] **Garde de conformité** (avant intégration) : jeu complet (thème+date+auteur+mots-clés) ; **stratégie de hash** de dédup (contenu + `telegram_message_id`).
@@ -62,6 +106,38 @@ But : **s'assurer que les bons composants sont présents** et **figer/valider le
 - [ ] **Jeu de citations de test** dans le corpus (convertir les données de test déjà en base atelier, ou seed dédié) → matière à **afficher** dès la Phase II.
 - [ ] Squelette React : layout, routage, **thème clair/sombre**, charte + Phosphor ; services (`EpurielServices`, adaptateur Web `fetch`/`credentials:'include'`).
 - [ ] **Nettoyage post-migration** (une fois les données de test reversées au corpus et le bout-en-bout validé) : supprimer l'**ancienne base `mist2786_epuriel`** (filet de sécurité conservé pendant la bascule Phase 2, cf. migration §2.6 / §9.5) et purger les **anciens lots** de l'atelier (dossiers `lots/` devenus inutiles ; les lots sont jetables, cf. migration Phase 3bis). ⚠️ Action **destructive et irréversible** : seulement après validation explicite du chef de projet.
+
+#### Complément I.7 — Build React & déploiement o2switch
+
+**Build** :
+```bash
+pnpm run build          # → dist/ (HTML + JS + CSS statiques)
+```
+
+**Déploiement** (depuis la machine de dev) :
+```bash
+rsync -avz --delete dist/ lumosphere:/home2/mist2786/public_html/
+```
+
+**Structure serveur après déploiement** :
+```
+/home2/mist2786/public_html/
+├── index.html          ← SPA entry point
+├── assets/             ← JS/CSS chunks (Vite)
+├── manifest.json       ← PWA manifest
+├── sw.js               ← Service worker
+├── api/                ← PHP API (epuriel.php, bootstrap.php, etc.)
+└── config/             ← config.php (hors dépôt, secrets)
+```
+
+**Routing SPA** : configurer `.htaccess` pour rediriger toutes les routes non-fichier vers `index.html` :
+```apache
+RewriteEngine On
+RewriteCond %{REQUEST_URI} !^/api/
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule . /index.html [L]
+```
 
 ---
 
@@ -82,12 +158,17 @@ But : **voir les résultats** le plus tôt possible et valider schéma + droits 
 ### III.1 — Rôles et droits
 - [ ] Rôles Visiteur / Abo3 / Abo4 / Éditeur / Administrateur ; **Administrateur protégé**.
 - [ ] Gestion des rôles ; **accès aux œuvres par rôle** (`role_oeuvre_access`) appliqué **dans la DAL** sur toutes les lectures.
+- [ ] **Écran admin de gestion des utilisateurs** :
+  - Bouton « + Ajouter un utilisateur ».
+  - Tableau : nom d'utilisateur, email, rôle, actions éditer / supprimer (suppression avec confirmation).
+  - Modale de création / édition : nom, email, rôle (dropdown), mot de passe, confirmation mot de passe.
+  - Champs mot de passe vidés après enregistrement (confidentialité).
 
 ### III.2 — Référentiels éditoriaux (CRUD admin)
 - [ ] Auteurs · œuvres (abréviation, auteur, URL, réf libraire, accès Abo3/Abo4) · **thèmes ≤ 2 niveaux** · mots-clés (normalisés, saisie qui propose l'existant) · états · emojis.
 
 ### III.3 — Consultation publique complète
-- [ ] Bandeau supérieur collant (logo/titre, favoris, bibliothèque, contact, aide, thème clair/sombre, configuration des rôles autorisés, connexion).
+- [ ] Bandeau supérieur collant (logo/titre, favoris, bibliothèque, contact, aide **contextuelle** (modale dont le contenu varie par page/section — clé par route), thème clair/sombre, configuration des rôles autorisés, connexion).
 - [ ] **Panneau de filtres** (œuvres, auteurs, thèmes/sous-thèmes, mots-clés OU/ET + filtre alphabétique, dates, plein texte, réinitialisation), repliable sur mobile.
 - [ ] **Zone de résultats** : compteur, critères actifs en **badges supprimables**, cartes, `Fin des résultats.`
 - [ ] **Favoris** web (local navigateur) + favoris reliés.
@@ -96,6 +177,28 @@ But : **voir les résultats** le plus tôt possible et valider schéma + droits 
 - [ ] **Étude** : conception de la recherche combinée et de ses index ; comportement OU/ET sur mots-clés ; tri/pertinence ; stratégie accent-insensible.
 - [ ] **Codage** : **FULLTEXT** (insensible casse/accents) + auteur + œuvre + thème + mots-clés (OU/ET) + dates + état (admin) + droits par rôle.
 - [ ] **Performances** : **pagination keyset**, **debounce 300 ms**, **virtualisation > 200**, index dédiés ; validés sur **1 000 / 10 000 / 50 000** entrées.
+
+#### Complément III.4 — Configuration FULLTEXT MySQL
+
+**Mode retenu** : `IN BOOLEAN MODE` (permet opérateurs `+`, `-`, `*`, guillemets pour phrases exactes). Plus prévisible que `NATURAL LANGUAGE MODE` pour une recherche éditoriale.
+
+**Configuration MariaDB 11.4** (à vérifier/adapter via phpMyAdmin ou `SET GLOBAL`) :
+- `innodb_ft_min_token_size = 2` (défaut 3 ; permet de trouver "IA", "âme", etc.)
+- `innodb_ft_enable_stopword = OFF` **ou** stopword list personnalisée française (le défaut est anglais et filtre "a", "de", "le" etc. qui sont aussi des mots français pertinents dans un contexte éditorial)
+- Collation des colonnes FULLTEXT : `utf8mb4_unicode_520_ci` (déjà appliquée en Phase 3.2)
+
+**Comportement recherche combinée** :
+- Fulltext = recherche principale (champ texte)
+- Filtres auteur/œuvre/thème/mots-clés = WHERE additionnels (index B-tree classiques)
+- Mots-clés OU/ET : toggle UI → `OR` = `IN (list)`, `AND` = `HAVING COUNT = nb_keywords`
+- Tri par défaut : `created_at DESC` (plus récent d'abord) ; option pertinence FULLTEXT (`MATCH score`)
+
+**Pagination keyset** :
+- Curseur = `(sort_value, id)` encodé en base64 opaque
+- Direction : forward only en v1 (simplification ; "retour" = reset filtres)
+- Page size : 50 (configurable)
+
+**Stemming** : non disponible nativement en français sur MariaDB. Accepter la recherche par forme exacte. Alternative future : table de synonymes/lemmes alimentée par LiteLLM.
 
 ### III.5 — Éditeur Markdown riche (implémentation de I.5)
 - [ ] Éditeur visuel (type Typora) : Markdown source, bascule source possible.
@@ -162,8 +265,20 @@ Après un vrai cas traité, renforcer la gestion globale (faire d'Epuriel un **p
 
 - [ ] **Médiathèque** : import JPG/PNG/GIF/WebP/SVG, miniatures, limite 2 Mo (configurable), texte alternatif, édition/suppression confirmée.
 - [ ] **Bibliothèque de documents** : PDF/EPUB (titre, description, type, date, visibilité par rôle), consultation/téléchargement visiteur autorisé.
-- [ ] **Notifications visiteurs** : formulaire de contact (honeypot + CSRF), tableau admin, notes internes.
+- [ ] **Notifications visiteurs** : formulaire de contact avec **catégorie** (« Question sur le contenu » → éditeur, « Autre » → admin) ; honeypot + CSRF ; **accusé de réception email** au visiteur ; **email de notification** au destinataire routé (+ copie admin si éditeur) ; tableau admin avec catégorie et destinataire routé ; notes internes.
+- [ ] **Notifications internes par email** :
+  - **PHPMailer** + SMTP authentifié o2switch ; config dans `config/config.php` (hors dépôt).
+  - **Erreur de traitement** (job échoué) → email immédiat à l'admin + éditeur assigné au lot.
+  - **Lot(s) prêt(s) à valider** → email digest à l'éditeur assigné ; **fréquence en nombre de jours** (0 = désactivé, 1 = quotidien, 7 = hebdo, 14 = bimensuel…), réglable par utilisateur dans ses préférences.
+  - Table `notification_preferences` : `user_id`, `event_type`, `frequence_jours` (SMALLINT, défaut 1), `dernier_envoi_at` (date du dernier digest envoyé).
+  - Extension table `notifications` : colonnes `categorie` (contenu/autre), `type` (contact/erreur_job/lot_pret), `destinataire_id` (FK→users), `email_envoye_at`.
+  - Cron digest : agrège les lots prêts depuis `dernier_envoi_at`, envoie le récapitulatif, met à jour `dernier_envoi_at`.
+  - Templates email simples (HTML inline, pas de moteur de templates).
 - [ ] **Import Telegram manuel** : config chiffrée, gestion des canaux, lien canal→œuvre, récupération par dates, révision, **import transactionnel**, dédoublonnage.
+  - **Étape 1 — Config identifiants** : champs API ID / API Hash / Session String avec textes gris d'indication (« Obtenu depuis my.telegram.org. Jamais affiché après enregistrement. ») ; badge statut vert « Ok » ou rouge « Configuration à enregistrer » ; bouton d'aide ouvrant une modale avec la procédure d'installation Telethon (onglets Windows / Debian).
+  - **Étape 2 — Gérer les canaux** : liste des canaux sauvegardés (modifier / supprimer) ; ajout avec Channel ID + auteur par défaut associé ; bouton d'aide avec procédure de récupération du Channel ID (privé ou public).
+  - **Étape 3 — Lancer un import** : dropdown canal (depuis les canaux configurés), dates début / fin, bouton « Récupérer les messages ».
+  - **Fenêtre de révision** : sélection / désélection (boutons tout sélectionner / tout désélectionner), groupement avec le message précédent (indication visuelle : indentation + bordure gauche mauve), bouton « Importer les N entrées ».
 - [ ] **Sauvegardes / restauration** : dump base + médias + bibliothèque, restauration contrôlée, remise à zéro (double confirmation).
 - [ ] **Emballage magasins** via PWABuilder (MSIX ; TWA + `assetlinks.json`) ; **responsive** desktop/tablette/mobile finalisé.
 
@@ -177,6 +292,24 @@ Après un vrai cas traité, renforcer la gestion globale (faire d'Epuriel un **p
 - [ ] **Configuration d'export** : éditeur Markdown pour l'intro + variables `{{works}}`, `{{themes}}`, `{{keywords}}`, `{{searchTerm}}`, `{{count}}`, `{{date}}`.
 - [ ] **Publication** d'un PDF/EPUB dans la bibliothèque pour les rôles autorisés.
 
+#### Structure du document exporté (PDF et EPUB)
+
+- **Page de titre** : logo Lulumineuse (1/4 hauteur), nom de l'application en grand (orange), critères de filtre actifs, copyright + date d'export en bas.
+- **Pages de présentation** : générées depuis la configuration d'export (si texte renseigné) ; sinon omises.
+- **Sommaire** : structure 2 niveaux (thèmes/sous-thèmes exportés), titres en orange.
+- **Corps du document** :
+  - Chapitres 2 niveaux (thème > sous-thème) en orange.
+  - Titres d'entrées en violet-mauve.
+  - **Numérotation des versets** : chaque paragraphe démarre par un numéro gris ; le 1er paragraphe de chaque entrée porte un **numéro d'entrée orange entre crochets `[n]`**.
+  - **Séparateur** : icône soleil (☀) entre chaque entrée.
+  - Liens hypertexte affichés en clair dans le texte.
+  - Notes de bas de page.
+  - Mots-clés en gris discret.
+- **Index lexical** : tous les mots-clés des entrées exportées ; **lettrines oranges** avant chaque changement de lettre (A, D…) ; format `Mot-clé : page-numéro_entrée` ; **cliquable** vers le crochet `[n]` correspondant.
+- **Pagination** : chiffres **romains** pour les pages liminaires (titre, présentation, sommaire) ; chiffres **arabes** pour le corps et l'index.
+- **En-têtes** : gauche = nom du site, droite = thème (> sous-thème si applicable), ligne séparatrice en dessous ; police réduite.
+- **Pieds de page** : numéro de page centré, police réduite.
+
 ---
 
 ## Phase VII — Évolutions (hors périmètre initial)
@@ -189,7 +322,7 @@ Après un vrai cas traité, renforcer la gestion globale (faire d'Epuriel un **p
 
 ## Tests transverses (à chaque phase)
 
-Règle métier / transformation → test unitaire ; parcours important → e2e (Playwright) ; endpoint → test API sur lot de démonstration ; script PHP → `php -l` + PHPStan/PHPCS ; worker Python → test sur petit fichier + Ruff ; avant livraison sensible → Gitleaks. Un développement n'est **pas stabilisé** si les tests requis manquent sans justification (cf. `trame_travail-lumosphere.md`).
+Règle métier / transformation → test unitaire ; parcours important → e2e (Playwright) ; endpoint → test API sur lot de démonstration ; script PHP → `php -l` + PHPStan/PHPCS ; worker Python → test sur petit fichier + Ruff ; avant livraison sensible → Gitleaks. Un développement n'est **pas stabilisé** si les tests requis manquent sans justification (cf. `2-trame_travail-lumosphere.md`).
 
 ## Critères de validation globaux
 

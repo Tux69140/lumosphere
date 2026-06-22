@@ -26,7 +26,7 @@ Il prend le cahier Lumosphère comme socle produit et **réintègre les fonction
 
 ## 2. Rôle du document
 
-Décrit **ce que l'application doit faire**, en langage lisible par un non-programmeur mais assez précis pour guider le développement. Complété par : `docs/stack_technique-lumosphere.md` (technique), `docs/_contexte-ia/` (pack condensé pour l'IA codeuse), et le devbook de migration.
+Décrit **ce que l'application doit faire**, en langage lisible par un non-programmeur mais assez précis pour guider le développement. Complété par : `docs/4-stack_technique-lumosphere.md` (technique), `docs/_contexte-ia/` (pack condensé pour l'IA codeuse), et le devbook de migration (`docs/4-devbook_migration_full_web-lumosphere.md`).
 
 ---
 
@@ -167,10 +167,11 @@ Contenu stocké en **Markdown enrichi**. Le HTML n'est pas la donnée maître : 
 
 ## 13. Interface publique (bibliothèque)
 
-- **Bandeau supérieur collant** : gauche logo + titre `Lumosphère` ; droite Favoris, Bibliothèque, Contact, Aide, thème clair/sombre, Configuration (rôles autorisés), Connexion/déconnexion.
+- **Bandeau supérieur collant** : gauche logo + titre `Lumosphère` ; droite Favoris, Bibliothèque, Contact, Aide (contextuelle : contenu **spécifique à la page/section en cours**), thème clair/sombre, Configuration (rôles autorisés), Connexion/déconnexion.
 - **Panneau de filtres** : œuvres, auteurs, thèmes/sous-thèmes, mots-clés (recherche + filtre alphabétique, bascule OU/ET), dates, recherche plein texte, réinitialisation. Visible sur grand écran, repliable sur mobile.
 - **Zone de résultats** : nombre d'entrées, messages, critères actifs en badges supprimables, cartes d'entrées, `Fin des résultats.`
 - **Carte d'entrée** : thème/sous-thème, œuvre, contenu rendu depuis Markdown, notes, mots-clés cliquables, favori, édition rapide (éditeur/admin).
+- **Pied de page** : logos **Biovibralyon.fr** et **Lulumineuse.com** avec hyperliens, texte d'attribution. Non collant (visible en fin de défilement).
 
 ---
 
@@ -212,7 +213,27 @@ Ajout PDF/EPUB ; titre, description, type, date ; visibilité selon rôle ; édi
 
 ## 20. Notifications visiteurs (phase 2)
 
-Formulaire de contact (email, message) ; anti-spam honeypot + CSRF ; tableau admin (statut, email, aperçu, date) ; notes internes ; suppression confirmée.
+Formulaire de contact avec **sélection de catégorie** en termes simples :
+- « Question sur le contenu » → routé vers un éditeur (+ copie admin).
+- « Autre » → routé vers l'administrateur.
+
+Champs : catégorie, email, message. Anti-spam honeypot + CSRF. Le visiteur reçoit un **accusé de réception par email** après envoi.
+
+Tableau admin : statut (Nouveau / En cours / Traité), catégorie, email, aperçu, date, destinataire routé ; notes internes ; suppression confirmée.
+
+---
+
+## 20bis. Notifications internes par email (phase 2)
+
+Le système envoie des emails aux utilisateurs internes (éditeur, admin) lors d'événements applicatifs :
+
+| Événement | Destinataire(s) | Délai |
+|-----------|-----------------|-------|
+| **Message de contact** (formulaire §20) | Admin ou éditeur (selon catégorie) | Immédiat |
+| **Erreur de traitement** (job échoué) | Admin + éditeur assigné au lot (si applicable) | Immédiat |
+| **Lot(s) prêt(s) à valider** | Éditeur assigné | **Fréquence paramétrable** (en nombre de jours : 1 = quotidien, 7 = hebdo, 14 = bimensuel ; 0 = désactivé). Chaque éditeur règle sa fréquence dans ses préférences. Un digest récapitulatif est envoyé par cron. |
+
+**Transport** : PHPMailer via SMTP authentifié o2switch. Config SMTP dans `config/config.php` (côté serveur uniquement, jamais versionné). Templates email simples en HTML inline.
 
 ---
 

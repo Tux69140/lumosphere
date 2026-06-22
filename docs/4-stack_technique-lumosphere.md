@@ -61,6 +61,7 @@ Document technique de référence de l'application unique **Lumosphère** (ateli
 - Configuration sensible **hors dépôt** et hors zone web : `/home2/mist2786/…/config/config.php` (db_*, lots_root, python_bin, timezone, clés IA). Jamais d'URL/identifiant en dur.
 - **Authentification par session forte** (remplace le jeton `X-Epuriel-Token`) : `/auth/login`, `/auth/logout`, `session_start`, cookie `httpOnly`/`Secure`/`SameSite`, CSRF. Tous les endpoints passent par une vérification de session. **Mesures de robustesse** : mots de passe `bcrypt`, **politique de mot de passe robuste**, **limitation des tentatives** (rate-limit) et **verrouillage temporaire** après échecs répétés, régénération de l'identifiant de session à la connexion, expiration/inactivité. (Pas de 2FA dans cette phase.)
 - Requêtes **PDO en paramètres liés** uniquement (aucune concaténation SQL).
+- **Email** : PHPMailer + SMTP authentifié o2switch. Config SMTP dans `config/config.php` (hors dépôt). Envois : accusé de réception contact visiteur, notification admin/éditeur (routée par catégorie), alerte erreur job, digest lots prêts (cron, fréquence par utilisateur en jours).
 
 ---
 
@@ -145,4 +146,4 @@ Couche unique via LiteLLM (Ollama local **abandonné** — pas de processus pers
 
 ## 12. Référence
 
-Schéma réel serveur (structure, sans données) et arborescence : `docs/_reference/` (instantané 2026-06-20). Devbook de migration et inventaires détaillés : `pretraitement/docs/devbook_migration_full_web-lumosphere.md`.
+Schéma réel serveur (structure, sans données) et arborescence : `docs/_reference/` (instantané 2026-06-20). Devbook de migration et inventaires détaillés : `docs/4-devbook_migration_full_web-lumosphere.md`.

@@ -19,7 +19,17 @@ Lots: `POST /lots/create` · `/lots/{id}/0_raw` · `/take` · `/checkpoint` · `
 Telegram: `GET|POST /telegram/sources` · `POST /telegram/lots/create-from-buffer` · `/telegram/lots/collect-and-create` · `/telegram/history/auth/start|confirm`.
 AI: `GET|POST /ia/settings` · `POST /ia/models/refresh|registry/save|test` · `/lots/{id}/ia/regenerate`.
 
-**To add**: auth (`/auth/*`), lot validation/integration to corpus, library consult/search, authors/works/themes/keywords CRUD, `Publiée` transition.
+**To add**: auth (`/auth/*`), lot validation/integration to corpus, library consult/search, authors/works/themes/keywords CRUD, `Publiée` transition, notifications/contact.
+
+## Notifications & Contact
+- `POST /api/contact` — visitor contact form submission (public, honeypot+CSRF). Category: "contenu" (→ editor) or "autre" (→ admin). Sends acknowledgment email to visitor + notification email to routed recipient.
+- `GET /api/notifications` — list notifications (authenticated, admin/editor).
+- `PUT /api/notifications/{id}` — update status/notes (authenticated).
+- `DELETE /api/notifications/{id}` — soft-delete (authenticated, confirmation in frontend).
+- `GET|PUT /api/notifications/preferences` — user email notification preferences (frequency in days for lot_pret digest).
+
+## Email transport
+PHPMailer + authenticated SMTP (o2switch). Config in `config/config.php` (server-only, never versioned). Internal events (job error → immediate; lots ready → cron digest per user frequency).
 
 ## Front (reminder)
 Everything via `apiClient.ts` (`fetch`, `credentials: 'include'`). Services (`mockServices.ts` → rename `webServices`) = sole adapter. The displayed "pivot" becomes the lot's **prepared content** (before corpus integration).

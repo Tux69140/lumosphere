@@ -26,6 +26,9 @@ All heavy work → **`server_jobs`** table drained by cron **`run_jobs.php`**. N
 ## AI
 LiteLLM (cloud). Configurable providers, default `gemini`, model allowlist, keys in server config.
 
+## Email
+PHPMailer + authenticated SMTP (o2switch). Sends: visitor contact acknowledgment, notification to admin/editor (routed by category), job error alerts, lot-ready digest (cron, frequency per user in days). Config in `config/config.php`.
+
 ## o2switch limits (shared, no VPS)
 | | |
 |---|---|

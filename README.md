@@ -23,8 +23,9 @@ Application web unique fusionnant l'**atelier de préparation documentaire** (ex
 
 - `docs/cahier_des_charges-lumosphere.md` — exigences fonctionnelles.
 - `docs/_contexte-ia/` — pack de contexte condensé pour l'IA codeuse (optimisation tokens).
-- `docs/stack_technique-lumosphere.md`, `docs/trame_travail-lumosphere.md`, `docs/conventions_traitement-lumosphere.md`.
-- Devbooks : `docs/devbook_migration_full_web-lumosphere.md` (migration full-web) puis `docs/devbook_developpement-lumosphere.md` (bibliothèque / UI documentaire + chaînes).
+- `docs/4-stack_technique-lumosphere.md`, `docs/2-trame_travail-lumosphere.md`, `docs/conventions_traitement-lumosphere.md`.
+- Séquençage : `docs/1-trame_execution-lumosphere.md` (ordre des tâches, point d'entrée).
+- Devbooks : `docs/4-devbook_migration_full_web-lumosphere.md` (migration full-web) puis `docs/3-devbook_developpement-lumosphere.md` (bibliothèque / UI documentaire + chaînes).
 
 ## Déploiement (o2switch)
 

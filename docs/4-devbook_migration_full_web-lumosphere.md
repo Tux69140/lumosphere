@@ -61,12 +61,12 @@ La documentation est refondue **avant** le code : elle cadre l'IA qui développe
   - **Cible locale Electron/Tauri (Index) → PWA installable, en ligne** (pas d'app Electron ni de consultation hors-ligne dans cette phase ; couche d'abstraction conservée pour un Tauri éventuel).
 
 ### Documents techniques et de cadrage à réécrire
-- [x] **1.4 — Stack technique unifiée** `docs/stack_technique-lumosphere.md` remplaçant `docs/stack_technique-pretraitement.md` et `index-lulumineux/docs/architecture-index_lulumineux.md`. Figer : React/Vite + PHP + MySQL, full-web o2switch, file de jobs + cron (pas de Celery/RQ/Redis — trop lourd pour le mutualisé), abstraction conservée pour le futur local, export SQLite, recherche FULLTEXT MySQL + collation accent-insensible, authentification serveur. **Préserver** les décisions o2switch : pas de VPS, `exec()` + cron, `server_jobs`, contraintes capacités serveur.
+- [x] **1.4 — Stack technique unifiée** `docs/4-stack_technique-lumosphere.md` remplaçant `docs/stack_technique-pretraitement.md` et `index-lulumineux/docs/architecture-index_lulumineux.md`. Figer : React/Vite + PHP + MySQL, full-web o2switch, file de jobs + cron (pas de Celery/RQ/Redis — trop lourd pour le mutualisé), abstraction conservée pour le futur local, export SQLite, recherche FULLTEXT MySQL + collation accent-insensible, authentification serveur. **Préserver** les décisions o2switch : pas de VPS, `exec()` + cron, `server_jobs`, contraintes capacités serveur.
 - [x] **1.5 — README unique.** — *fait (`README.md` racine, harmonisé : intégration directe au corpus)*. Décrire un seul produit. **Corriger** : (a) l'incohérence de chemin config `README.md:143` (`/home/sc1phcv1381/...`) vs `bootstrap.php:5` (`/home2/mist2786/...`) ; (b) les **noms d'outils erronés** (`extracteur_bot_telegram`, `extracteur_fichiers_telegram_bot` cités dans le README **n'existent pas** ; les vrais dossiers sont `telechargeur_msg_telegram/` et `telechargeur_fichiers_telegram/`) ; (c) le bloc « Format pivot » et `POST /lots/{id}/pivot` → **intégration directe au corpus**.
 - [x] **1.6 — CLAUDE.md + AGENTS.md.** — *fait : `CLAUDE.md` + `AGENTS.md` (pointeur, source unique) ; règles security/database/dal transposées (interdits + ligne DAL)*. Périmètre unifié ; interdictions révisées : « ne plus produire de fichier pivot », « authentification serveur obligatoire », « plus d'écriture directe dans le corpus sans validation » (remplace « ne jamais écrire dans les tables finales de Lumosphère »), conserver « pdfmd jamais app principale ». Transposer les `.cursor/rules/*.mdc` de l'Index (security, database, dal) en règles du CLAUDE.md fusionné. Mettre à jour les chemins de déploiement (`epuriel`→`lumosphere`).
-- [x] **1.7 — Devbook de développement** — *fait : `docs/devbook_developpement-lumosphere.md` (prend le relais de ce devbook de migration) : bibliothèque / UI documentaire complète + toutes les chaînes de préparation, transposé React/PHP/MySQL/PWA + intégration directe*. Suivant les **phases du cahier** (chap. 26 : Phase 1 cœur éditorial web / Phase 2 modules / Phase 3 exports), augmentées des modules d'atelier.
+- [x] **1.7 — Devbook de développement** — *fait : `docs/3-devbook_developpement-lumosphere.md` (prend le relais de ce devbook de migration) : bibliothèque / UI documentaire complète + toutes les chaînes de préparation, transposé React/PHP/MySQL/PWA + intégration directe*. Suivant les **phases du cahier** (chap. 26 : Phase 1 cœur éditorial web / Phase 2 modules / Phase 3 exports), augmentées des modules d'atelier.
 - [x] **1.8 — format_pivot.md → modèle de données de staging.** — *sans objet : pivot ET staging abandonnés (intégration directe) ; le modèle ex-pivot 3.4 sert de cartographie atelier→corpus, cf. `_contexte-ia/02`*. Convertir en description des **tables `import_staging_*`**. Réconcilier les versions (Epuriel 3.4 fait foi ; Index 3.1 périmé) et **réintégrer le bloc `media`** (présent dans l'architecture/CDC, absent du pivot 3.1). Résoudre l'incohérence interne `date_debut/date_fin` vs `date_source_debut/date_source_fin`. Porter les enums (`type_document`, `type_segment`, `source.type`) en contraintes base. Porter la règle Telegram (themes + mots_cles validés requis) comme garde de passage à « validé ».
-- [x] **1.9 — Trame de travail unifiée** `docs/trame_travail-lumosphere.md` fusionnant `docs/trame_travail-pretraitement.md` et `index-lulumineux/docs/trame_travail-index_lulumineux.md`.
+- [x] **1.9 — Trame de travail unifiée** `docs/2-trame_travail-lumosphere.md` fusionnant `docs/trame_travail-pretraitement.md` et `index-lulumineux/docs/trame_travail-index_lulumineux.md`.
 - [x] **1.10 — Document IA directeur.** — *décisions IA actées (cahier §22, stack §8, `_contexte-ia`) : LiteLLM cloud, providers, défaut gemini, allowlist, journalisation*. Récupérer `docs/archive/E.5 — IaProvider, LiteLLM et Ollama.md` comme référence IA : LiteLLM gateway unique, **cloud only (Ollama local abandonné)**, providers configurables (openai/anthropic/mistral/deepseek/gemini/ollama_cloud), défaut `gemini`, allowlist des modèles, mémorisation serveur du couple provider+modèle, journalisation coût/latence. Récupérer aussi `tableau_modeles_ia_a_valider.md` (règle d'allowlist).
 - [x] **1.11 — Conventions de traitement à récupérer de l'archive** — *fait : `docs/conventions_traitement-lumosphere.md` (formatage RAG, garde-fou anti-résumé, chaîne YouTube ; SDK Google→LiteLLM, Celery/Redis/S3→jobs+cron, pivot→intégration directe)*. Sources : `info - Formatage_md_pour_rag.md` (chunking, front-matter, anti-résumé) ; logique YouTube (`Youtube*.md` : yt-dlp + youtube-transcript-api, 2 passes Map/Clean, garde-fou anti-résumé >20 %, timecodes) **en abandonnant** le SDK Google natif (→ LiteLLM) et Celery/RQ/Redis/S3 (→ file de jobs + cron).
 - [x] **1.12 — Récupération d'artefacts depuis `index-lulumineux` avant archivage** (cf. D7) — *fait : schémas Index copiés dans `docs/_reference/index-corpus-schema/` (v4 dbml + v2 sql + triggers-fts5) ; charte intégrée (cahier §28) ; maquette = démo AIStudio*. Sources : `db/schema_T0.2_v4_sources_simple.dbml` + `db/schema_T0.2_v2.sql` (triggers/seeds), `triggers-fts5.txt`, `docs/Charte_couleurs_UI.docx` + CDC §24 (orange / violet-mauve / gris, clair-sombre), `docs/Lumosphere-accueil.excalidraw` (maquette accueil).
@@ -147,6 +147,24 @@ C'est ici qu'on fusionne réellement les données. La base atelier (7 tables) ex
 ### 3.3 — Tables authentification / autorisation (brique nouvelle)
 - [ ] `users` (email unique, `password_hash` bcrypt, `role_id`), `roles` (seed : Administrateur **protégé**, Éditeur, Visiteur, Abo3, Abo4), `permissions`, `role_permissions`, **`role_oeuvre_access`** (droits Abo3/Abo4 par œuvre), `active_sessions`. + mécanique session/CSRF PHP (Phase 6.2).
 
+#### Complément 3.3 — Stockage sessions & CORS
+
+**Décision sessions** (à trancher) :
+| Option | Avantage | Inconvénient |
+|--------|----------|--------------|
+| **Fichier PHP natif** (recommandé v1) | Zéro config, natif o2switch, performant mono-serveur | Pas de visibilité admin sur sessions actives |
+| **Table `active_sessions`** | Visibilité admin, invalidation ciblée, stats connexion | Complexité ajoutée, `session_set_save_handler()` custom |
+
+→ **Recommandation** : fichier PHP natif en v1 (mono-serveur o2switch, pas de load-balancing). La table `active_sessions` sert uniquement de **journal de connexions** (log last_login, device, IP) et d'**invalidation admin** (forcer déconnexion). Pas de stockage session PHP dedans.
+
+**Configuration CORS** (à appliquer dans `bootstrap.php`) :
+- `Access-Control-Allow-Origin` : domaine exact (pas `*`) pour que `credentials: 'include'` fonctionne
+- `Access-Control-Allow-Credentials: true`
+- `Access-Control-Allow-Headers: Content-Type, X-CSRF-Token`
+- `SameSite=Lax` sur le cookie de session (protection CSRF implicite pour GET, token explicite pour POST/PUT/DELETE)
+
+**CSRF** : token par session (pas par requête — simplifie le frontend SPA), stocké en `$_SESSION['csrf_token']`, envoyé via header `X-CSRF-Token` sur les mutations.
+
 ### 3.4 — Tables modules
 - [ ] `mediatheque`, `bibliotheque`, `notifications`, `telegram_channels` (**à réconcilier** avec le bloc Telegram déjà codé côté atelier — `collect_sources`), `import_sources` (carnet de sources générique ; **pas de `import_runs`** — D10), `config`, `emojis`, `export_jobs` (phase 3), `schema_version`, `user_favorites`, `local_favorites`.
 
@@ -193,6 +211,22 @@ Décision du chef de projet : **ne conserver aucune trace des étapes**, sauf en
 - [ ] Conserver le **modèle file de jobs + cron** (`server_jobs` + `run_jobs.php`) pour tout traitement long — ne jamais lancer le lourd dans la requête web (scénario « Cas C » de la procédure capacités).
 - [ ] Réécrire le health-check schéma (ex-`verifier_bloc_b.php`, archive) pour le schéma complet et le nom `lumosphere`.
 
+#### Complément Phase 4 — Décision OCR
+
+**Constat** : Tesseract, OCRmyPDF, Poppler et Pandoc sont **absents** sur o2switch. Pas d'accès root pour installer des paquets système.
+
+**Options** :
+| Option | Faisabilité | Impact |
+|--------|------------|--------|
+| **A. Différer OCR à une phase ultérieure** (recommandé v1) | Immédiat | Chaîne PDF limitée aux PDF textuels (PyMuPDF extrait le texte natif). PDF scannés = non supportés en v1. |
+| **B. Compiler Tesseract dans le venv** | Complexe (dépendances C++, leptonica) | Fragile sur mutualisé, maintenance lourde |
+| **C. Service OCR externe (cloud)** | Simple à intégrer (API REST) | Coût récurrent, dépendance externe, données envoyées hors serveur |
+| **D. Traitement local (machine dev) + upload résultat** | Fonctionnel | Workflow manuel, pas automatisable via cron |
+
+→ **Recommandation** : Option A pour la v1. Les PDF textuels (majorité des sources éditoriales) sont traités via PyMuPDF. Les PDF scannés sont signalés à l'éditeur ("OCR non disponible, PDF ignoré"). Réévaluer en v2 (option C si budget, option D sinon).
+
+**Pandoc** (EPUB, Phase VI) : même situation. Compiler un binaire statique ou utiliser un service de conversion. À traiter au moment de Phase VI.
+
 ---
 
 ## Phase 5 — Renommage réduit (D4 : Lumosphère + Epuriel interne)
@@ -230,6 +264,51 @@ L'app est **déjà presque navigateur-ready** : tout le métier passe par `fetch
 - [ ] Adapter le worker `process_telegram_v1.py` (lancé `:2521` avec `--export-pivot`) : écrire en base, **ou** parser sa sortie JSON côté PHP et insérer au corpus. **Nouvelle capacité** : les workers Python ne se connectent pas à MySQL aujourd'hui → ajouter PDO/MySQL au worker, ou conserver le parsing côté PHP.
 - [ ] Conserver les validateurs (`epuriel_validate_minimal_pivot:3241`, `epuriel_validate_telegram_pivot:3269`) comme **garde de conformité avant intégration** ; porter la règle Telegram (thèmes + mots-clés requis). *(L'entrée intégrée arrive en « À Corriger » ; passage à « Publiée » = acte humain distinct, cf. cahier §11.)*
 - [ ] Frontend : `exportTelegramPivot`/`generateTelegramPivotFromRevision` gardent la même route mais ne manipulent plus de fichier ; `pivotSummary.ts` affiche le **contenu préparé du lot** ; l'onglet « Erreurs et export pivot » (`UI Epuriel.md` §4.4) devient onglet « Validation / intégration ».
+
+#### Complément 6.3 — Machine d'états des lots
+
+```
+┌──────────┐   créé par     ┌────────────┐   pris en charge   ┌─────────────┐
+│ en_attente│──────────────→│ en_cours    │──────────────────→│ en_traitement│
+└──────────┘   collecte/    └────────────┘   éditeur          └─────────────┘
+               upload              ↑                                  │
+                                   │                    succès worker │  échec worker
+                                   │                                  ↓          ↓
+                              ┌────┴───────┐              ┌──────────┐  ┌───────┐
+                              │ à_reprendre │←─────────────│ en_révision│  │erreur │
+                              └────────────┘  renvoi      └──────────┘  └───────┘
+                                                                │              │
+                                                   validation   │    retry     │
+                                                                ↓              ↓
+                                                          ┌─────────┐   retour en
+                                                          │  prêt   │   en_traitement
+                                                          └─────────┘
+                                                                │
+                                                   intégration  │  échec conformité
+                                                   (transaction)↓         ↓
+                                                          ┌─────────┐  retour
+                                                          │ intégré │  en_révision
+                                                          └─────────┘  (+ erreurs)
+```
+
+**Transitions valides** :
+| De → Vers | Déclencheur | Action |
+|-----------|-------------|--------|
+| `en_attente` → `en_cours` | Éditeur prend le lot | Assignation `editor_id` |
+| `en_cours` → `en_traitement` | Lancement job | `server_jobs` créé |
+| `en_traitement` → `en_révision` | Worker terminé OK | Contenu prêt |
+| `en_traitement` → `erreur` | Worker échoué | Log erreur dans `journal_events` |
+| `erreur` → `en_traitement` | Retry (éditeur/admin) | Nouveau job créé |
+| `en_révision` → `prêt` | Éditeur valide conformité | Garde vérifiée (jeu complet) |
+| `en_révision` → `à_reprendre` | Éditeur renvoie | Corrections nécessaires |
+| `à_reprendre` → `en_cours` | Éditeur reprend | Cycle recommence |
+| `prêt` → `intégré` | Intégration corpus (transaction) | Lot supprimé |
+| `prêt` → `en_révision` | Échec conformité | Erreurs affichées |
+
+**Règles** :
+- Seuls `erreur` et `à_reprendre` permettent un retour en arrière
+- `intégré` est un état terminal (lot supprimé physiquement)
+- Pause optionnelle : tout état sauf `intégré` peut être mis en `pausé` (gel temporaire)
 
 ### 6.4 — Retirer Electron, garder l'abstraction
 - [ ] Supprimer `src/main/`, `src/preload/`, `services/electronServices.ts`, le type natif (`vite-env.d.ts`). Nettoyer `package.json` (retirer `electron`, `electron-vite`, scripts `dist:win:portable`), migrer `electron.vite.config` → config Vite pure.

@@ -5,8 +5,10 @@
 ## 1. Rôle du document
 
 Décrit **comment on travaille** (méthode, règles d'exécution, qualité), pas **quoi** faire ni dans quel ordre. Le **quoi/quand** vit dans les deux devbooks :
-- `devbook_migration_full_web-lumosphere.md` — rendre l'atelier Epuriel full-web + poser le socle base/auth/serveur ;
-- `devbook_developpement-lumosphere.md` — **construire la bibliothèque / UI documentaire complète et toutes les chaînes de préparation** (prend le relais).
+- `4-devbook_migration_full_web-lumosphere.md` — rendre l'atelier Epuriel full-web + poser le socle base/auth/serveur ;
+- `3-devbook_developpement-lumosphere.md` — **construire la bibliothèque / UI documentaire complète et toutes les chaînes de préparation** (prend le relais).
+
+**Séquençage inter-devbooks** : `1-trame_execution-lumosphere.md` — liste ordonnée de toutes les tâches (T01–T47), chacune pointant vers la section du devbook concerné. C'est le **point d'entrée unique** pour savoir quelle tâche faire ensuite.
 
 Source d'autorité pour coder : `docs/_contexte-ia/`.
 
