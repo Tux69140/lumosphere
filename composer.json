@@ -1,0 +1,8 @@
+{
+    "name": "lumosphere/api",
+    "description": "Lumosphère DAL",
+    "type": "project",
+    "require-dev": {
+        "phpunit/phpunit": "^13.2"
+    }
+}

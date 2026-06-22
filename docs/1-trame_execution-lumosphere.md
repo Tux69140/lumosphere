@@ -4,16 +4,37 @@
 >
 > **Légende** : `[Mig §X]` = devbook migration, `[Dev §X]` = devbook développement, `[NOUVEAU]` = complément ajouté aux devbooks.
 
+┌────────────────────┬────────────────────┬────────────────────────────────────────┐
+│       Étape        │  Agents utiles ?   │                Pourquoi                │
+├────────────────────┼────────────────────┼────────────────────────────────────────┤
+│ 3.6–3.7 + 3bis     │ Non                │ Travail séquentiel sur la base         │
+│ (maintenant)       │                    │                                        │
+├────────────────────┼────────────────────┼────────────────────────────────────────┤
+│ T05–T08 (Tranche   │ Oui, 2 en          │ Audit front // DAL PHP, puis squelette │
+│ 1)                 │ parallèle          │  React // auth PHP                     │
+├────────────────────┼────────────────────┼────────────────────────────────────────┤
+│ T10–T14 (Tranche   │ Oui, 2 en          │ Config FULLTEXT base // vue React      │
+│ 2)                 │ parallèle          │ cartes, puis recherche // droits DAL   │
+├────────────────────┼────────────────────┼────────────────────────────────────────┤
+│ T15–T22 (Tranche   │ Oui, 3-4 en        │ Modules UI indépendants                │
+│ 3)                 │ parallèle          │                                        │
+├────────────────────┼────────────────────┼────────────────────────────────────────┤
+│ T28–T35 (Tranches  │ Oui, chaînes       │ Telegram // PDF // YouTube // HTML     │
+│ 4-5)               │ indépendantes      │                                        │
+└────────────────────┴────────────────────┴────────────────────────────────────────┘
+
+> **Phase 3bis scindée** : seule sa part « réglages + règles » se fait **maintenant** avec 3.6–3.7 (interrupteur mode débogage global + rétention journal 90 j en base — fait). Le reste dépend du code des chaînes et de l'intégration corpus : **dossiers de lots minimalistes, arrêt des fichiers `manifest.json`/`journal.csv`, purge du tampon Telegram, journal allégé** → pendant la **Phase 4** (T28–T35) ; **effacement du lot après import + nettoyage auto** → à la **Phase 6.3** (intégration corpus). Détail des préfixes `[maintenant]`/`[Phase 4]`/`[Phase 6.3]` dans le devbook migration, section Phase 3bis.
+
 ---
 
 ## Tranche 1 — Socle auth + premier affichage
 
 | # | Source | Tâche | Prérequis |
 |---|--------|-------|-----------|
-| T01 | Mig §3.3 | Tables auth (users, roles, permissions, role_oeuvre_access, active_sessions) | Mig §3.1–3.2 ✓ |
-| T02 | Mig §3.4 | Tables modules (mediatheque, bibliotheque, notifications, config, etc.) | T01 |
+| ~T01~ | Mig §3.3 | Tables auth (users, roles, permissions, role_oeuvre_access, active_sessions) | Mig §3.1–3.2 ✓ |
+| ~T02~ | Mig §3.4 | Tables modules (mediatheque, bibliotheque, notifications, config, etc.) | T01 |
 | T03 | Mig §3.6 + §3.7 | Seeds : rôles (Admin protégé, Éditeur, Visiteur, Abo3, Abo4), états (C/R/P), admin initial, thèmes | T01, T02 |
-| T04 | Mig §3.3 complément | Décision stockage sessions : fichier PHP natif + table `active_sessions` pour journal/invalidation | T01 |
+| ~T04~ | Mig §3.3 complément | Décision stockage sessions : fichier PHP natif + table `active_sessions` pour journal/invalidation | T01 |
 | T05 | Dev §I.2 | Audit composants présents/à installer (React 19, Tailwind, Phosphor, pnpm, Vitest, Playwright…) | — |
 | T06 | Dev §I.4 | DAL MySQL PDO — module central + règles métier (droits, soft-delete, verrous, keyset) | T01, T03 |
 | T07 | Mig §6.2 | Auth serveur PHP : POST /auth/login, /auth/logout, session httpOnly/Secure/SameSite, CSRF, rate-limit | T04, T06 |
