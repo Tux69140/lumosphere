@@ -290,11 +290,11 @@ L'app est **déjà presque navigateur-ready** : tout le métier passe par `fetch
 
 ### 6.2 — Authentification serveur (POINT CRITIQUE — remplace le jeton client)
 
-- [ ] Jeton actuel = secret partagé en clair côté client (`mockServices.ts:37,64,101`, env de build) — à supprimer.
-- [ ] Créer `/auth/login` + `/auth/logout` (PHP), session (`session_start`, cookie `httpOnly`/`Secure`/`SameSite`), CSRF. Remplacer `epuriel_require_token` (`bootstrap.php:135-147`) par `lumosphere_require_session` ; adapter le CORS (`bootstrap.php:35-48`) pour `credentials`.
-- [ ] Frontend : retirer le champ `apiToken` (settings + `uiContract` + SettingsView), `fetch(..., { credentials: 'include' })`, **écran de login**. Transformer l'écran « réglages jeton API » (`UI Epuriel.md` §1.1) en écran de connexion.
-- [ ] Implémenter les **rôles** (Phase 3.3) et **mettre fin au « tout utilisateur admin » V1** (bloc-e-telegram.plan §21). Mot de passe admin initial à changer au premier démarrage.
-- [ ] Étendre Gitleaks aux secrets d'auth/session.
+- [x] Jeton actuel = secret partagé en clair côté client (`mockServices.ts:37,64,101`, env de build) — à supprimer. *(Plus de jeton client — authentification par session PHP.)*
+- [x] Créer `/auth/login` + `/auth/logout` (PHP), session (`session_start`, cookie `httpOnly`/`Secure`/`SameSite`), CSRF. *(Implémenté dans `api/endpoints/auth.php` + `api/dal/auth.php` + `api/bootstrap.php`. Rate-limit 5 tentatives / 30 min. Expiration session 2 h.)*
+- [x] Frontend : `fetch(..., { credentials: 'include' })`, méthodes `login`/`logout`/`setup` dans `src/services/api.ts`. *(Écran de login = T09.)*
+- [x] Implémenter les **rôles** (Phase 3.3) et **mettre fin au « tout utilisateur admin » V1**. *(Rôles chargés à la connexion via `dal_auth_load_permissions()`. Premier admin créé via `/auth/setup` protégé par code secret.)*
+- [x] Étendre Gitleaks aux secrets d'auth/session. *(`.gitleaks.toml` : règles pour session PHP, bcrypt, setup_secret, CSRF token, mot de passe BDD, config.php.)*
 
 ### 6.3 — Abandon du fichier pivot → intégration directe au corpus
 
