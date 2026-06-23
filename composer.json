@@ -3,6 +3,8 @@
     "description": "Lumosphère DAL",
     "type": "project",
     "require-dev": {
-        "phpunit/phpunit": "^13.2"
+        "phpunit/phpunit": "^13.2",
+        "phpstan/phpstan": "^2.2",
+        "squizlabs/php_codesniffer": "^4.0"
     }
 }
