@@ -15,7 +15,9 @@
 | PHPCS               | 4.0.1   | `composer.json` (devDependencies)      |
 | Gitleaks            | 8.22.1  | Installé globalement                   |
 | DAL PHP             | —       | `api/dal/` (11 fichiers)               |
+| DAL Auth            | —       | `api/dal/auth.php`                     |
 | Migrations DB       | —       | `db/migrations/` (5 scripts : 003–007) |
+| Migration 008       | —       | `db/migrations/008_login_attempts.sql` |
 | Point d'entrée API  | —       | `api/bootstrap.php` + `api/router.php` |
 | Endpoints API       | —       | `api/endpoints/` (11 fichiers)         |
 | Services front      | —       | `src/services/api.ts`                  |
