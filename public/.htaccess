@@ -1,19 +1,14 @@
-# Lumosphère — maintenance
 RewriteEngine On
 
-# Ressources statiques toujours accessibles (images, CSS, JS…)
+# Static assets — always accessible
 RewriteRule \.(css|js|jpg|jpeg|png|gif|svg|ico|woff2?)$ - [L]
 
-# La page de maintenance elle-même
-RewriteRule ^maintenance\.html$ - [L]
+# API requests → bootstrap.php
+RewriteCond %{REQUEST_URI} ^/api/
+RewriteRule ^api/(.*)$ /api/bootstrap.php [L,QSA]
 
-# Cookie dev présent → accès direct autorisé
-RewriteCond %{HTTP_COOKIE} lumosphere_dev=ouilulu
-RewriteRule ^ - [L]
-
-# Paramètre secret ?dev=ouilulu → pose le cookie (8 h) et redirige proprement
-RewriteCond %{QUERY_STRING} (?:^|&)dev=ouilulu(?:&|$)
-RewriteRule ^(.*)$ /$1 [CO=lumosphere_dev:ouilulu:.%{HTTP_HOST}:480:/:Secure,NE,R=302,L]
-
-# Tout autre visiteur → page de maintenance
-RewriteRule ^ /maintenance.html [R=302,L]
+# SPA fallback (non-file, non-directory, non-api)
+RewriteCond %{REQUEST_URI} !^/api/
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule . /index.html [L]
