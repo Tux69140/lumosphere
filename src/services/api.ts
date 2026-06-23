@@ -30,7 +30,14 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<ApiR
   })
 
   if (response.status === 403) {
-    csrfToken = null
+    const body = await response
+      .clone()
+      .json()
+      .catch(() => null)
+    const isCsrfError = body?.errors?.some((e: string) => e.toLowerCase().includes('csrf'))
+    if (isCsrfError) {
+      csrfToken = null
+    }
   }
 
   if (response.status === 401) {

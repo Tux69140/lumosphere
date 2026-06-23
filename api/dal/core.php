@@ -37,9 +37,7 @@ function dal_get_pdo(?array $config = null): PDO
         PDO::ATTR_EMULATE_PREPARES   => false,
     ]);
 
-    if ($config === null) {
-        $pdo = $instance;
-    }
+    $pdo = $instance;
 
     return $instance;
 }
@@ -76,7 +74,7 @@ function dal_soft_delete_clause(string $alias, array $ctx): string
  * R8 — Rights filter per oeuvre. Appended to every SELECT on citations.
  * Adds bound params to $params by reference.
  */
-function dal_oeuvre_access_clause(string $oeuvre_col, array $ctx, array &$params): string
+function dal_oeuvre_access_clause(string $oeuvre_col, array $ctx, array &$params, string $etat_col = 'c.etat_id'): string
 {
     $role_id = $ctx['role_id'] ?? ROLE_VISITEUR;
 
@@ -85,13 +83,13 @@ function dal_oeuvre_access_clause(string $oeuvre_col, array $ctx, array &$params
     }
 
     if ($role_id === ROLE_VISITEUR) {
-        return ' AND c.etat_id = ' . ETAT_PUBLIEE;
+        return " AND {$etat_col} = " . ETAT_PUBLIEE;
     }
 
     // Abo3 / Abo4
     $params[':ctx_role_id'] = $role_id;
     return " AND {$oeuvre_col} IN (SELECT oeuvre_id FROM role_oeuvre_access WHERE role_id = :ctx_role_id)"
-         . ' AND c.etat_id = ' . ETAT_PUBLIEE;
+         . " AND {$etat_col} = " . ETAT_PUBLIEE;
 }
 
 /**

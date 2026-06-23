@@ -21,6 +21,18 @@ function endpoint_auth(PDO $pdo, array $ctx, string $method, ?int $id, ?array $b
     };
 }
 
+function _auth_init_session(PDO $pdo, int $user_id, int $role_id): void
+{
+    session_regenerate_id(true);
+    $permissions = dal_auth_load_permissions($pdo, $role_id);
+    $_SESSION['user_id']            = $user_id;
+    $_SESSION['role_id']            = $role_id;
+    $_SESSION['permissions']        = $permissions;
+    $_SESSION['last_activity']      = time();
+    $_SESSION['session_token_hash'] = hash('sha256', session_id());
+    dal_auth_create_session($pdo, $user_id, session_id());
+}
+
 function _auth_csrf(): array
 {
     if (empty($_SESSION['csrf_token'])) {
@@ -63,23 +75,16 @@ function _auth_login(PDO $pdo, array $body): array
     }
 
     $user = dal_get_user_for_auth($pdo, $email);
-    if (!$user || !password_verify($password, $user['password_hash'])) {
+    $dummy_hash = '$2y$12$000000000000000000000uGHKMGRE8kIjzMSmMKmKmKmKmKmKmK';
+    $hash = $user ? $user['password_hash'] : $dummy_hash;
+    if (!$user || !password_verify($password, $hash)) {
         dal_auth_record_failed_attempt($pdo, $email);
         return dal_error('Identifiants incorrects.');
     }
 
     dal_auth_clear_attempts($pdo, $email);
 
-    session_regenerate_id(true);
-
-    $permissions = dal_auth_load_permissions($pdo, (int) $user['role_id']);
-    $_SESSION['user_id']     = (int) $user['id'];
-    $_SESSION['role_id']     = (int) $user['role_id'];
-    $_SESSION['permissions'] = $permissions;
-    $_SESSION['last_activity'] = time();
-    $_SESSION['session_token_hash'] = hash('sha256', session_id());
-
-    dal_auth_create_session($pdo, (int) $user['id'], session_id());
+    _auth_init_session($pdo, (int) $user['id'], (int) $user['role_id']);
 
     return dal_ok([
         'id'       => (int) $user['id'],
@@ -140,16 +145,8 @@ function _auth_setup(PDO $pdo, array $body): array
 
     dal_auth_delete_setup_secret($pdo);
 
-    session_regenerate_id(true);
     $user_id = (int) $result['data']['id'];
-    $permissions = dal_auth_load_permissions($pdo, ROLE_ADMIN);
-    $_SESSION['user_id']     = $user_id;
-    $_SESSION['role_id']     = ROLE_ADMIN;
-    $_SESSION['permissions'] = $permissions;
-    $_SESSION['last_activity'] = time();
-    $_SESSION['session_token_hash'] = hash('sha256', session_id());
-
-    dal_auth_create_session($pdo, $user_id, session_id());
+    _auth_init_session($pdo, $user_id, ROLE_ADMIN);
 
     return dal_ok([
         'id'      => $user_id,

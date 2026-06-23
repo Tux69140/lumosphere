@@ -180,14 +180,43 @@ function dal_search_citations(PDO $pdo, array $ctx, string $query, array $filter
         $where .= ' AND c.theme_id = :f_theme_id';
         $params[':f_theme_id'] = (int) $filters['theme_id'];
     }
+    if (!empty($filters['etat_id'])) {
+        $where .= ' AND c.etat_id = :f_etat_id';
+        $params[':f_etat_id'] = (int) $filters['etat_id'];
+    }
+    if (!empty($filters['auteur_id'])) {
+        $where .= ' AND o.auteur_id = :f_auteur_id';
+        $params[':f_auteur_id'] = (int) $filters['auteur_id'];
+    }
+    if (!empty($filters['date_from'])) {
+        $where .= ' AND c.date_entree >= :f_date_from';
+        $params[':f_date_from'] = $filters['date_from'];
+    }
+    if (!empty($filters['date_to'])) {
+        $where .= ' AND c.date_entree <= :f_date_to';
+        $params[':f_date_to'] = $filters['date_to'];
+    }
+
+    if (!empty($filters['keyword_ids']) && is_array($filters['keyword_ids'])) {
+        $kw_ids = array_map('intval', $filters['keyword_ids']);
+        $placeholders = [];
+        foreach ($kw_ids as $i => $kid) {
+            $key = ":kw_{$i}";
+            $placeholders[] = $key;
+            $params[$key] = $kid;
+        }
+        $in_list = implode(',', $placeholders);
+        $mode = ($filters['keyword_mode'] ?? 'or') === 'and' ? 'and' : 'or';
+        if ($mode === 'or') {
+            $where .= " AND c.id IN (SELECT citation_id FROM citation_keywords WHERE keyword_id IN ({$in_list}))";
+        } else {
+            $where .= " AND c.id IN (SELECT citation_id FROM citation_keywords WHERE keyword_id IN ({$in_list}) GROUP BY citation_id HAVING COUNT(DISTINCT keyword_id) = :kw_count)";
+            $params[':kw_count'] = count($kw_ids);
+        }
+    }
 
     $decoded_cursor = dal_decode_cursor($cursor);
-    if ($decoded_cursor !== null) {
-        $params[':cursor_sort1'] = $decoded_cursor['sort_value'];
-        $params[':cursor_sort2'] = $decoded_cursor['sort_value'];
-        $params[':cursor_id']    = $decoded_cursor['id'];
-        $where .= ' AND (c.date_entree < :cursor_sort1 OR (c.date_entree = :cursor_sort2 AND c.id < :cursor_id))';
-    }
+    $where .= dal_keyset_clause('c.date_entree', 'c.id', $decoded_cursor, 'DESC', $params);
 
     $limit = $page_size + 1;
     $sql = "SELECT c.id, c.contenu, c.notes, c.oeuvre_id, c.theme_id, c.etat_id,
