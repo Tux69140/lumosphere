@@ -1,0 +1,11 @@
+dist/
+node_modules/
+pnpm-lock.yaml
+vendor/
+docs/
+.superpowers/
+*.md
+composer.json
+composer.lock
+public/
+phpunit.xml
