@@ -11,8 +11,13 @@ function route(PDO $pdo, array $ctx): void
     $path = preg_replace('#^/api/#', '', $uri);
     $segments = explode('/', trim($path, '/'));
     $resource = $segments[0] ?? '';
-    $id = isset($segments[1]) && ctype_digit($segments[1]) ? (int) $segments[1] : null;
-    $action = $segments[2] ?? null;
+    if (isset($segments[1]) && ctype_digit($segments[1])) {
+        $id = (int) $segments[1];
+        $action = $segments[2] ?? null;
+    } else {
+        $action = $segments[1] ?? null;
+        $id = isset($segments[2]) && ctype_digit($segments[2]) ? (int) $segments[2] : null;
+    }
 
     $endpoint_file = __DIR__ . '/endpoints/' . $resource . '.php';
     if ($resource === '' || !file_exists($endpoint_file)) {
