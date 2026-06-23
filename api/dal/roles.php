@@ -7,8 +7,9 @@ require_once __DIR__ . '/core.php';
 function dal_find_roles(PDO $pdo, array $ctx): array
 {
     dal_require_permission($ctx, 'corpus.read');
-    $rows = $pdo->query('SELECT id, nom, created_at, updated_at FROM roles ORDER BY id')
-                ->fetchAll();
+    $stmt = $pdo->prepare('SELECT id, nom, created_at, updated_at FROM roles ORDER BY id');
+    $stmt->execute();
+    $rows = $stmt->fetchAll();
     return dal_ok($rows);
 }
 
