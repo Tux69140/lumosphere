@@ -5,6 +5,7 @@ type ApiResponse<T> = {
 }
 
 let csrfToken: string | null = null
+let onSessionExpired: (() => void) | null = null
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
   const headers: Record<string, string> = {
@@ -30,6 +31,10 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<ApiR
 
   if (response.status === 403) {
     csrfToken = null
+  }
+
+  if (response.status === 401) {
+    onSessionExpired?.()
   }
 
   return response.json() as Promise<ApiResponse<T>>
@@ -64,7 +69,57 @@ function fetchCsrf() {
 export const apiClient = {
   // Auth
   getCsrf: fetchCsrf,
-  getMe: () => get<{ user_id: number; role_id: number } | null>('auth/me'),
+  getMe: () =>
+    get<{
+      id: number
+      prenom: string
+      nom: string
+      email: string
+      role_id: number
+      role_nom: string
+    } | null>('auth/me'),
+  login: (email: string, password: string) =>
+    post<{
+      id: number
+      prenom: string
+      nom: string
+      email: string
+      role_id: number
+    }>('auth/login', { email, password }),
+  logout: () => {
+    csrfToken = null
+    return post<void>('auth/logout', {})
+  },
+  setup: (data: {
+    setup_secret: string
+    prenom: string
+    nom: string
+    email: string
+    password: string
+    password_confirm: string
+  }) =>
+    post<{ id: number; prenom: string; nom: string; email: string; role_id: number }>(
+      'auth/setup',
+      data,
+    ),
+  findSessions: () =>
+    get<
+      {
+        id: number
+        user_id: number
+        prenom: string
+        nom: string
+        email: string
+        ip: string
+        user_agent: string
+        last_seen: string
+        created_at: string
+      }[]
+    >('auth/sessions'),
+  forceLogout: (sessionId: number) => del<void>(`auth/sessions/${sessionId}`),
+  onSessionExpired: (callback: () => void) => {
+    onSessionExpired = callback
+  },
 
   // Citations
   findCitations: (params?: Record<string, string>) => {
