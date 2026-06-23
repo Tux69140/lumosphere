@@ -16,6 +16,9 @@ date_default_timezone_set($config['timezone'] ?? 'Europe/Paris');
 require_once __DIR__ . '/dal/core.php';
 $pdo = dal_get_pdo($config);
 
+// Auth DAL (constants + functions needed for session checks)
+require_once __DIR__ . '/dal/auth.php';
+
 // CORS
 $allowed_origin = $config['allowed_origin'] ?? '';
 if ($allowed_origin !== '' && isset($_SERVER['HTTP_ORIGIN'])) {
@@ -33,13 +36,62 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
+// JSON output
+header('Content-Type: application/json; charset=utf-8');
+
+// Parse URI for setup-mode check and CSRF bypass
+$uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+$path = preg_replace('#^/api/#', '', $uri);
+$first_segment = explode('/', trim($path, '/'))[0] ?? '';
+$second_segment = explode('/', trim($path, '/'))[1] ?? '';
+
+// Setup mode: block all routes except auth/csrf and auth/setup when no user exists
+if ($first_segment === 'auth' && in_array($second_segment, ['csrf', 'setup', 'login'], true)) {
+    // These routes are always accessible
+} elseif (!dal_auth_has_any_user($pdo)) {
+    http_response_code(503);
+    echo json_encode(['status' => 'error', 'data' => null, 'errors' => ['Application non configurée. Créez le premier administrateur.']]);
+    exit;
+}
+
+// Session expiration check (2h idle timeout)
+if (isset($_SESSION['user_id'], $_SESSION['last_activity'])) {
+    if (time() - $_SESSION['last_activity'] > SESSION_IDLE_TIMEOUT) {
+        $token_hash = $_SESSION['session_token_hash'] ?? null;
+        if ($token_hash !== null) {
+            dal_auth_invalidate_session($pdo, $token_hash);
+        }
+        $_SESSION = [];
+        session_destroy();
+        http_response_code(401);
+        echo json_encode(['status' => 'error', 'data' => null, 'errors' => ['Session expirée.']]);
+        exit;
+    }
+
+    // Check if session was revoked by admin
+    $token_hash = $_SESSION['session_token_hash'] ?? null;
+    if ($token_hash !== null && dal_auth_is_session_revoked($pdo, $token_hash)) {
+        $_SESSION = [];
+        session_destroy();
+        http_response_code(401);
+        echo json_encode(['status' => 'error', 'data' => null, 'errors' => ['Session révoquée par un administrateur.']]);
+        exit;
+    }
+
+    // Update activity timestamp + last_seen in DB
+    $_SESSION['last_activity'] = time();
+    if ($token_hash !== null) {
+        dal_auth_update_last_seen($pdo, $token_hash);
+    }
+}
+
 // CSRF check on mutations
 if (in_array($_SERVER['REQUEST_METHOD'], ['POST', 'PUT', 'DELETE'], true)) {
     $token = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
     $session_token = $_SESSION['csrf_token'] ?? '';
-    // Skip CSRF for login endpoint
-    $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-    if (!str_ends_with($uri, '/auth/login') && ($token === '' || $token !== $session_token)) {
+    // Skip CSRF for login and setup endpoints (no pre-existing session)
+    $is_csrf_exempt = ($first_segment === 'auth' && in_array($second_segment, ['login', 'setup'], true));
+    if (!$is_csrf_exempt && ($token === '' || $token !== $session_token)) {
         http_response_code(403);
         echo json_encode(['status' => 'error', 'data' => null, 'errors' => ['Jeton CSRF invalide.']]);
         exit;
@@ -53,9 +105,6 @@ $ctx = [
     'permissions'     => $_SESSION['permissions'] ?? ['corpus.read'],
     'include_deleted' => false,
 ];
-
-// JSON output
-header('Content-Type: application/json; charset=utf-8');
 
 // Route
 require_once __DIR__ . '/router.php';
