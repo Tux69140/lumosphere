@@ -379,6 +379,13 @@ PDF Typst, EPUB Pandoc, configuration d'export.
 
 ---
 
-## 31. Hors périmètre initial
+## 31. Obligations RGPD / CGU
+
+- **Suivi des sessions** : l'application enregistre l'adresse IP et le type de navigateur à chaque connexion, à des fins de sécurité du compte (détection d'intrusion, déconnexion forcée par l'administrateur). Ces données sont automatiquement purgées après **90 jours**. Base légale : intérêt légitime (sécurité). **Cette information doit figurer dans les CGU / mentions légales de l'application.**
+- **Tentatives de connexion** : l'email est enregistré temporairement en cas d'échec de connexion (blocage après 5 tentatives). Purgé automatiquement après 30 minutes d'inactivité ou après connexion réussie.
+
+---
+
+## 32. Hors périmètre initial
 
 Mode hors-ligne / cache du corpus ; édition hors-ligne avec synchronisation ; outil mobile d'édition pour 2-3 éditeurs (séparé, futur) ; application native Tauri/Android en magasin (porte ouverte, non retenue maintenant) ; App Store Apple ; recherche sémantique / RAG ; exports avant la phase 3 ; migration des anciennes données de test ; import Telegram automatique.
