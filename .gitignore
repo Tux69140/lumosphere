@@ -19,6 +19,7 @@ refs/
 
 # Dépendances et artefacts de build
 node_modules/
+vendor/
 .venv/
 .venv-win/
 venvs/

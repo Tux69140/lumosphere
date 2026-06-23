@@ -16,6 +16,10 @@
 | Gitleaks            | 8.22.1  | Installé globalement                   |
 | DAL PHP             | —       | `api/dal/` (11 fichiers)               |
 | Migrations DB       | —       | `db/migrations/` (5 scripts : 003–007) |
+| Point d'entrée API  | —       | `api/bootstrap.php` + `api/router.php` |
+| Endpoints API       | —       | `api/endpoints/` (11 fichiers)         |
+| Services front      | —       | `src/services/api.ts`                  |
+| Tests DAL           | —       | `tests/dal/` (PHPUnit)                 |
 | Page de maintenance | —       | `public/maintenance.html`              |
 | React               | 19.2.7  | `package.json` (dependencies)          |
 | Vite                | 8.1.0   | `package.json` (devDependencies)       |
