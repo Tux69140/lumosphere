@@ -30,11 +30,11 @@ But : **s'assurer que les bons composants sont présents** et **figer/valider le
 - [x] Reconstruction sur **React/Vite + PHP + MySQL + PWA** ; Markdown = source éditoriale ; **LiteLLM** ; **intégration directe au corpus** (plus de pipeline séparé ni de pivot). *(Acté en Phase 1 documentation.)*
 
 ### I.2 — Vérifier la présence des bons composants (avant toute (ré)installation)
-- [ ] **Contrôler ce qui est déjà présent** dans le dépôt avant d'installer (éviter les doublons / restes inutiles : ex-Electron côté front, paquets Tauri/Rust).
-- [ ] **Front** : React 19, Vite, **TypeScript**, **Tailwind** (charte §28 + clair/sombre), composants headless (Bits UI / Radix ou équivalent unique), **TanStack Table**, **Phosphor Icons**, **Zod** (validation), pnpm, ESLint/Prettier, **Vitest + Playwright**.
-- [ ] **API** : PHP 8.1, **PDO MySQL** (paramètres liés), pas de framework lourd ; outillage PHPStan/PHPCS, Gitleaks.
-- [ ] **Workers** : venv **py311** (PyMuPDF/Pillow/LiteLLM OK) ; OCR (Tesseract/OCRmyPDF/Poppler) et Pandoc **à installer** (cf. migration Phase 4).
-- [ ] **Livrable** : note « composants présents / à installer » validée.
+- [x] **Contrôler ce qui est déjà présent** dans le dépôt avant d'installer (éviter les doublons / restes inutiles : ex-Electron côté front, paquets Tauri/Rust).
+- [x] **Front** : React 19, Vite, **TypeScript**, **Tailwind** (charte §28 + clair/sombre), composants headless (**Radix UI** retenu, sans shadcn), **TanStack Table**, **Phosphor Icons**, **Zod** (validation), pnpm, ESLint/Prettier, **Vitest + Playwright**. Complété par **cmdk** (combobox), **react-day-picker** (dates), **Sonner** (notifications toast).
+- [x] **API** : PHP 8.1, **PDO MySQL** (paramètres liés), pas de framework lourd ; outillage PHPStan/PHPCS, Gitleaks.
+- [x] **Workers** : venv **py311** (PyMuPDF/Pillow/LiteLLM OK) ; OCR (Tesseract/OCRmyPDF/Poppler) et Pandoc **à installer** (cf. migration Phase 4).
+- [x] **Livrable** : note « composants présents / à installer » validée (`docs/note_composants-I2.md`).
 
 ### I.3 — Étude et validation du schéma corpus + auth (ex-T0.4) ⚠️ à valider
 - [ ] **Étudier et valider** les tables **corpus** : `citations`, `auteurs`, `oeuvres`, `themes` (≤ 2 niveaux, chemin calculé PHP), `keywords`, `citation_keywords`, `etats` (C/R/P), `mediatheque`, `bibliotheque`, `notifications`, `config`, `emojis`, `telegram_channels`, `import_sources` (sans `import_runs`), `export_jobs`, `schema_version`, `user_favorites`, `local_favorites`.
@@ -68,10 +68,10 @@ But : **s'assurer que les bons composants sont présents** et **figer/valider le
 - Le filtre s'applique **dans la requête SQL** (WHERE), jamais en post-fetch côté PHP
 
 ### I.4 — Définir la DAL (couche d'accès données, ex-T0.5)
-- [ ] **Module unique** d'accès MySQL en **PDO paramètres liés** ; **aucun SQL côté front**.
-- [ ] **Règles métier centralisées** : état défaut `À Corriger` ; `Publiée` interdit sans jeu complet **ni validation humaine** (mots-clés IA) ; états système non supprimables ; thèmes ≤ 2 niveaux ; mots-clés normalisés (unicité insensible casse) ; **suppression douce filtrée** ; **droits par œuvre sur TOUTES les lectures** ; verrous `SELECT … FOR UPDATE` ; **pagination keyset**.
-- [ ] **Recherche** : extraction du texte depuis Markdown pour `FULLTEXT` + `auteur_nom` dénormalisé maintenu à l'écriture.
-- [ ] Appel via **contrats stables** (services applicatifs), pas depuis les composants — prépare les adaptateurs (Web aujourd'hui ; Tauri plus tard).
+- [x] **Module unique** d'accès MySQL en **PDO paramètres liés** ; **aucun SQL côté front**. *(DAL complétée : 11 fichiers `api/dal/`, point d'entrée `api/bootstrap.php` + routeur + endpoints.)*
+- [x] **Règles métier centralisées** : état défaut `À Corriger` ; `Publiée` interdit sans jeu complet **ni validation humaine** (mots-clés IA) ; états système non supprimables ; thèmes ≤ 2 niveaux ; mots-clés normalisés (unicité insensible casse) ; **suppression douce filtrée** ; **droits par œuvre sur TOUTES les lectures** ; verrous `SELECT … FOR UPDATE` ; **pagination keyset**. *(Toutes ces règles implémentées et testées dans `tests/dal/`.)*
+- [x] **Recherche** : extraction du texte depuis Markdown pour `FULLTEXT` + `auteur_nom` dénormalisé maintenu à l'écriture. *(Recherche fulltext avec `IN BOOLEAN MODE`, filtres combinés, modes OR/AND mots-clés.)*
+- [x] Appel via **contrats stables** (services applicatifs), pas depuis les composants — prépare les adaptateurs (Web aujourd'hui ; Tauri plus tard). *(`src/services/api.ts` — point unique de communication, remplaçable pour bureau/mobile.)*
 
 ### I.5 — Spécifier l'éditeur Markdown riche (ex-T0.6)
 - [ ] Trancher l'**architecture de l'éditeur** avant de l'implémenter : Markdown enrichi comme source, rendu visuel confortable, toolbar non technique, tableaux/images/liens/notes/emojis, bascule source optionnelle.

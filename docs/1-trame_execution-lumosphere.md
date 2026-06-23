@@ -33,10 +33,10 @@
 |---|--------|-------|-----------|
 | ~T01~ | Mig §3.3 | Tables auth (users, roles, permissions, role_oeuvre_access, active_sessions) | Mig §3.1–3.2 ✓ |
 | ~T02~ | Mig §3.4 | Tables modules (mediatheque, bibliotheque, notifications, config, etc.) | T01 |
-| T03 | Mig §3.6 + §3.7 | Seeds : rôles (Admin protégé, Éditeur, Visiteur, Abo3, Abo4), états (C/R/P), admin initial, thèmes | T01, T02 |
+| ~T03~ | Mig §3.6 + §3.7 | Seeds : rôles (Admin protégé, Éditeur, Visiteur, Abo3, Abo4), états (C/R/P), admin initial, thèmes | T01, T02 |
 | ~T04~ | Mig §3.3 complément | Décision stockage sessions : fichier PHP natif + table `active_sessions` pour journal/invalidation | T01 |
-| T05 | Dev §I.2 | Audit composants présents/à installer (React 19, Tailwind, Phosphor, pnpm, Vitest, Playwright…) | — |
-| T06 | Dev §I.4 | DAL MySQL PDO — module central + règles métier (droits, soft-delete, verrous, keyset) | T01, T03 |
+| ~T05~ | Dev §I.2 | Audit composants présents/à installer (React 19, Tailwind, Phosphor, pnpm, Vitest, Playwright…) | — |
+| ~T06~ | Dev §I.4 | DAL MySQL PDO — module central + règles métier (droits, soft-delete, verrous, keyset) | T01, T03 |
 | T07 | Mig §6.2 | Auth serveur PHP : POST /auth/login, /auth/logout, session httpOnly/Secure/SameSite, CSRF, rate-limit | T04, T06 |
 | T08 | Dev §I.7 | Squelette React : layout, routing, thème clair/sombre, charte Phosphor, services web (fetch + credentials) | T05 |
 | T09 | Dev §II.1 | Écran login + redirection post-auth | T07, T08 |
