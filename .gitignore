@@ -30,6 +30,10 @@ release/
 .cache/
 tmp/
 
+# Playwright test artifacts
+playwright-report/
+test-results/
+
 # Outillage IA local (Claude Code, etc.) — non versionné
 .claude/
 
