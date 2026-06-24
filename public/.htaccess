@@ -17,7 +17,7 @@ RewriteRule ^ /index.html [L]
 
 # Paramètre secret ?dev=ouilulu → pose le cookie (8 h) et redirige
 RewriteCond %{QUERY_STRING} (?:^|&)dev=ouilulu(?:&|$)
-RewriteRule ^(.*)$ /$1 [CO=lumosphere_dev:ouilulu:.%{HTTP_HOST}:480:/:Secure,NE,R=302,L]
+RewriteRule ^(.*)$ /$1? [CO=lumosphere_dev:ouilulu:.%{HTTP_HOST}:480:/:Secure,NE,R=302,L]
 
 # Tout autre visiteur → page de maintenance
 RewriteRule ^ /maintenance.html [R=302,L]
