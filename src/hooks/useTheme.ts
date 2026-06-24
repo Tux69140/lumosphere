@@ -46,7 +46,7 @@ export function useTheme() {
   }, [])
 
   const cycleTheme = useCallback(() => {
-    const next = CYCLE[(CYCLE.indexOf(theme) + 1) % CYCLE.length]
+    const next = CYCLE[(CYCLE.indexOf(theme) + 1) % CYCLE.length] as Theme
     setTheme(next)
   }, [theme, setTheme])
 
