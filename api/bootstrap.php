@@ -6,6 +6,7 @@ declare(strict_types=1);
 ini_set('session.cookie_httponly', '1');
 ini_set('session.cookie_secure', '1');
 ini_set('session.cookie_samesite', 'Lax');
+ini_set('session.gc_maxlifetime', '2592000'); // 30 jours : préserver les sessions « se souvenir de moi »
 session_start();
 
 // Load config (outside repo)
@@ -54,9 +55,9 @@ if ($first_segment === 'auth' && in_array($second_segment, ['csrf', 'setup', 'lo
     exit;
 }
 
-// Session expiration check (2h idle timeout)
+// Session expiration check (2h idle / 30j remember)
 if (isset($_SESSION['user_id'], $_SESSION['last_activity'])) {
-    if (time() - $_SESSION['last_activity'] > SESSION_IDLE_TIMEOUT) {
+    if (dal_auth_is_session_expired($_SESSION, time())) {
         $token_hash = $_SESSION['session_token_hash'] ?? null;
         if ($token_hash !== null) {
             dal_auth_invalidate_session($pdo, $token_hash);
@@ -82,6 +83,17 @@ if (isset($_SESSION['user_id'], $_SESSION['last_activity'])) {
     $_SESSION['last_activity'] = time();
     if ($token_hash !== null) {
         dal_auth_update_last_seen($pdo, $token_hash);
+    }
+
+    // Rafraîchir le cookie persistant des sessions « se souvenir de moi »
+    if (!empty($_SESSION['remember'])) {
+        setcookie(session_name(), session_id(), [
+            'expires'  => time() + REMEMBER_DURATION,
+            'path'     => '/',
+            'secure'   => true,
+            'httponly' => true,
+            'samesite' => 'Lax',
+        ]);
     }
 }
 

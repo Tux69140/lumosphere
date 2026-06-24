@@ -21,7 +21,7 @@ function endpoint_auth(PDO $pdo, array $ctx, string $method, ?int $id, ?array $b
     };
 }
 
-function _auth_init_session(PDO $pdo, int $user_id, int $role_id): void
+function _auth_init_session(PDO $pdo, int $user_id, int $role_id, bool $remember = false): void
 {
     session_regenerate_id(true);
     $permissions = dal_auth_load_permissions($pdo, $role_id);
@@ -29,8 +29,20 @@ function _auth_init_session(PDO $pdo, int $user_id, int $role_id): void
     $_SESSION['role_id']            = $role_id;
     $_SESSION['permissions']        = $permissions;
     $_SESSION['last_activity']      = time();
+    $_SESSION['login_at']           = time();
+    $_SESSION['remember']           = $remember;
     $_SESSION['session_token_hash'] = hash('sha256', session_id());
     dal_auth_create_session($pdo, $user_id, session_id());
+
+    if ($remember) {
+        setcookie(session_name(), session_id(), [
+            'expires'  => time() + REMEMBER_DURATION,
+            'path'     => '/',
+            'secure'   => true,
+            'httponly' => true,
+            'samesite' => 'Lax',
+        ]);
+    }
 }
 
 function _auth_csrf(): array
@@ -84,7 +96,8 @@ function _auth_login(PDO $pdo, array $body): array
 
     dal_auth_clear_attempts($pdo, $email);
 
-    _auth_init_session($pdo, (int) $user['id'], (int) $user['role_id']);
+    $remember = !empty($body['remember']);
+    _auth_init_session($pdo, (int) $user['id'], (int) $user['role_id'], $remember);
 
     return dal_ok([
         'id'       => (int) $user['id'],

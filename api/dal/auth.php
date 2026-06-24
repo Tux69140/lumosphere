@@ -9,6 +9,22 @@ const MAX_LOGIN_ATTEMPTS   = 5;
 const LOCKOUT_DURATION     = 1800; // 30 minutes
 const SESSION_IDLE_TIMEOUT = 7200; // 2 heures
 const SESSION_PURGE_DAYS   = 90;
+const REMEMBER_DURATION = 2592000; // 30 jours (en secondes)
+
+/**
+ * Détermine si une session est expirée.
+ * - remember : limite absolue de 30 jours depuis la connexion.
+ * - sinon    : 2 h d'inactivité.
+ */
+function dal_auth_is_session_expired(array $session, int $now): bool
+{
+    if (!empty($session['remember'])) {
+        $login_at = (int) ($session['login_at'] ?? 0);
+        return ($now - $login_at) > REMEMBER_DURATION;
+    }
+    $last = (int) ($session['last_activity'] ?? 0);
+    return ($now - $last) > SESSION_IDLE_TIMEOUT;
+}
 
 function dal_auth_check_rate_limit(PDO $pdo, string $email): array
 {
