@@ -85,14 +85,14 @@ export const apiClient = {
       role_id: number
       role_nom: string
     } | null>('auth/me'),
-  login: (email: string, password: string) =>
+  login: (email: string, password: string, remember: boolean) =>
     post<{
       id: number
       prenom: string
       nom: string
       email: string
       role_id: number
-    }>('auth/login', { email, password }),
+    }>('auth/login', { email, password, remember }),
   logout: () => {
     csrfToken = null
     return post<void>('auth/logout', {})
