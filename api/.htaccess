@@ -1,0 +1,11 @@
+# API Lumosphère — point d'entrée unique
+RewriteEngine On
+
+# Bloquer l'accès direct aux fichiers internes (dal, endpoints, config, router)
+RewriteRule ^(dal|endpoints)/ - [F]
+RewriteRule ^(router|config)\.php$ - [F]
+
+# Toute requête /api/* (non-fichier) → bootstrap.php (qui appelle route())
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ bootstrap.php [L]
