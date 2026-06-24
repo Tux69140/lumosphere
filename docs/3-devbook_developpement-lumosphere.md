@@ -163,6 +163,7 @@ But : **voir les résultats** le plus tôt possible et valider schéma + droits 
   - Tableau : nom d'utilisateur, email, rôle, actions éditer / supprimer (suppression avec confirmation).
   - Modale de création / édition : nom, email, rôle (dropdown), mot de passe, confirmation mot de passe.
   - Champs mot de passe vidés après enregistrement (confidentialité).
+- [ ] Fonction de changement de passe / mot de passe oublié.
 
 ### III.2 — Référentiels éditoriaux (CRUD admin)
 - [ ] Auteurs · œuvres (abréviation, auteur, URL, réf libraire, accès Abo3/Abo4) · **thèmes ≤ 2 niveaux** · mots-clés (normalisés, saisie qui propose l'existant) · états · emojis.
@@ -172,6 +173,7 @@ But : **voir les résultats** le plus tôt possible et valider schéma + droits 
 - [ ] **Panneau de filtres** (œuvres, auteurs, thèmes/sous-thèmes, mots-clés OU/ET + filtre alphabétique, dates, plein texte, réinitialisation), repliable sur mobile.
 - [ ] **Zone de résultats** : compteur, critères actifs en **badges supprimables**, cartes, `Fin des résultats.`
 - [ ] **Favoris** web (local navigateur) + favoris reliés.
+- [ ] Fonction "Retour à la page d'où l'on venait » après connexion, reliquat de T09.
 
 ### III.4 — Moteur de recherche : étude puis codage (ex-T1.6)
 - [ ] **Étude** : conception de la recherche combinée et de ses index ; comportement OU/ET sur mots-clés ; tri/pertinence ; stratégie accent-insensible.

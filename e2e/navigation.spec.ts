@@ -24,9 +24,9 @@ test.describe('Navigation', () => {
     await expect(page).toHaveURL('/')
   })
 
-  test('la page admin affiche un placeholder', async ({ page }) => {
+  test('/admin sans connexion redirige vers /login', async ({ page }) => {
     await page.goto('/admin')
-    await expect(page.getByText('Administration')).toBeVisible()
+    await expect(page).toHaveURL('/login')
   })
 
   test("le titre de l'onglet est Lumosphère", async ({ page }) => {

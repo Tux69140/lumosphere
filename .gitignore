@@ -41,3 +41,5 @@ test-results/
 # Divers
 .DS_Store
 Thumbs.db
+.superpowers/
+.phpunit.result.cache
