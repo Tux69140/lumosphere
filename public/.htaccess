@@ -7,17 +7,21 @@ RewriteRule \.(css|js|jpg|jpeg|png|gif|svg|ico|woff2?)$ - [L]
 # Page de maintenance elle-même
 RewriteRule ^maintenance\.html$ - [L]
 
-# Cookie dev présent → accès SPA
-RewriteCond %{HTTP_COOKIE} lumosphere_dev=ouilulu
+# API toujours accessible
 RewriteRule ^api/ - [L]
-RewriteCond %{HTTP_COOKIE} lumosphere_dev=ouilulu
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^ /index.html [L]
 
 # Paramètre secret ?dev=ouilulu → pose le cookie (8 h) et redirige
 RewriteCond %{QUERY_STRING} (?:^|&)dev=ouilulu(?:&|$)
 RewriteRule ^(.*)$ /$1? [CO=lumosphere_dev:ouilulu:.%{HTTP_HOST}:480:/:Secure,NE,R=302,L]
+
+# Cookie présent + fichier existant (dont index.html) → servir directement
+RewriteCond %{HTTP_COOKIE} lumosphere_dev=ouilulu
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteRule ^ - [L]
+
+# Cookie présent + route SPA (non-fichier) → index.html
+RewriteCond %{HTTP_COOKIE} lumosphere_dev=ouilulu
+RewriteRule ^ /index.html [L]
 
 # Tout autre visiteur → page de maintenance
 RewriteRule ^ /maintenance.html [R=302,L]
