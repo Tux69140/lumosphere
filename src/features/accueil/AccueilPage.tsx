@@ -57,7 +57,7 @@ export function AccueilPage() {
             contenu={c.contenu}
             auteur_nom={c.auteur_nom}
             theme_nom={c.theme_nom}
-            mots_cles={c.mots_cles.map((k) => k.mot)}
+            mots_cles={(c.mots_cles ?? []).map((k) => k.mot)}
           />
         ))}
       </div>

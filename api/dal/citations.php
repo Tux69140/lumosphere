@@ -5,6 +5,36 @@ declare(strict_types=1);
 require_once __DIR__ . '/core.php';
 
 /**
+ * Attach keywords (mots_cles: [{id, mot}]) to a list of citation rows.
+ * Single batch query to avoid N+1.
+ */
+function dal_attach_keywords(PDO $pdo, array $rows): array
+{
+    if (empty($rows)) {
+        return $rows;
+    }
+    $ids = array_map('intval', array_column($rows, 'id'));
+    $placeholders = implode(',', array_fill(0, count($ids), '?'));
+    $stmt = $pdo->prepare(
+        "SELECT ck.citation_id, k.id, k.mot
+         FROM keywords k
+         JOIN citation_keywords ck ON ck.keyword_id = k.id
+         WHERE ck.citation_id IN ({$placeholders})
+         ORDER BY k.mot"
+    );
+    $stmt->execute($ids);
+    $by_citation = [];
+    foreach ($stmt->fetchAll() as $kw) {
+        $by_citation[(int) $kw['citation_id']][] = ['id' => (int) $kw['id'], 'mot' => $kw['mot']];
+    }
+    foreach ($rows as &$row) {
+        $row['mots_cles'] = $by_citation[(int) $row['id']] ?? [];
+    }
+    unset($row);
+    return $rows;
+}
+
+/**
  * Read citations with R7 (soft-delete), R8 (oeuvre access), R9 (keyset pagination).
  */
 function dal_find_citations(PDO $pdo, array $ctx, array $filters = [], ?string $cursor = null, int $page_size = PAGE_SIZE_DEFAULT): array
@@ -91,7 +121,7 @@ function dal_find_citations(PDO $pdo, array $ctx, array $filters = [], ?string $
         $last = end($rows);
         $next_cursor = dal_encode_cursor($last['date_entree'], (int) $last['id']);
     }
-    return dal_ok(['items' => $rows, 'next_cursor' => $next_cursor]);
+    return dal_ok(['items' => dal_attach_keywords($pdo, $rows), 'next_cursor' => $next_cursor]);
 }
 
 function dal_get_citation(PDO $pdo, array $ctx, int $id): array
@@ -247,7 +277,7 @@ function dal_search_citations(PDO $pdo, array $ctx, string $query, array $filter
         $last = end($rows);
         $next_cursor = dal_encode_cursor($last['date_entree'], (int) $last['id']);
     }
-    return dal_ok(['items' => $rows, 'next_cursor' => $next_cursor]);
+    return dal_ok(['items' => dal_attach_keywords($pdo, $rows), 'next_cursor' => $next_cursor]);
 }
 
 /**
