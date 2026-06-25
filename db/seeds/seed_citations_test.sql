@@ -14,10 +14,10 @@ SET @auteur_id = (SELECT id FROM auteurs WHERE nom = 'Lulumineuse');
 
 -- 2. Œuvre
 INSERT INTO oeuvres (auteur_id, nom, abreviation)
-SELECT @auteur_id, 'Telegram Lulumineuse', 'TgLulu'
-WHERE NOT EXISTS (SELECT 1 FROM oeuvres WHERE nom = 'Telegram Lulumineuse');
+SELECT @auteur_id, 'Telegram', 'TgLulu'
+WHERE NOT EXISTS (SELECT 1 FROM oeuvres WHERE nom = 'Telegram');
 
-SET @oeuvre_id = (SELECT id FROM oeuvres WHERE nom = 'Telegram Lulumineuse');
+SET @oeuvre_id = (SELECT id FROM oeuvres WHERE nom = 'Telegram');
 
 -- 3. État par défaut
 SET @etat_id = (SELECT id FROM etats WHERE nom = 'À Corriger');
