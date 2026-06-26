@@ -108,3 +108,58 @@ body {
   background-color: var(--color-bg-page);
   color: var(--color-text-primary);
 }
+
+/* Rendu Markdown des citations et des notes (carte de citation) */
+.prose-display > :first-child {
+  margin-top: 0;
+}
+.prose-display > :last-child {
+  margin-bottom: 0;
+}
+.prose-display p {
+  margin: 0.5rem 0;
+}
+.prose-display strong {
+  font-weight: 600;
+}
+.prose-display em {
+  font-style: italic;
+}
+.prose-display ul {
+  list-style: disc;
+  margin: 0.5rem 0;
+  padding-left: 1.5rem;
+}
+.prose-display ol {
+  list-style: decimal;
+  margin: 0.5rem 0;
+  padding-left: 1.5rem;
+}
+.prose-display li {
+  margin: 0.25rem 0;
+}
+.prose-display h1,
+.prose-display h2,
+.prose-display h3 {
+  font-weight: 600;
+  margin: 0.75rem 0 0.5rem;
+}
+.prose-display a {
+  color: var(--color-action);
+  text-decoration: underline;
+}
+.prose-display blockquote {
+  border-left: 3px solid var(--color-border);
+  padding-left: 0.75rem;
+  margin: 0.5rem 0;
+  color: var(--color-text-secondary);
+}
+.prose-display table {
+  border-collapse: collapse;
+  margin: 0.5rem 0;
+}
+.prose-display th,
+.prose-display td {
+  border: 1px solid var(--color-border);
+  padding: 0.25rem 0.5rem;
+}
