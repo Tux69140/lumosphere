@@ -137,8 +137,9 @@ export function RoleDetail({ detail, loading, oeuvres, onSave, onDelete }: Props
                     type="checkbox"
                     checked={oeuvreIds.includes(o.id)}
                     onChange={() => toggleOeuvre(o.id)}
+                    disabled={hasReadAll}
                     aria-label={o.nom}
-                    className="h-4 w-4 cursor-pointer"
+                    className="h-4 w-4 cursor-pointer disabled:cursor-not-allowed"
                     style={{ accentColor: 'var(--color-action)' }}
                   />
                   {o.nom}

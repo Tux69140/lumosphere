@@ -43,14 +43,14 @@ export function RolesAccessPage() {
     const role = rr.data as { id: number; nom: string; permissions: { id: number }[] }
     const permIds = role.permissions.map((p) => p.id)
     const oeuvreIds = (ro.data?.oeuvre_ids ?? []) as number[]
-    const hasReadAll = permIds.includes(2) // corpus.read_all
+    if (ro.status !== 'ok') toast.error('Impossible de charger les œuvres du rôle.')
     setDetail({
       id,
       nom: role.nom,
       permissionIds: permIds,
       oeuvreIds,
       isProtected: id === ROLE_ADMIN,
-      showOeuvres: permIds.includes(1) && !hasReadAll && id !== ROLE_VISITEUR,
+      showOeuvres: id !== ROLE_VISITEUR,
     })
   }
 
