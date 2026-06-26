@@ -49,9 +49,9 @@
 
 | # | Source | Tâche | Prérequis |
 |---|--------|-------|-----------|
-| T10 | Dev §I.3 + §I.7 | Seed données de test corpus (citations + auteurs + œuvres) | T06 |
-| T11 | Dev §III.4 complément | Config FULLTEXT : `BOOLEAN MODE`, `innodb_ft_min_token_size=2`, stopwords FR, tri par défaut | T10 |
-| T12 | Dev §II.1 | Vue bibliothèque lecture : liste de cards (titre, auteur, extrait Markdown rendu, thème, état) | T08, T10 |
+| ~T10~ | Dev §I.3 + §I.7 | Seed données de test corpus (citations + auteurs + œuvres) | T06 |
+| ~T11~ | Dev §III.4 complément | Config FULLTEXT : `BOOLEAN MODE`, `innodb_ft_min_token_size=2`, stopwords FR, tri par défaut | T10 |
+| ~T12~ | Dev §II.1 | Vue bibliothèque lecture : liste de cards (titre, auteur, extrait Markdown rendu, thème, état) | T08, T10 |
 | T13 | Dev §II.1 | Recherche basique : fulltext + filtres thème/œuvre/auteur | T11, T12 |
 | T14 | Dev §III.1 + §I.3 complément | Droits rôle/œuvre appliqués dans la DAL (matrice RBAC) | T06, T10 |
 

@@ -29,16 +29,17 @@ export function CitationCard({
     <article className="group rounded-lg border border-(--color-border) bg-(--color-bg-card) p-5 shadow-sm transition-shadow hover:shadow-md">
       {/* En-tête : thème (gauche) + œuvre (droite) */}
       <div className="mb-3 flex items-start justify-between gap-4">
-        <p className="text-xs text-(--color-text-secondary)">
-          <span className="font-medium">Thème :</span> {theme_nom ?? 'Non spécifié'}
-        </p>
+        <div className="flex-1 text-xs text-(--color-text-secondary)">
+          <span className="font-medium text-(--color-text-primary)">Thème :&nbsp;</span>
+          {theme_nom ?? 'Non spécifié'}
+        </div>
         {oeuvre_nom && (
           <span className="shrink-0 text-sm font-medium text-(--color-accent)">{oeuvre_nom}</span>
         )}
       </div>
 
       {/* Contenu (Markdown) */}
-      <div className="prose-display text-sm leading-relaxed text-(--color-text-primary)">
+      <div className="prose-display flow-root text-sm text-(--color-text-primary)">
         <ReactMarkdown remarkPlugins={[remarkGfm]}>{contenu}</ReactMarkdown>
       </div>
 
@@ -51,19 +52,23 @@ export function CitationCard({
       {showNotes && (
         <div
           data-testid="publication-notes"
-          className="prose-display mt-4 border-t border-(--color-border) pt-3 text-xs text-(--color-text-secondary)"
+          style={{ borderTopColor: 'var(--color-border)' }}
+          className="prose-display mt-4 border-t pt-3 text-xs text-(--color-text-secondary)"
         >
           <ReactMarkdown remarkPlugins={[remarkGfm]}>{notes}</ReactMarkdown>
         </div>
       )}
 
       {/* Pied : mots-clés (gauche) + actions inertes (droite) */}
-      <div className="mt-3 flex items-center justify-between gap-2 border-t border-(--color-border) pt-3">
-        <div className="flex flex-1 flex-wrap gap-1.5">
+      <div
+        style={{ borderTopColor: '#f1f5f9' }}
+        className="mt-3 flex min-h-[30px] items-center justify-between gap-2 border-t pt-3"
+      >
+        <div className="flex flex-1 flex-wrap gap-2">
           {mots_cles.map((mc) => (
             <span
               key={mc}
-              className="rounded-full bg-(--color-tag-bg) px-2.5 py-0.5 text-xs text-(--color-tag-text)"
+              className="rounded-full bg-(--color-bg-sidebar) px-2 py-1 text-xs text-(--color-text-secondary)"
             >
               {mc}
             </span>

@@ -107,15 +107,10 @@
 body {
   background-color: var(--color-bg-page);
   color: var(--color-text-primary);
+  font-family: 'Inter', sans-serif;
 }
 
 /* Rendu Markdown des citations et des notes (carte de citation) */
-.prose-display > :first-child {
-  margin-top: 0;
-}
-.prose-display > :last-child {
-  margin-bottom: 0;
-}
 .prose-display p {
   margin: 0.5rem 0;
 }
