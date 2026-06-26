@@ -14,6 +14,8 @@ final class RolesTest extends TestCase
     protected function setUp(): void
     {
         $this->pdo = get_test_pdo();
+        reset_test_db($this->pdo);
+        seed_default_roles($this->pdo);
     }
 
     public function test_find_roles_returns_5(): void
@@ -73,5 +75,41 @@ final class RolesTest extends TestCase
 
         // Restore original permissions
         dal_update_role_permissions($this->pdo, $ctx, ROLE_EDITEUR, [1,2,3,4,8,9,10,11,12,13,14]);
+    }
+
+    public function test_create_role_with_permissions(): void
+    {
+        $ctx = create_test_ctx(ROLE_ADMIN);
+        $r = dal_create_role($this->pdo, $ctx, 'Testeur', [1, 3]);
+        $this->assertSame('ok', $r['status']);
+        $this->assertIsInt($r['data']['id']);
+        $this->assertSame('Testeur', $r['data']['nom']);
+
+        // Vérifier que les permissions sont bien enregistrées
+        $r2 = dal_get_role_with_permissions($this->pdo, $ctx, $r['data']['id']);
+        $this->assertCount(2, $r2['data']['permissions']);
+    }
+
+    public function test_create_role_empty_nom_rejected(): void
+    {
+        $ctx = create_test_ctx(ROLE_ADMIN);
+        $r = dal_create_role($this->pdo, $ctx, '   ', [1]);
+        $this->assertSame('error', $r['status']);
+    }
+
+    public function test_update_role_nom(): void
+    {
+        $ctx = create_test_ctx(ROLE_ADMIN);
+        $r = dal_update_role($this->pdo, $ctx, ROLE_VISITEUR, 'Visiteur Renommé');
+        $this->assertSame('ok', $r['status']);
+        $this->assertSame('Visiteur Renommé', $r['data']['nom']);
+    }
+
+    public function test_update_admin_role_blocked(): void
+    {
+        $ctx = create_test_ctx(ROLE_ADMIN);
+        $r = dal_update_role($this->pdo, $ctx, ROLE_ADMIN, 'Nouveau Nom');
+        $this->assertSame('error', $r['status']);
+        $this->assertStringContainsString('Administrateur', $r['errors'][0]);
     }
 }

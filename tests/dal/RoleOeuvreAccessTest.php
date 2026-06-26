@@ -17,6 +17,7 @@ final class RoleOeuvreAccessTest extends TestCase
     {
         $this->pdo = get_test_pdo();
         reset_test_db($this->pdo);
+        seed_default_roles($this->pdo);
     }
 
     public function test_get_returns_empty_then_set_replaces(): void
@@ -35,11 +36,16 @@ final class RoleOeuvreAccessTest extends TestCase
         $this->assertSame([$o1], dal_get_role_oeuvre_access($this->pdo, $ctx, ROLE_ABO3)['data']['oeuvre_ids']);
     }
 
-    public function test_set_rejects_non_subscriber_role(): void
+    public function test_set_editeur_oeuvres_succeeds(): void
     {
         $ctx = create_test_ctx(ROLE_ADMIN);
-        $r = dal_set_role_oeuvre_access($this->pdo, $ctx, ROLE_EDITEUR, [1]);
-        $this->assertSame('error', $r['status']);
+        $a = dal_create_auteur($this->pdo, $ctx, ['nom' => 'A'])['data']['id'];
+        $o = dal_create_oeuvre($this->pdo, $ctx, ['nom' => 'O', 'auteur_id' => $a])['data']['id'];
+
+        // Tout rôle (y compris Éditeur) peut désormais recevoir des œuvres réservées.
+        $r = dal_set_role_oeuvre_access($this->pdo, $ctx, ROLE_EDITEUR, [$o]);
+        $this->assertSame('ok', $r['status']);
+        $this->assertSame([$o], dal_get_role_oeuvre_access($this->pdo, $ctx, ROLE_EDITEUR)['data']['oeuvre_ids']);
     }
 
     public function test_set_requires_admin_roles_permission(): void

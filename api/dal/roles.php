@@ -81,6 +81,52 @@ function dal_update_role_permissions(PDO $pdo, array $ctx, int $role_id, array $
     }
 }
 
+function dal_create_role(PDO $pdo, array $ctx, string $nom, array $permission_ids): array
+{
+    dal_require_permission($ctx, 'admin.roles');
+    $nom = trim($nom);
+    if ($nom === '') {
+        return dal_error('Le nom du rôle est requis.');
+    }
+    $ids = array_values(array_unique(array_filter(
+        array_map('intval', $permission_ids),
+        static fn (int $v): bool => $v > 0
+    )));
+
+    $pdo->beginTransaction();
+    try {
+        $stmt = $pdo->prepare('INSERT INTO roles (nom) VALUES (:nom)');
+        $stmt->execute(['nom' => $nom]);
+        $id = (int) $pdo->lastInsertId();
+        $stmt = $pdo->prepare('INSERT INTO role_permissions (role_id, permission_id) VALUES (:role_id, :perm_id)');
+        foreach ($ids as $perm_id) {
+            $stmt->execute(['role_id' => $id, 'perm_id' => $perm_id]);
+        }
+        $pdo->commit();
+        return dal_ok(['id' => $id, 'nom' => $nom]);
+    } catch (\Throwable $e) {
+        $pdo->rollBack();
+        return dal_error('Erreur lors de la création du rôle.');
+    }
+}
+
+function dal_update_role(PDO $pdo, array $ctx, int $id, string $nom): array
+{
+    dal_require_permission($ctx, 'admin.roles');
+    if ($id === ROLE_ADMIN) {
+        return dal_error('Le rôle Administrateur ne peut pas être renommé.');
+    }
+    $nom = trim($nom);
+    if ($nom === '') {
+        return dal_error('Le nom du rôle est requis.');
+    }
+    $stmt = $pdo->prepare('UPDATE roles SET nom = :nom WHERE id = :id');
+    $stmt->execute(['nom' => $nom, 'id' => $id]);
+    return $stmt->rowCount() > 0
+        ? dal_ok(['id' => $id, 'nom' => $nom])
+        : dal_error('Rôle introuvable.');
+}
+
 /**
  * Lecture des œuvres réservées à un rôle (Abo3/Abo4).
  */
@@ -99,9 +145,6 @@ function dal_get_role_oeuvre_access(PDO $pdo, array $ctx, int $role_id): array
 function dal_set_role_oeuvre_access(PDO $pdo, array $ctx, int $role_id, array $oeuvre_ids): array
 {
     dal_require_permission($ctx, 'admin.roles');
-    if (!in_array($role_id, [ROLE_ABO3, ROLE_ABO4], true)) {
-        return dal_error('Seuls les rôles Abo3 et Abo4 peuvent se voir réserver des œuvres.');
-    }
     $ids = array_values(array_unique(array_filter(
         array_map('intval', $oeuvre_ids),
         static fn (int $v): bool => $v > 0

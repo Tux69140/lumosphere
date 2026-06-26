@@ -6,6 +6,8 @@ composer.json
 composer.lock
 docs/**
 .superpowers/**
+.claude/**
+.impeccable/**
 *.md
 public/**
 db/**
