@@ -13,6 +13,8 @@ vi.mock('@/services/api', () => ({
     findCitations: vi
       .fn()
       .mockResolvedValue({ status: 'ok', data: { items: [], next_cursor: null }, errors: [] }),
+    findOeuvres: vi.fn().mockResolvedValue({ status: 'ok', data: [], errors: [] }),
+    findThemes: vi.fn().mockResolvedValue({ status: 'ok', data: [], errors: [] }),
   },
 }))
 vi.mock('sonner', () => ({ toast: { error: vi.fn() }, Toaster: () => null }))

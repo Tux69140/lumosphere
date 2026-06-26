@@ -19,8 +19,8 @@ describe('buildThemeTree', () => {
   it('regroupe enfants sous parents et garde les racines sans enfant', () => {
     expect(TREE).toHaveLength(2)
     expect(TREE[0]).toMatchObject({ id: 1, nom: 'Spiritualité' })
-    expect(TREE[0].children.map((c) => c.id)).toEqual([2, 3])
-    expect(TREE[1].children).toEqual([])
+    expect(TREE[0]!.children.map((c) => c.id)).toEqual([2, 3])
+    expect(TREE[1]!.children).toEqual([])
   })
 })
 

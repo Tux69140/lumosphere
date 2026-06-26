@@ -1,50 +1,22 @@
 // src/features/accueil/AccueilPage.tsx
-import { useEffect, useState } from 'react'
-import { apiClient } from '@/services/api'
 import { CitationCard } from '@/components/CitationCard'
 import { useAuth } from '@/hooks/useAuth'
+import { useCorpusSearch } from '@/features/corpus/useCorpusSearch'
 
 const ADMIN_ROLES = [1, 2] // Administrateur, Éditeur
-
-type Citation = {
-  id: number
-  contenu: string
-  oeuvre_nom: string | null
-  auteur_nom: string | null
-  theme_nom: string | null
-  notes: string | null
-  mots_cles: { id: number; mot: string }[]
-}
 
 export function AccueilPage() {
   const { user } = useAuth()
   const canEdit = user ? ADMIN_ROLES.includes(user.role_id) : false
-
-  const [citations, setCitations] = useState<Citation[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    apiClient
-      .findCitations()
-      .then((res) => {
-        if (res.status === 'ok' && res.data) {
-          setCitations(res.data.items as Citation[])
-        } else {
-          setError(res.errors?.[0] ?? 'Erreur de chargement')
-        }
-      })
-      .catch(() => setError('Impossible de contacter le serveur'))
-      .finally(() => setLoading(false))
-  }, [])
+  const { items, loading, error, hasMore } = useCorpusSearch()
 
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
         <span className="text-sm text-(--color-text-secondary)">
           {loading
-            ? 'Chargement…'
-            : `${citations.length} entrée${citations.length !== 1 ? 's' : ''}`}
+            ? 'Recherche…'
+            : `${items.length} résultat${items.length !== 1 ? 's' : ''}${hasMore ? '+' : ''}`}
         </span>
       </div>
 
@@ -54,12 +26,12 @@ export function AccueilPage() {
         </div>
       )}
 
-      {!loading && !error && citations.length === 0 && (
-        <p className="text-sm text-(--color-text-placeholder)">Aucune entrée</p>
+      {!loading && !error && items.length === 0 && (
+        <p className="text-sm text-(--color-text-placeholder)">Aucune entrée ne correspond.</p>
       )}
 
       <div className="flex flex-col gap-4">
-        {citations.map((c) => (
+        {items.map((c) => (
           <CitationCard
             key={c.id}
             contenu={c.contenu}
@@ -72,6 +44,12 @@ export function AccueilPage() {
           />
         ))}
       </div>
+
+      {!loading && hasMore && (
+        <p className="mt-4 text-center text-xs text-(--color-text-placeholder)">
+          Affinez votre recherche pour préciser les résultats.
+        </p>
+      )}
     </div>
   )
 }
