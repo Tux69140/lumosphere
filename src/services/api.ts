@@ -183,6 +183,9 @@ export const apiClient = {
   getRoleWithPermissions: (id: number) => get<unknown>(`roles/${id}`),
   updateRolePermissions: (id: number, permissionIds: number[]) =>
     put<void>(`roles/${id}/permissions`, { permission_ids: permissionIds }),
+  getRoleOeuvres: (roleId: number) => get<{ oeuvre_ids: number[] }>(`roles/${roleId}/oeuvres`),
+  setRoleOeuvres: (roleId: number, oeuvreIds: number[]) =>
+    put<{ oeuvre_ids: number[] }>(`roles/${roleId}/oeuvres`, { oeuvre_ids: oeuvreIds }),
 
   // Users
   findUsers: () => get<unknown[]>('users'),

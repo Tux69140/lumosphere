@@ -80,3 +80,44 @@ function dal_update_role_permissions(PDO $pdo, array $ctx, int $role_id, array $
         return dal_error('Erreur lors de la mise à jour des permissions.');
     }
 }
+
+/**
+ * Lecture des œuvres réservées à un rôle (Abo3/Abo4).
+ */
+function dal_get_role_oeuvre_access(PDO $pdo, array $ctx, int $role_id): array
+{
+    dal_require_permission($ctx, 'admin.roles');
+    $stmt = $pdo->prepare('SELECT oeuvre_id FROM role_oeuvre_access WHERE role_id = :rid ORDER BY oeuvre_id');
+    $stmt->execute(['rid' => $role_id]);
+    $ids = array_map(static fn ($r) => (int) $r['oeuvre_id'], $stmt->fetchAll());
+    return dal_ok(['oeuvre_ids' => $ids]);
+}
+
+/**
+ * Remplace l'ensemble des œuvres réservées à un rôle abonné (Abo3/Abo4) — transaction.
+ */
+function dal_set_role_oeuvre_access(PDO $pdo, array $ctx, int $role_id, array $oeuvre_ids): array
+{
+    dal_require_permission($ctx, 'admin.roles');
+    if (!in_array($role_id, [ROLE_ABO3, ROLE_ABO4], true)) {
+        return dal_error('Seuls les rôles Abo3 et Abo4 peuvent se voir réserver des œuvres.');
+    }
+    $ids = array_values(array_unique(array_filter(
+        array_map('intval', $oeuvre_ids),
+        static fn (int $v): bool => $v > 0
+    )));
+
+    $pdo->beginTransaction();
+    try {
+        $pdo->prepare('DELETE FROM role_oeuvre_access WHERE role_id = :rid')->execute(['rid' => $role_id]);
+        $stmt = $pdo->prepare('INSERT INTO role_oeuvre_access (role_id, oeuvre_id) VALUES (:rid, :oid)');
+        foreach ($ids as $oid) {
+            $stmt->execute(['rid' => $role_id, 'oid' => $oid]);
+        }
+        $pdo->commit();
+        return dal_ok(['oeuvre_ids' => $ids]);
+    } catch (\Throwable $e) {
+        $pdo->rollBack();
+        return dal_error('Erreur lors de la mise à jour des accès par œuvre.');
+    }
+}
