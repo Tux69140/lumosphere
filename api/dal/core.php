@@ -71,25 +71,43 @@ function dal_soft_delete_clause(string $alias, array $ctx): string
 }
 
 /**
- * R8 — Rights filter per oeuvre. Appended to every SELECT on citations.
- * Adds bound params to $params by reference.
+ * R8 — Œuvre visibility fragment (no état): public works (not reserved to any role)
+ * plus works reserved to this role's tier. Returns '' for roles with corpus.read_all.
+ * Internal sub-SELECTs are constants; only role ids are bound.
+ */
+function dal_oeuvre_visibility_clause(string $oeuvre_col, array $ctx, array &$params): string
+{
+    if (in_array('corpus.read_all', $ctx['permissions'] ?? [], true)) {
+        return '';
+    }
+    $role_id = $ctx['role_id'] ?? ROLE_VISITEUR;
+    $reserved = 'SELECT oeuvre_id FROM role_oeuvre_access';
+
+    if ($role_id === ROLE_ABO3) {
+        $params[':ctx_abo3'] = ROLE_ABO3;
+        return " AND ({$oeuvre_col} NOT IN ({$reserved})"
+             . " OR {$oeuvre_col} IN (SELECT oeuvre_id FROM role_oeuvre_access WHERE role_id = :ctx_abo3))";
+    }
+    if ($role_id === ROLE_ABO4) {
+        $params[':ctx_abo3'] = ROLE_ABO3;
+        $params[':ctx_abo4'] = ROLE_ABO4;
+        return " AND ({$oeuvre_col} NOT IN ({$reserved})"
+             . " OR {$oeuvre_col} IN (SELECT oeuvre_id FROM role_oeuvre_access WHERE role_id IN (:ctx_abo3, :ctx_abo4)))";
+    }
+    // Visiteur (et tout rôle non privilégié) : œuvres publiques uniquement.
+    return " AND {$oeuvre_col} NOT IN ({$reserved})";
+}
+
+/**
+ * R8 — Rights filter per oeuvre, appended to every SELECT on citations.
+ * corpus.read_all → no restriction. Otherwise: Publiée only + œuvre visibility.
  */
 function dal_oeuvre_access_clause(string $oeuvre_col, array $ctx, array &$params, string $etat_col = 'c.etat_id'): string
 {
-    $role_id = $ctx['role_id'] ?? ROLE_VISITEUR;
-
-    if (in_array($role_id, [ROLE_ADMIN, ROLE_EDITEUR], true)) {
+    if (in_array('corpus.read_all', $ctx['permissions'] ?? [], true)) {
         return '';
     }
-
-    if ($role_id === ROLE_VISITEUR) {
-        return " AND {$etat_col} = " . ETAT_PUBLIEE;
-    }
-
-    // Abo3 / Abo4
-    $params[':ctx_role_id'] = $role_id;
-    return " AND {$oeuvre_col} IN (SELECT oeuvre_id FROM role_oeuvre_access WHERE role_id = :ctx_role_id)"
-         . " AND {$etat_col} = " . ETAT_PUBLIEE;
+    return " AND {$etat_col} = " . ETAT_PUBLIEE . dal_oeuvre_visibility_clause($oeuvre_col, $ctx, $params);
 }
 
 /**

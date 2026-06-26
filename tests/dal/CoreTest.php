@@ -101,8 +101,8 @@ final class CoreTest extends TestCase
         $clause = dal_oeuvre_access_clause('c.oeuvre_id', $ctx, $params);
         $this->assertStringContainsString('role_oeuvre_access', $clause);
         $this->assertStringContainsString('etat_id = ' . ETAT_PUBLIEE, $clause);
-        $this->assertArrayHasKey(':ctx_role_id', $params);
-        $this->assertSame(ROLE_ABO3, $params[':ctx_role_id']);
+        $this->assertArrayHasKey(':ctx_abo3', $params);
+        $this->assertSame(ROLE_ABO3, $params[':ctx_abo3']);
     }
 
     // R9 — Keyset pagination

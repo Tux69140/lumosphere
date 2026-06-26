@@ -181,46 +181,51 @@ final class CitationsTest extends TestCase
         $this->assertSame($pub_id, (int) $r['data']['items'][0]['id']);
     }
 
-    public function test_find_citations_abo3_sees_only_granted_oeuvres(): void
+    public function test_find_citations_cumulative_access(): void
     {
-        $ctx = create_test_ctx(ROLE_EDITEUR);
-        // Second oeuvre
-        $r = dal_create_oeuvre($this->pdo, $ctx, ['nom' => 'Œuvre 2', 'auteur_id' => $this->auteur_id]);
-        $oeuvre2_id = $r['data']['id'];
-
-        // Citation in oeuvre 1 (published)
-        $r1 = dal_create_citation($this->pdo, $ctx, [
-            'contenu' => 'Oeuvre 1',
-            'oeuvre_id' => $this->oeuvre_id,
-            'theme_id' => $this->theme_id,
-            'date_entree' => '2026-01-01',
-        ]);
+        $ctx_ed = create_test_ctx(ROLE_EDITEUR);
         $ctx_admin = create_test_ctx(ROLE_ADMIN);
-        $kw = dal_create_keyword($this->pdo, $ctx_admin, 'abo3test');
-        dal_set_citation_keywords($this->pdo, $ctx, $r1['data']['id'], [$kw['data']['id']]);
-        dal_update_citation($this->pdo, $ctx, $r1['data']['id'], ['etat_id' => ETAT_PUBLIEE]);
 
-        // Citation in oeuvre 2 (published)
-        $r2 = dal_create_citation($this->pdo, $ctx, [
-            'contenu' => 'Oeuvre 2',
-            'oeuvre_id' => $oeuvre2_id,
-            'theme_id' => $this->theme_id,
-            'date_entree' => '2026-01-01',
-        ]);
-        $kw2 = dal_create_keyword($this->pdo, $ctx_admin, 'abo3test2');
-        dal_set_citation_keywords($this->pdo, $ctx, $r2['data']['id'], [$kw2['data']['id']]);
-        dal_update_citation($this->pdo, $ctx, $r2['data']['id'], ['etat_id' => ETAT_PUBLIEE]);
+        // Helper local: crée une citation Publiée dans une œuvre.
+        $publish = function (int $oeuvre_id, string $contenu) use ($ctx_ed, $ctx_admin): int {
+            $c = dal_create_citation($this->pdo, $ctx_ed, [
+                'contenu' => $contenu, 'oeuvre_id' => $oeuvre_id,
+                'theme_id' => $this->theme_id, 'date_entree' => '2026-01-01',
+            ]);
+            $kw = dal_create_keyword($this->pdo, $ctx_admin, 'kw_' . $contenu);
+            dal_set_citation_keywords($this->pdo, $ctx_ed, $c['data']['id'], [$kw['data']['id']]);
+            dal_update_citation($this->pdo, $ctx_ed, $c['data']['id'], ['etat_id' => ETAT_PUBLIEE]);
+            return (int) $c['data']['id'];
+        };
 
-        // Grant Abo3 access to oeuvre 1 only
-        $this->pdo->prepare('INSERT INTO role_oeuvre_access (role_id, oeuvre_id) VALUES (:rid, :oid)')
-            ->execute(['rid' => ROLE_ABO3, 'oid' => $this->oeuvre_id]);
+        // oeuvre1 = publique (setUp). oeuvre2 = réservée Abo3. oeuvre3 = réservée Abo4.
+        $oeuvre2 = dal_create_oeuvre($this->pdo, $ctx_ed, ['nom' => 'Œuvre Abo3', 'auteur_id' => $this->auteur_id])['data']['id'];
+        $oeuvre3 = dal_create_oeuvre($this->pdo, $ctx_ed, ['nom' => 'Œuvre Abo4', 'auteur_id' => $this->auteur_id])['data']['id'];
+        $ins = $this->pdo->prepare('INSERT INTO role_oeuvre_access (role_id, oeuvre_id) VALUES (:r, :o)');
+        $ins->execute(['r' => ROLE_ABO3, 'o' => $oeuvre2]);
+        $ins->execute(['r' => ROLE_ABO4, 'o' => $oeuvre3]);
 
-        // Abo3 should see only oeuvre 1
-        $ctx_abo3 = create_test_ctx(ROLE_ABO3, 10);
-        $r = dal_find_citations($this->pdo, $ctx_abo3);
-        $this->assertSame('ok', $r['status']);
-        $this->assertCount(1, $r['data']['items']);
-        $this->assertSame((int) $r1['data']['id'], (int) $r['data']['items'][0]['id']);
+        $publish($this->oeuvre_id, 'pub');
+        $publish($oeuvre2, 'abo3');
+        $publish($oeuvre3, 'abo4');
+
+        $ids = function (array $ctx): array {
+            $r = dal_find_citations($this->pdo, $ctx);
+            return array_map(static fn ($i) => (int) $i['oeuvre_id'], $r['data']['items']);
+        };
+
+        // Visiteur : seulement l'œuvre publique.
+        $this->assertSame([$this->oeuvre_id], array_values(array_unique($ids(create_test_ctx(ROLE_VISITEUR, null)))));
+        // Abo3 : publique + réservée Abo3, pas Abo4.
+        $abo3 = $ids(create_test_ctx(ROLE_ABO3, 10));
+        $this->assertContains($this->oeuvre_id, $abo3);
+        $this->assertContains($oeuvre2, $abo3);
+        $this->assertNotContains($oeuvre3, $abo3);
+        // Abo4 : les trois.
+        $abo4 = $ids(create_test_ctx(ROLE_ABO4, 11));
+        $this->assertContains($this->oeuvre_id, $abo4);
+        $this->assertContains($oeuvre2, $abo4);
+        $this->assertContains($oeuvre3, $abo4);
     }
 
     public function test_find_citations_editeur_sees_all(): void

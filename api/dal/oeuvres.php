@@ -15,12 +15,8 @@ function dal_find_oeuvres(PDO $pdo, array $ctx, ?int $auteur_id = null): array
         $params['auteur_id'] = $auteur_id;
     }
 
-    // R8 — Abo3/Abo4 see only granted oeuvres
-    $role_id = $ctx['role_id'] ?? ROLE_VISITEUR;
-    if (in_array($role_id, [ROLE_ABO3, ROLE_ABO4], true)) {
-        $where .= ' AND o.id IN (SELECT oeuvre_id FROM role_oeuvre_access WHERE role_id = :ctx_role_id)';
-        $params['ctx_role_id'] = $role_id;
-    }
+    // R8 — Visibilité œuvre cohérente avec les citations (publiques + réservées au palier).
+    $where .= dal_oeuvre_visibility_clause('o.id', $ctx, $params);
 
     $sql = "SELECT o.id, o.auteur_id, o.nom, o.abreviation, o.url, o.ref_libraire, o.description,
                    o.created_at, o.updated_at, a.nom AS auteur_nom
