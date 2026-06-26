@@ -33,7 +33,7 @@ function RolePanel({
   }
 
   return (
-    <section data-testid={`panel-${label.toLowerCase()}`} className="mb-6">
+    <section data-testid={`panel-${roleId}`} className="mb-6">
       <h2 className="mb-2 font-semibold text-(--color-text-primary)">{label}</h2>
       <div className="max-h-64 overflow-y-auto rounded-md border border-(--color-border) p-3">
         {oeuvres.map((o) => (
@@ -74,8 +74,8 @@ export function RolesAccessPage() {
         Cochez les œuvres réservées à chaque rôle abonné. Les œuvres non cochées restent publiques
         (visibles des visiteurs).
       </p>
-      <RolePanel roleId={ROLE_ABO3} label="Abo3" oeuvres={oeuvres} />
-      <RolePanel roleId={ROLE_ABO4} label="Abo4" oeuvres={oeuvres} />
+      <RolePanel roleId={ROLE_ABO3} label="Abonnés 3" oeuvres={oeuvres} />
+      <RolePanel roleId={ROLE_ABO4} label="Abonnés 4" oeuvres={oeuvres} />
       <p className="text-xs text-(--color-text-placeholder)">
         Visiteur : voit tout le contenu public. Éditeur et Administrateur : voient tout.
       </p>

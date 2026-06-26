@@ -30,11 +30,11 @@ beforeEach(() => vi.clearAllMocks())
 describe('RolesAccessPage', () => {
   it("coche l'état initial et enregistre les œuvres réservées d'Abo3", async () => {
     render(<RolesAccessPage />)
-    const abo3Panel = screen.getByTestId('panel-abo3')
+    const abo3Panel = screen.getByTestId('panel-4')
     await waitFor(() => expect(within(abo3Panel).getByLabelText('Œuvre A')).toBeChecked())
     // Réserver aussi l'œuvre B dans le panneau Abo3 puis enregistrer.
     await userEvent.click(within(abo3Panel).getByLabelText('Œuvre B'))
-    await userEvent.click(within(abo3Panel).getByRole('button', { name: /enregistrer abo3/i }))
+    await userEvent.click(within(abo3Panel).getByRole('button', { name: /enregistrer abonnés 3/i }))
     await waitFor(() =>
       expect(apiClient.setRoleOeuvres).toHaveBeenCalledWith(4, expect.arrayContaining([1, 2])),
     )
