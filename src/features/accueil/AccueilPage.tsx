@@ -2,16 +2,24 @@
 import { useEffect, useState } from 'react'
 import { apiClient } from '@/services/api'
 import { CitationCard } from '@/components/CitationCard'
+import { useAuth } from '@/hooks/useAuth'
+
+const ADMIN_ROLES = [1, 2] // Administrateur, Éditeur
 
 type Citation = {
   id: number
   contenu: string
+  oeuvre_nom: string | null
   auteur_nom: string | null
   theme_nom: string | null
+  notes: string | null
   mots_cles: { id: number; mot: string }[]
 }
 
 export function AccueilPage() {
+  const { user } = useAuth()
+  const canEdit = user ? ADMIN_ROLES.includes(user.role_id) : false
+
   const [citations, setCitations] = useState<Citation[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -55,9 +63,12 @@ export function AccueilPage() {
           <CitationCard
             key={c.id}
             contenu={c.contenu}
-            auteur_nom={c.auteur_nom}
+            oeuvre_nom={c.oeuvre_nom}
             theme_nom={c.theme_nom}
+            auteur_nom={c.auteur_nom}
+            notes={c.notes}
             mots_cles={(c.mots_cles ?? []).map((k) => k.mot)}
+            canEdit={canEdit}
           />
         ))}
       </div>
