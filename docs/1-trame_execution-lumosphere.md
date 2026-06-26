@@ -39,7 +39,7 @@
 | ~T06~ | Dev §I.4 | DAL MySQL PDO — module central + règles métier (droits, soft-delete, verrous, keyset) | T01, T03 |
 | ~T07~ | Mig §6.2 | Auth serveur PHP : POST /auth/login, /auth/logout, session httpOnly/Secure/SameSite, CSRF, rate-limit | T04, T06 |
 | T08 | Dev §I.7 | Squelette React : layout, routing, thème clair/sombre, charte Phosphor, services web (fetch + credentials) | T05 |
-| T09 | Dev §II.1 | Écran login + redirection post-auth | T07, T08 |
+| ~T09~ | Dev §II.1 | Écran login + redirection post-auth | T07, T08 |
 
 **✓ VALIDATION** : un éditeur se connecte via le navigateur → session PHP active, cookie sécurisé visible.
 
@@ -52,8 +52,8 @@
 | ~T10~ | Dev §I.3 + §I.7 | Seed données de test corpus (citations + auteurs + œuvres) | T06 |
 | ~T11~ | Dev §III.4 complément | Config FULLTEXT : `BOOLEAN MODE`, `innodb_ft_min_token_size=2`, stopwords FR, tri par défaut | T10 |
 | ~T12~ | Dev §II.1 | Vue bibliothèque lecture : liste de cards (titre, auteur, extrait Markdown rendu, thème, état) | T08, T10 |
-| T13 | Dev §II.1 | Recherche basique : fulltext + filtres thème/œuvre/auteur | T11, T12 |
-| T14 | Dev §III.1 + §I.3 complément | Droits rôle/œuvre appliqués dans la DAL (matrice RBAC) | T06, T10 |
+| ~T13~ | Dev §II.1 | Recherche basique : fulltext + filtres thème/œuvre/auteur | T11, T12 |
+| ~T14~ | Dev §III.1 + §I.3 complément | Droits rôle/œuvre appliqués dans la DAL (matrice RBAC) | T06, T10 |
 
 **✓ VALIDATION** : éditeur voit et filtre les citations. Abo3 ne voit que ses œuvres autorisées. Recherche accent-insensible fonctionnelle.
 

@@ -69,8 +69,12 @@ function del<T>(path: string): Promise<ApiResponse<T>> {
   return request<T>(path, { method: 'DELETE' })
 }
 
-function fetchCsrf() {
-  return get<{ csrf_token: string }>('auth/csrf')
+async function fetchCsrf() {
+  const result = await get<{ csrf_token: string }>('auth/csrf')
+  if (result.status === 'ok' && result.data?.csrf_token) {
+    csrfToken = result.data.csrf_token
+  }
+  return result
 }
 
 export const apiClient = {

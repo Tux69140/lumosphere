@@ -111,10 +111,24 @@ if (in_array($_SERVER['REQUEST_METHOD'], ['POST', 'PUT', 'DELETE'], true)) {
 }
 
 // Build user context
+// Pour les visiteurs non connectés, charger les permissions du rôle Visiteur depuis la DB.
+if (!isset($_SESSION['permissions'])) {
+    $vp_stmt = $pdo->prepare(
+        'SELECT p.code FROM permissions p
+         JOIN role_permissions rp ON rp.permission_id = p.id
+         WHERE rp.role_id = :role_id'
+    );
+    $vp_stmt->execute(['role_id' => ROLE_VISITEUR]);
+    $visitor_permissions = $vp_stmt->fetchAll(PDO::FETCH_COLUMN);
+    if (!$visitor_permissions) {
+        $visitor_permissions = ['corpus.read']; // fallback si le rôle Visiteur n'a aucune permission
+    }
+}
+
 $ctx = [
     'user_id'         => $_SESSION['user_id'] ?? null,
     'role_id'         => $_SESSION['role_id'] ?? ROLE_VISITEUR,
-    'permissions'     => $_SESSION['permissions'] ?? ['corpus.read'],
+    'permissions'     => $_SESSION['permissions'] ?? $visitor_permissions,
     'include_deleted' => false,
 ];
 

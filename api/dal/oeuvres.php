@@ -15,7 +15,6 @@ function dal_find_oeuvres(PDO $pdo, array $ctx, ?int $auteur_id = null): array
         $params['auteur_id'] = $auteur_id;
     }
 
-    // R8 — Visibilité œuvre cohérente avec les citations (publiques + réservées au palier).
     $where .= dal_oeuvre_visibility_clause('o.id', $ctx, $params);
 
     $sql = "SELECT o.id, o.auteur_id, o.nom, o.abreviation, o.url, o.ref_libraire, o.description,

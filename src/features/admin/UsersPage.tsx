@@ -48,7 +48,7 @@ export function UsersPage() {
             setEditing(null)
             setModalOpen(true)
           }}
-          className="flex items-center gap-1.5 rounded-md bg-(--color-accent) px-3 py-2 text-sm text-white"
+          className="flex items-center gap-1.5 rounded-md bg-(--color-action) px-3 py-2 text-sm text-(--color-action-text) hover:bg-(--color-action-hover)"
         >
           <Plus size={16} /> Ajouter un utilisateur
         </button>

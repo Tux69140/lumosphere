@@ -1,5 +1,6 @@
 // src/features/accueil/AccueilPage.tsx
 import { CitationCard } from '@/components/CitationCard'
+import { ResultsInfoBar } from '@/components/ResultsInfoBar'
 import { useAuth } from '@/hooks/useAuth'
 import { useCorpusSearch } from '@/features/corpus/useCorpusSearch'
 
@@ -12,13 +13,7 @@ export function AccueilPage() {
 
   return (
     <div>
-      <div className="mb-4 flex items-center justify-between">
-        <span className="text-sm text-(--color-text-secondary)">
-          {loading
-            ? 'Recherche…'
-            : `${items.length} résultat${items.length !== 1 ? 's' : ''}${hasMore ? '+' : ''}`}
-        </span>
-      </div>
+      <ResultsInfoBar />
 
       {error && (
         <div className="mb-4 rounded-md bg-(--color-danger-bg) p-3 text-sm text-(--color-danger-text)">
@@ -30,7 +25,7 @@ export function AccueilPage() {
         <p className="text-sm text-(--color-text-placeholder)">Aucune entrée ne correspond.</p>
       )}
 
-      <div className="flex flex-col gap-4">
+      <div className="mt-4 flex flex-col gap-4">
         {items.map((c) => (
           <CitationCard
             key={c.id}

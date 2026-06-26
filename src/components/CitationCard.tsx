@@ -68,7 +68,7 @@ export function CitationCard({
           {mots_cles.map((mc) => (
             <span
               key={mc}
-              className="rounded-full bg-(--color-bg-sidebar) px-2 py-1 text-xs text-(--color-text-secondary)"
+              className="rounded-full bg-(--color-tag-bg) px-2 py-1 text-xs text-(--color-tag-text)"
             >
               {mc}
             </span>

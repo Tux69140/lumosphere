@@ -1,0 +1,217 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-06-26T13:24:51Z",
+  "title": "Design System: Lumosphère",
+  "extensions": {
+    "colorMeta": {
+      "action": {
+        "role": "primary",
+        "displayName": "Vert Éditorial",
+        "canonical": "#2b4f35",
+        "tonalRamp": ["#0a1a10", "#142a1c", "#1c3c27", "#2b4f35", "#3d6b49", "#5a8a65", "#82ad8e", "#b5ceba", "#e0ede3", "#f4f9f5"]
+      },
+      "accent": {
+        "role": "accent",
+        "displayName": "Or Parchemin",
+        "canonical": "#d3b67b",
+        "tonalRamp": ["#3d2e10", "#5c451a", "#7a5c26", "#9a7535", "#b99350", "#d3b67b", "#e2cda0", "#eddfc0", "#f5eeda", "#faf7ef"]
+      },
+      "action-hover": {
+        "role": "secondary",
+        "displayName": "Indigo Marqueur",
+        "canonical": "#4338ca",
+        "tonalRamp": ["#0f0d3d", "#1a185c", "#28239e", "#3730a3", "#4338ca", "#6366f1", "#818cf8", "#a5b4fc", "#c7d2fe", "#e0e7ff"]
+      },
+      "bg-page": {
+        "role": "neutral",
+        "displayName": "Blanc Végétal",
+        "canonical": "#f8fefc",
+        "tonalRamp": ["#0f1e1a", "#1a3028", "#2a4a3c", "#3d6456", "#557e70", "#7aa592", "#a5c9bb", "#d0e6e0", "#ecf7f3", "#f8fefc"]
+      },
+      "bg-card": {
+        "role": "neutral",
+        "displayName": "Blanc Pur",
+        "canonical": "#ffffff",
+        "tonalRamp": ["#1a1a1a", "#333333", "#555555", "#777777", "#999999", "#bbbbbb", "#d5d5d5", "#ebebeb", "#f5f5f5", "#ffffff"]
+      },
+      "text-primary": {
+        "role": "neutral",
+        "displayName": "Encre Chaude",
+        "canonical": "#3d3a35",
+        "tonalRamp": ["#0f0e0c", "#1f1e1a", "#2e2c28", "#3d3a35", "#524f49", "#6e6b64", "#918e87", "#b8b5af", "#dddbd8", "#f2f1f0"]
+      },
+      "text-secondary": {
+        "role": "neutral",
+        "displayName": "Étain Tiède",
+        "canonical": "#706b63",
+        "tonalRamp": ["#1c1a17", "#2d2b27", "#3e3c38", "#514e49", "#706b63", "#908b83", "#aaa5a0", "#c4c0bb", "#dbd9d6", "#f0efed"]
+      },
+      "border": {
+        "role": "neutral",
+        "displayName": "Voile Argenté",
+        "canonical": "#e2e8f0",
+        "tonalRamp": ["#1e2631", "#2d3a4a", "#3e5063", "#526880", "#6e859e", "#94a8bc", "#b8c9d8", "#d4e0eb", "#e2e8f0", "#f0f4f8"]
+      }
+    },
+    "typographyMeta": {
+      "display":  { "displayName": "Display",  "purpose": "Titres de pages, h1 dans les vues admin et corpus." },
+      "headline": { "displayName": "Headline", "purpose": "Sous-titres de sections et titres alternatifs de pages." },
+      "title":    { "displayName": "Title",    "purpose": "Titres de panneaux, noms de rôles, intitulés de groupes." },
+      "body":     { "displayName": "Body",     "purpose": "Tout le contenu de l'interface. Max 65–75ch sur les colonnes de texte." },
+      "label":    { "displayName": "Label",    "purpose": "Métadonnées, mots-clés, en-têtes de groupes en petites capitales dans l'admin." }
+    },
+    "shadows": [
+      {
+        "name": "ambient-low",
+        "value": "0 1px 2px 0 rgb(0 0 0 / 0.05)",
+        "purpose": "État de repos des cartes de citations (shadow-sm). Présence subtile."
+      },
+      {
+        "name": "ambient-mid",
+        "value": "0 4px 6px -1px rgb(0 0 0 / 0.10), 0 2px 4px -2px rgb(0 0 0 / 0.10)",
+        "purpose": "État hover des cartes de citations (shadow-md). Élévation de feedback."
+      }
+    ],
+    "motion": [
+      {
+        "name": "transition-colors",
+        "value": "color 150ms ease-out, background-color 150ms ease-out, border-color 150ms ease-out",
+        "purpose": "Tous les éléments interactifs : boutons, liens, nav items. Feedback immédiat."
+      },
+      {
+        "name": "transition-shadow",
+        "value": "box-shadow 200ms ease-out",
+        "purpose": "Cartes de citations : lift au hover."
+      }
+    ],
+    "breakpoints": [
+      { "name": "md", "value": "768px", "purpose": "Header mobile → desktop nav" },
+      { "name": "lg", "value": "1024px", "purpose": "Layout sidebar + contenu principal" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Button Primary",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Action primaire. Couleur Vert Éditorial, hover vers Indigo Marqueur.",
+      "html": "<button class=\"ds-btn-primary\">Enregistrer</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; gap: 6px; background-color: #2b4f35; color: #ffffff; border: none; border-radius: 6px; padding: 8px 16px; font-family: Inter, system-ui, sans-serif; font-size: 0.875rem; font-weight: 500; line-height: 1.4; cursor: pointer; transition: background-color 150ms ease-out; } .ds-btn-primary:hover { background-color: #4338ca; } .ds-btn-primary:focus-visible { outline: 2px solid #2b4f35; outline-offset: 2px; } .ds-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }"
+    },
+    {
+      "name": "Button Accent",
+      "kind": "button",
+      "refersTo": "button-accent",
+      "description": "Action secondaire dans les panneaux de configuration. Or Parchemin.",
+      "html": "<button class=\"ds-btn-accent\">Enregistrer les droits</button>",
+      "css": ".ds-btn-accent { display: inline-flex; align-items: center; gap: 6px; background-color: #d3b67b; color: #ffffff; border: none; border-radius: 6px; padding: 8px 12px; font-family: Inter, system-ui, sans-serif; font-size: 0.875rem; font-weight: 500; cursor: pointer; transition: background-color 150ms ease-out; } .ds-btn-accent:hover { background-color: #b89558; } .ds-btn-accent:focus-visible { outline: 2px solid #d3b67b; outline-offset: 2px; } .ds-btn-accent:disabled { opacity: 0.5; cursor: not-allowed; }"
+    },
+    {
+      "name": "Button Ghost",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Navigation, liens dans le header, actions secondaires discrètes.",
+      "html": "<button class=\"ds-btn-ghost\">Admin</button>",
+      "css": ".ds-btn-ghost { display: inline-flex; align-items: center; gap: 6px; background-color: transparent; color: #3d3a35; border: none; border-radius: 6px; padding: 8px 12px; font-family: Inter, system-ui, sans-serif; font-size: 0.875rem; font-weight: 400; cursor: pointer; transition: background-color 150ms ease-out; } .ds-btn-ghost:hover { background-color: #fff4f4; } .ds-btn-ghost:focus-visible { outline: 2px solid #2b4f35; outline-offset: 2px; }"
+    },
+    {
+      "name": "Citation Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Carte de citation — composant signature. Élévation dynamique au hover.",
+      "html": "<article class=\"ds-citation-card\"><div class=\"ds-citation-card__header\"><span class=\"ds-citation-card__theme\"><span class=\"ds-citation-card__theme-label\">Thème :&nbsp;</span>Philosophie</span><span class=\"ds-citation-card__oeuvre\">Le Monde comme volonté</span></div><div class=\"ds-citation-card__content\">« La vie oscille, comme un pendule, de droite à gauche, de la souffrance à l'ennui. »</div><p class=\"ds-citation-card__auteur\">— Schopenhauer</p><div class=\"ds-citation-card__footer\"><span class=\"ds-tag-kw\">philosophie</span><span class=\"ds-tag-kw\">existence</span></div></article>",
+      "css": ".ds-citation-card { background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05); transition: box-shadow 200ms ease-out; } .ds-citation-card:hover { box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.10), 0 2px 4px -2px rgb(0 0 0 / 0.10); } .ds-citation-card__header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 12px; } .ds-citation-card__theme { flex: 1; font-size: 0.75rem; color: #706b63; } .ds-citation-card__theme-label { font-weight: 500; color: #3d3a35; } .ds-citation-card__oeuvre { flex-shrink: 0; font-size: 0.875rem; font-weight: 500; color: #d3b67b; } .ds-citation-card__content { font-size: 0.875rem; color: #3d3a35; line-height: 1.6; } .ds-citation-card__auteur { margin-top: 8px; font-size: 0.75rem; font-weight: 500; color: #706b63; } .ds-citation-card__footer { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid #f1f5f9; } .ds-tag-kw { background-color: #f8fafc; color: #706b63; border-radius: 9999px; padding: 4px 8px; font-size: 0.75rem; font-family: Inter, system-ui, sans-serif; }"
+    },
+    {
+      "name": "Input Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Champ de formulaire standard.",
+      "html": "<div class=\"ds-field\"><label class=\"ds-field__label\" for=\"search\">Rechercher</label><input class=\"ds-field__input\" type=\"text\" id=\"search\" placeholder=\"Titre, auteur, thème…\" /></div>",
+      "css": ".ds-field { display: flex; flex-direction: column; gap: 4px; } .ds-field__label { font-family: Inter, system-ui, sans-serif; font-size: 0.875rem; font-weight: 500; color: #3d3a35; } .ds-field__input { background-color: #ffffff; color: #3d3a35; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px 12px; font-family: Inter, system-ui, sans-serif; font-size: 0.875rem; line-height: 1.4; transition: border-color 150ms ease-out, box-shadow 150ms ease-out; outline: none; } .ds-field__input::placeholder { color: #64748b; } .ds-field__input:focus-visible { border-color: #2b4f35; box-shadow: 0 0 0 3px rgb(43 79 53 / 0.15); } .ds-field__input:disabled { opacity: 0.5; cursor: not-allowed; }"
+    },
+    {
+      "name": "Tag — Filter",
+      "kind": "chip",
+      "refersTo": "tag-filter",
+      "description": "Tag de filtre actif dans la sidebar. Fond mauve givré, texte indigo.",
+      "html": "<span class=\"ds-tag-filter\">Philosophie<button class=\"ds-tag-filter__remove\" aria-label=\"Supprimer le filtre Philosophie\"><svg width=\"12\" height=\"12\" viewBox=\"0 0 12 12\" fill=\"none\"><path d=\"M9 3L3 9M3 3l6 6\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\"/></svg></button></span>",
+      "css": ".ds-tag-filter { display: inline-flex; align-items: center; gap: 4px; background-color: #ececff; color: #4338ca; border-radius: 9999px; padding: 2px 8px; font-family: Inter, system-ui, sans-serif; font-size: 0.75rem; font-weight: 500; } .ds-tag-filter__remove { display: inline-flex; align-items: center; justify-content: center; background: none; border: none; cursor: pointer; color: #4338ca; padding: 0; opacity: 0.7; transition: opacity 150ms; } .ds-tag-filter__remove:hover { opacity: 1; }"
+    },
+    {
+      "name": "Nav Item — Admin",
+      "kind": "nav",
+      "refersTo": "button-ghost",
+      "description": "Lien de navigation dans la sidebar admin. État actif en fond crème Accent-bg.",
+      "html": "<nav class=\"ds-admin-nav\"><a class=\"ds-admin-nav__item ds-admin-nav__item--active\" href=\"#\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 256 256\" fill=\"currentColor\"><path d=\"M230.9 220.1C223.8 203.7 207 192 188 192H68C49 192 32.2 203.7 25.1 220.1a8 8 0 0 0 14.6 6.4C44.8 214.3 55.8 208 68 208h120c12.2 0 23.2 6.3 28.3 18.5a8 8 0 0 0 14.6-6.4ZM128 184a72 72 0 1 0-72-72 72.1 72.1 0 0 0 72 72Zm0-128a56 56 0 1 1-56 56 56.1 56.1 0 0 1 56-56Z\"/></svg>Utilisateurs</a><a class=\"ds-admin-nav__item\" href=\"#\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 256 256\" fill=\"currentColor\"><path d=\"M247.5 86.6a8 8 0 0 0-5.5-5.5L189 65.5 172.4 12.5a8 8 0 0 0-15.2 0L141.6 65.5 88.1 81.1a8 8 0 0 0 0 15.2l53.5 15.6L157.2 165a8 8 0 0 0 15.2 0l15.6-53.1 53.5-15.6a8 8 0 0 0 5.5-9.7Z\"/></svg>Rôles et droits</a></nav>",
+      "css": ".ds-admin-nav { display: flex; flex-direction: column; gap: 2px; padding: 8px; } .ds-admin-nav__item { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 6px; font-family: Inter, system-ui, sans-serif; font-size: 0.875rem; font-weight: 400; color: #706b63; text-decoration: none; transition: background-color 150ms ease-out, color 150ms ease-out; } .ds-admin-nav__item:hover { background-color: #fff4f4; color: #3d3a35; } .ds-admin-nav__item--active { background-color: #ffffdf; color: #3d3a35; font-weight: 500; } .ds-admin-nav__item--active:hover { background-color: #ffffdf; }"
+    },
+    {
+      "name": "Permission Group Header",
+      "kind": "custom",
+      "refersTo": null,
+      "description": "En-tête de groupe de permissions dans l'admin Rôles et droits. Signature typographique éditorial-admin.",
+      "html": "<div class=\"ds-perm-group\"><div class=\"ds-perm-group__header\"><span class=\"ds-perm-group__label\">Corpus</span></div><div class=\"ds-perm-group__items\"><label class=\"ds-perm-item\"><input type=\"checkbox\" checked /> Lire les publications</label><label class=\"ds-perm-item\"><input type=\"checkbox\" /> Voir tout le corpus</label><label class=\"ds-perm-item\"><input type=\"checkbox\" /> Créer et modifier</label></div></div>",
+      "css": ".ds-perm-group { margin-bottom: 20px; } .ds-perm-group__header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; } .ds-perm-group__label { font-family: Inter, system-ui, sans-serif; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.075em; text-transform: uppercase; color: #64748b; white-space: nowrap; } .ds-perm-group__header::after { content: ''; flex: 1; height: 1px; background-color: #e2e8f0; } .ds-perm-group__items { display: flex; flex-wrap: wrap; gap: 4px 16px; } .ds-perm-item { display: flex; align-items: center; gap: 8px; font-family: Inter, system-ui, sans-serif; font-size: 0.875rem; color: #3d3a35; cursor: pointer; padding: 3px 0; } .ds-perm-item input[type='checkbox'] { accent-color: #2b4f35; width: 15px; height: 15px; cursor: pointer; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "La Lumosphère : Index interactif des ressources proposées par Lulumineuse",
+    "overview": "Lumosphère est une interface de travail au service d'un corpus littéraire vivant. Sa personnalité visuelle est celle d'une revue indépendante de qualité : soignée sans être institutionnelle, dense sans être surchargée. Le design ne se montre pas — il s'efface pour laisser les citations occuper tout l'espace qu'elles méritent.\n\nLa chaleur du système naît de deux couleurs seulement : un Or Parchemin qui marque ce qui compte, et un Vert Éditorial sombre pour toutes les actions. Le reste est de l'encre sur du papier — fond quasi-blanc légèrement teinté, textes bruns-chauds, bordures argentées discrètes.\n\nCe système refuse explicitement : le blanc aseptisé SaaS, le gris institutionnel des archives académiques, les grilles de KPI analytics, et les hero sections marketing.",
+    "keyCharacteristics": [
+      "Économie chromatique : deux couleurs-clés (or + vert), le reste en neutres chauds",
+      "Typographie unique (Inter) déclinée en poids et tailles — pas de serif, pas de display extravagant",
+      "Élévation réservée aux cartes de citations ; l'UI chrome reste plate",
+      "Deux modes (clair/sombre/auto) avec des palettes distinctes, pas de simples inversions",
+      "Mode administrateur visuellement distinct dans sa densité, mais dans la même charte"
+    ],
+    "rules": [
+      {
+        "name": "La Règle du Un Dix Pourcent",
+        "body": "L'Or Parchemin apparaît sur ≤ 10 % de n'importe quel écran. Sa rareté fait sa valeur. Utiliser l'or pour décorer détruit l'effet.",
+        "section": "colors"
+      },
+      {
+        "name": "La Règle Anti-Gris Froid",
+        "body": "Aucun gris pur (#888888) dans le texte ni dans les fonds. Chaque neutre tire vers le brun chaud (textes) ou vers le vert froid très léger (fonds).",
+        "section": "colors"
+      },
+      {
+        "name": "La Règle Mono-Famille",
+        "body": "Une seule famille typographique dans toute l'application. Jamais d'introduction d'un serif ou d'un monospace pour l'atmosphère.",
+        "section": "typography"
+      },
+      {
+        "name": "La Règle Anti-Fluid",
+        "body": "Pas de clamp() sur les titres d'interface. La typographie product est fixe en rem.",
+        "section": "typography"
+      },
+      {
+        "name": "La Règle du Chrome Plat",
+        "body": "Tout l'UI chrome (header, sidebar, panneaux, modales, formulaires) est rendu plat avec des bordures. Les ombres sont réservées au contenu du corpus.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Utiliser l'Or Parchemin (#d3b67b) exclusivement pour les éléments qui méritent d'être remarqués : titres d'œuvres, sélections actives, icône de logo.",
+      "Conserver transition-colors 150ms sur tous les éléments interactifs.",
+      "Vérifier les contrastes texte/fond à chaque nouveau composant : ≥ 4,5:1 pour le texte courant.",
+      "Utiliser shadow-sm → shadow-md au hover sur les CitationCards uniquement.",
+      "Utiliser les en-têtes de groupes en uppercase tracking-widest text-xs dans l'admin pour structurer les panneaux denses.",
+      "Respecter les deux familles de tags : mauve pour les filtres actifs, givre pour les mots-clés de corpus.",
+      "Utiliser text-wrap: balance sur les h1 et h2."
+    ],
+    "donts": [
+      "Pas de fond crème, sable, parchemin ou ivoire (oklch L 0.84-0.97, C < 0.06, hue 40-100). Le fond de page est Blanc Végétal — teinté de vert froid, pas de brun chaud.",
+      "Pas de SaaS blanc aseptisé (Notion/Linear-like), ni de violet/bleu startup comme couleur primaire en mode clair.",
+      "Pas d'ombres sur le header, la sidebar, les panneaux admin ou les formulaires.",
+      "Pas de border-left: 3px solid comme accent décoratif sur des cartes ou des listes.",
+      "Pas de gradient text (background-clip: text). L'emphase passe par le poids ou la couleur solide.",
+      "Pas de gris institutionnel pur (#888888, #999999) dans les textes.",
+      "Pas de polices en mode display (titres >24px) dans les boutons, labels ou cellules de tableaux.",
+      "Ne pas utiliser modal comme première réponse à un formulaire complexe.",
+      "Pas de grilles de cartes identiques (même hauteur, même icône, même structure répétée).",
+      "Pas de hex directs dans les classes Tailwind pour les couleurs sémantiques — utiliser uniquement les tokens CSS var(--color-*)."
+    ]
+  }
+}

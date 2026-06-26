@@ -1,0 +1,87 @@
+import { X } from '@phosphor-icons/react'
+import { useCorpusSearch } from '@/features/corpus/useCorpusSearch'
+import type { ThemeNode } from '@/features/corpus/types'
+
+function findThemeName(tree: ThemeNode[], id: number): string | undefined {
+  for (const node of tree) {
+    if (node.id === id) return node.nom
+    for (const child of node.children) {
+      if (child.id === id) return child.nom
+    }
+  }
+}
+
+function FilterPill({ label, onRemove }: { label: string; onRemove: () => void }) {
+  return (
+    <span className="flex items-center rounded-full bg-(--color-tag-bg) py-1 pl-2.5 pr-1 text-xs font-medium text-(--color-tag-text)">
+      {label}
+      <button
+        onClick={onRemove}
+        className="ml-1.5 rounded-full p-0.5 hover:bg-(--color-bg-button) focus:outline-none"
+        aria-label={`Supprimer le filtre ${label}`}
+      >
+        <X size={12} aria-hidden="true" />
+      </button>
+    </span>
+  )
+}
+
+export function ResultsInfoBar() {
+  const {
+    items,
+    loading,
+    hasMore,
+    hasActiveFilters,
+    query,
+    setQuery,
+    oeuvres,
+    themeTree,
+    selectedOeuvreIds,
+    selectedThemeIds,
+    toggleOeuvre,
+    toggleTheme,
+  } = useCorpusSearch()
+
+  const countLabel = loading
+    ? 'Recherche…'
+    : `${items.length} résultat${items.length !== 1 ? 's' : ''}${hasMore ? '+' : ''}`
+
+  return (
+    <div className="mb-4 space-y-2">
+      <div className="flex min-h-[58px] items-center justify-between rounded-lg border border-(--color-border) bg-(--color-bg-card) p-3 shadow-sm">
+        <div className="flex-1" />
+        <span className="rounded-full bg-(--color-bg-sidebar) px-3 py-1 text-sm font-medium text-(--color-text-secondary)">
+          {countLabel}
+        </span>
+      </div>
+
+      {hasActiveFilters && (
+        <div className="flex flex-wrap items-center gap-2">
+          {query.trim() !== '' && (
+            <FilterPill label={`Recherche : « ${query} »`} onRemove={() => setQuery('')} />
+          )}
+          {selectedOeuvreIds.map((id) => {
+            const nom = oeuvres.find((o) => o.id === id)?.nom ?? String(id)
+            return (
+              <FilterPill
+                key={`oeuvre-${id}`}
+                label={`Œuvre : ${nom}`}
+                onRemove={() => toggleOeuvre(id)}
+              />
+            )
+          })}
+          {selectedThemeIds.map((id) => {
+            const nom = findThemeName(themeTree, id) ?? String(id)
+            return (
+              <FilterPill
+                key={`theme-${id}`}
+                label={`Thème : ${nom}`}
+                onRemove={() => toggleTheme(id)}
+              />
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}

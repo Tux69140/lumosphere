@@ -19,21 +19,27 @@ export function RolesAccessPage() {
   const [detailLoading, setDetailLoading] = useState(false)
 
   useEffect(() => {
-    Promise.all([apiClient.findRoles(), apiClient.findOeuvres()]).then(([rr, ro]) => {
-      if (rr.status === 'ok') setRoles((rr.data ?? []) as Role[])
-      else toast.error('Impossible de charger les rôles.')
-      if (ro.status === 'ok') setOeuvres((ro.data ?? []) as Oeuvre[])
-      else toast.error('Impossible de charger les œuvres.')
-    })
+    Promise.all([apiClient.getCsrf(), apiClient.findRoles(), apiClient.findOeuvres()]).then(
+      ([, rr, ro]) => {
+        if (rr.status === 'ok') setRoles((rr.data ?? []) as Role[])
+        else toast.error('Impossible de charger les rôles.')
+        if (ro.status === 'ok') setOeuvres((ro.data ?? []) as Oeuvre[])
+        else toast.error('Impossible de charger les œuvres.')
+      },
+    )
   }, [])
 
   async function selectRole(id: number) {
     setSelectedId(id)
     setDetailLoading(true)
-    setDetail(null) // clear to trigger remount with fresh state on load
+    setDetail(null)
+    // Tous les rôles sauf Admin ont une liste d'œuvres accessibles à configurer
+    const showOeuvres = id !== ROLE_ADMIN
     const [rr, ro] = await Promise.all([
       apiClient.getRoleWithPermissions(id),
-      apiClient.getRoleOeuvres(id),
+      showOeuvres
+        ? apiClient.getRoleOeuvres(id)
+        : Promise.resolve({ status: 'ok' as const, data: { oeuvre_ids: [] }, errors: [] }),
     ])
     setDetailLoading(false)
     if (rr.status !== 'ok') {
@@ -41,16 +47,17 @@ export function RolesAccessPage() {
       return
     }
     const role = rr.data as { id: number; nom: string; permissions: { id: number }[] }
-    const permIds = role.permissions.map((p) => p.id)
+    // corpus.read (id 1) est toujours accordé implicitement — on ne l'affiche pas
+    const permIds = role.permissions.map((p) => p.id).filter((pid) => pid !== 1)
     const oeuvreIds = (ro.data?.oeuvre_ids ?? []) as number[]
-    if (ro.status !== 'ok') toast.error('Impossible de charger les œuvres du rôle.')
     setDetail({
       id,
       nom: role.nom,
       permissionIds: permIds,
       oeuvreIds,
       isProtected: id === ROLE_ADMIN,
-      showOeuvres: id !== ROLE_VISITEUR,
+      canDelete: id !== ROLE_ADMIN && id !== ROLE_VISITEUR,
+      showOeuvres,
     })
   }
 
@@ -59,9 +66,10 @@ export function RolesAccessPage() {
     setDetail({
       id: null,
       nom: '',
-      permissionIds: [1], // corpus.read pré-coché
+      permissionIds: [],
       oeuvreIds: [],
       isProtected: false,
+      canDelete: true,
       showOeuvres: true,
     })
   }
@@ -69,9 +77,11 @@ export function RolesAccessPage() {
   async function saveRole(data: { nom: string; permissionIds: number[]; oeuvreIds: number[] }) {
     if (!detail) return
 
+    // corpus.read (id 1) est toujours injecté silencieusement
+    const permIds = Array.from(new Set([1, ...data.permissionIds]))
+
     if (detail.id === null) {
-      // Création
-      const r = await apiClient.createRole(data.nom, data.permissionIds)
+      const r = await apiClient.createRole(data.nom, permIds)
       if (r.status !== 'ok') {
         toast.error(r.errors?.[0] ?? 'Création impossible.')
         return
@@ -83,11 +93,10 @@ export function RolesAccessPage() {
       return
     }
 
-    // Mise à jour
     const id = detail.id
     const [rn, rp, ro] = await Promise.all([
       apiClient.updateRole(id, data.nom),
-      apiClient.updateRolePermissions(id, data.permissionIds),
+      apiClient.updateRolePermissions(id, permIds),
       detail.showOeuvres
         ? apiClient.setRoleOeuvres(id, data.oeuvreIds)
         : Promise.resolve({ status: 'ok' as const, data: null, errors: [] as string[] }),
@@ -126,7 +135,8 @@ export function RolesAccessPage() {
     <div>
       <h1 className="mb-1 text-xl font-bold text-(--color-text-primary)">Rôles et droits</h1>
       <p className="mb-4 text-sm text-(--color-text-secondary)">
-        Gérez les rôles, leurs permissions et leurs accès aux œuvres réservées.
+        Gérez les rôles et leurs permissions. Le rôle Visiteur définit ce que voient les personnes
+        non connectées.
       </p>
       <div className="flex min-h-[500px] overflow-hidden rounded-lg border border-(--color-border)">
         <RoleList

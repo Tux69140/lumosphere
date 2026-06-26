@@ -71,9 +71,11 @@ function dal_soft_delete_clause(string $alias, array $ctx): string
 }
 
 /**
- * R8 — Œuvre visibility fragment (no état): public works plus works reserved
- * to this role. Abo4 cumulates Abo3+Abo4 (business decision T14).
- * Returns '' for roles with corpus.read_all.
+ * R8 — Visibilité par œuvre : publique + autorisée pour ce rôle.
+ * Une œuvre "publique" = absente de role_oeuvre_access pour tout rôle.
+ * Une œuvre "réservée" = présente dans role_oeuvre_access → visible uniquement
+ * aux rôles qui l'ont explicitement dans leur liste.
+ * Abo4 cumule Abo3+Abo4. corpus.read_all → aucune restriction.
  */
 function dal_oeuvre_visibility_clause(string $oeuvre_col, array $ctx, array &$params): string
 {
@@ -84,23 +86,20 @@ function dal_oeuvre_visibility_clause(string $oeuvre_col, array $ctx, array &$pa
     $reserved = 'SELECT oeuvre_id FROM role_oeuvre_access';
 
     if ($role_id === ROLE_ABO4) {
-        // Cumul Abo3+Abo4 conservé (décision métier T14).
         $params[':ctx_abo3'] = ROLE_ABO3;
         $params[':ctx_abo4'] = ROLE_ABO4;
         return " AND ({$oeuvre_col} NOT IN ({$reserved})"
              . " OR {$oeuvre_col} IN (SELECT oeuvre_id FROM role_oeuvre_access WHERE role_id IN (:ctx_abo3, :ctx_abo4)))";
     }
 
-    // Tout autre rôle (Abo3, Visiteur, rôles personnalisés) :
-    // œuvres publiques + réservées spécifiquement à CE rôle.
     $params[':ctx_role'] = $role_id;
     return " AND ({$oeuvre_col} NOT IN ({$reserved})"
          . " OR {$oeuvre_col} IN (SELECT oeuvre_id FROM role_oeuvre_access WHERE role_id = :ctx_role))";
 }
 
 /**
- * R8 — Rights filter per oeuvre, appended to every SELECT on citations.
- * corpus.read_all → no restriction. Otherwise: Publiée only + œuvre visibility.
+ * R8 — Rights filter per oeuvre, appended to every SELECT on citations/oeuvres.
+ * corpus.read_all → no restriction. Otherwise: Publiée only + whitelist Visiteur.
  */
 function dal_oeuvre_access_clause(string $oeuvre_col, array $ctx, array &$params, string $etat_col = 'c.etat_id'): string
 {

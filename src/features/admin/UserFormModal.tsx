@@ -78,7 +78,11 @@ export function UserFormModal({
     <Dialog.Root open={open} onOpenChange={(o) => !o && onClose()}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 bg-black/40" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 w-[min(90vw,28rem)] -translate-x-1/2 -translate-y-1/2 rounded-lg bg-(--color-bg-card) p-5 shadow-lg">
+        <Dialog.Content
+          className="fixed left-1/2 top-1/2 w-[min(90vw,28rem)] -translate-x-1/2 -translate-y-1/2 rounded-lg bg-(--color-bg-card) p-5 shadow-lg"
+          onInteractOutside={(e) => e.preventDefault()}
+          onEscapeKeyDown={(e) => e.preventDefault()}
+        >
           <Dialog.Title className="mb-4 text-lg font-bold text-(--color-text-primary)">
             {user ? "Modifier l'utilisateur" : 'Ajouter un utilisateur'}
           </Dialog.Title>
@@ -169,7 +173,7 @@ export function UserFormModal({
               </button>
               <button
                 type="submit"
-                className="rounded-md bg-(--color-accent) px-3 py-2 text-sm text-white"
+                className="rounded-md bg-(--color-action) px-3 py-2 text-sm text-(--color-action-text) hover:bg-(--color-action-hover)"
               >
                 Enregistrer
               </button>

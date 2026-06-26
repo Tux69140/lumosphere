@@ -44,6 +44,9 @@ function dal_delete_role(PDO $pdo, array $ctx, int $id): array
     if ($id === ROLE_ADMIN) {
         return dal_error('Le rôle Administrateur ne peut pas être supprimé.');
     }
+    if ($id === ROLE_VISITEUR) {
+        return dal_error('Le rôle Visiteur est un rôle système et ne peut pas être supprimé.');
+    }
     $stmt = $pdo->prepare('DELETE FROM roles WHERE id = :id');
     $stmt->execute(['id' => $id]);
     return $stmt->rowCount() > 0 ? dal_ok() : dal_error('Rôle introuvable.');
@@ -120,16 +123,18 @@ function dal_update_role(PDO $pdo, array $ctx, int $id, string $nom): array
     if ($nom === '') {
         return dal_error('Le nom du rôle est requis.');
     }
-    $stmt = $pdo->prepare('UPDATE roles SET nom = :nom WHERE id = :id');
-    $stmt->execute(['nom' => $nom, 'id' => $id]);
-    return $stmt->rowCount() > 0
-        ? dal_ok(['id' => $id, 'nom' => $nom])
-        : dal_error('Rôle introuvable.');
+    // Vérification d'existence avant UPDATE : rowCount() = 0 si le nom est inchangé
+    // (MariaDB ne compte pas les lignes "non modifiées"), ce qui produirait un faux "Rôle introuvable".
+    $check = $pdo->prepare('SELECT id FROM roles WHERE id = :id');
+    $check->execute(['id' => $id]);
+    if (!$check->fetch()) {
+        return dal_error('Rôle introuvable.');
+    }
+    $pdo->prepare('UPDATE roles SET nom = :nom WHERE id = :id')
+        ->execute(['nom' => $nom, 'id' => $id]);
+    return dal_ok(['id' => $id, 'nom' => $nom]);
 }
 
-/**
- * Lecture des œuvres réservées à un rôle.
- */
 function dal_get_role_oeuvre_access(PDO $pdo, array $ctx, int $role_id): array
 {
     dal_require_permission($ctx, 'admin.roles');
@@ -139,9 +144,6 @@ function dal_get_role_oeuvre_access(PDO $pdo, array $ctx, int $role_id): array
     return dal_ok(['oeuvre_ids' => $ids]);
 }
 
-/**
- * Remplace l'ensemble des œuvres réservées à un rôle — transaction.
- */
 function dal_set_role_oeuvre_access(PDO $pdo, array $ctx, int $role_id, array $oeuvre_ids): array
 {
     dal_require_permission($ctx, 'admin.roles');
@@ -149,7 +151,6 @@ function dal_set_role_oeuvre_access(PDO $pdo, array $ctx, int $role_id, array $o
         array_map('intval', $oeuvre_ids),
         static fn (int $v): bool => $v > 0
     )));
-
     $pdo->beginTransaction();
     try {
         $pdo->prepare('DELETE FROM role_oeuvre_access WHERE role_id = :rid')->execute(['rid' => $role_id]);
@@ -161,6 +162,7 @@ function dal_set_role_oeuvre_access(PDO $pdo, array $ctx, int $role_id, array $o
         return dal_ok(['oeuvre_ids' => $ids]);
     } catch (\Throwable $e) {
         $pdo->rollBack();
-        return dal_error('Erreur lors de la mise à jour des accès par œuvre.');
+        return dal_error('Erreur lors de la mise à jour des œuvres accessibles.');
     }
 }
+

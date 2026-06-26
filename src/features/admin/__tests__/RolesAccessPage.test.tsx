@@ -68,6 +68,18 @@ describe('RolesAccessPage', () => {
     await waitFor(() => expect(apiClient.getRoleWithPermissions).toHaveBeenCalledWith(2))
   })
 
+  it('charge les œuvres accessibles pour le rôle Visiteur', async () => {
+    vi.mocked(apiClient.getRoleWithPermissions).mockResolvedValueOnce({
+      status: 'ok',
+      data: { id: 3, nom: 'Visiteur', permissions: [{ id: 1, code: 'corpus.read' }] },
+      errors: [],
+    })
+    render(<RolesAccessPage />)
+    await waitFor(() => screen.getByTestId('role-item-3'))
+    await userEvent.click(screen.getByTestId('role-item-3'))
+    await waitFor(() => expect(apiClient.getRoleOeuvres).toHaveBeenCalledWith(3))
+  })
+
   it('ouvre une fiche vierge au clic sur le bouton Créer', async () => {
     render(<RolesAccessPage />)
     await waitFor(() => screen.getByLabelText('Créer un nouveau rôle'))
@@ -96,11 +108,6 @@ describe('RolesAccessPage', () => {
       data: { id: 1, nom: 'Administrateur', permissions: [{ id: 1, code: 'corpus.read' }] },
       errors: [],
     })
-    vi.mocked(apiClient.getRoleOeuvres).mockResolvedValueOnce({
-      status: 'ok',
-      data: { oeuvre_ids: [] },
-      errors: [],
-    })
     render(<RolesAccessPage />)
     await waitFor(() => screen.getByTestId('role-item-1'))
     await userEvent.click(screen.getByTestId('role-item-1'))
@@ -113,11 +120,6 @@ describe('RolesAccessPage', () => {
     vi.mocked(apiClient.getRoleWithPermissions).mockResolvedValueOnce({
       status: 'ok',
       data: { id: 2, nom: 'Éditeur', permissions: [{ id: 1, code: 'corpus.read' }] },
-      errors: [],
-    })
-    vi.mocked(apiClient.getRoleOeuvres).mockResolvedValueOnce({
-      status: 'ok',
-      data: { oeuvre_ids: [] },
       errors: [],
     })
     render(<RolesAccessPage />)
