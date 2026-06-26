@@ -128,7 +128,7 @@ function dal_update_role(PDO $pdo, array $ctx, int $id, string $nom): array
 }
 
 /**
- * Lecture des œuvres réservées à un rôle (Abo3/Abo4).
+ * Lecture des œuvres réservées à un rôle.
  */
 function dal_get_role_oeuvre_access(PDO $pdo, array $ctx, int $role_id): array
 {
@@ -140,7 +140,7 @@ function dal_get_role_oeuvre_access(PDO $pdo, array $ctx, int $role_id): array
 }
 
 /**
- * Remplace l'ensemble des œuvres réservées à un rôle abonné (Abo3/Abo4) — transaction.
+ * Remplace l'ensemble des œuvres réservées à un rôle — transaction.
  */
 function dal_set_role_oeuvre_access(PDO $pdo, array $ctx, int $role_id, array $oeuvre_ids): array
 {
