@@ -180,9 +180,14 @@ export const apiClient = {
 
   // Roles
   findRoles: () => get<unknown[]>('roles'),
-  getRoleWithPermissions: (id: number) => get<unknown>(`roles/${id}`),
+  getRoleWithPermissions: (id: number) =>
+    get<{ id: number; nom: string; permissions: { id: number; code: string }[] }>(`roles/${id}`),
   updateRolePermissions: (id: number, permissionIds: number[]) =>
     put<void>(`roles/${id}/permissions`, { permission_ids: permissionIds }),
+  createRole: (nom: string, permissionIds: number[]) =>
+    post<{ id: number; nom: string }>('roles', { nom, permission_ids: permissionIds }),
+  updateRole: (id: number, nom: string) => put<{ id: number; nom: string }>(`roles/${id}`, { nom }),
+  deleteRole: (id: number) => del<void>(`roles/${id}`),
   getRoleOeuvres: (roleId: number) => get<{ oeuvre_ids: number[] }>(`roles/${roleId}/oeuvres`),
   setRoleOeuvres: (roleId: number, oeuvreIds: number[]) =>
     put<{ oeuvre_ids: number[] }>(`roles/${roleId}/oeuvres`, { oeuvre_ids: oeuvreIds }),
