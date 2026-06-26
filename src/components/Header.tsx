@@ -4,14 +4,13 @@ import { Link, useNavigate } from 'react-router'
 import { SunHorizon, List, X, SignIn, SignOut } from '@phosphor-icons/react'
 import { ThemeToggle } from './ThemeToggle'
 import { useAuth } from '@/hooks/useAuth'
-
-const ADMIN_ROLES = [1, 2] // Administrateur, Éditeur
+import { ROLE_ADMIN } from '@/constants/roles'
 
 export function Header() {
   const [menuOpen, setMenuOpen] = useState(false)
   const { user, logout } = useAuth()
   const navigate = useNavigate()
-  const isStaff = user !== null && ADMIN_ROLES.includes(user.role_id)
+  const isAdmin = user !== null && user.role_id === ROLE_ADMIN
 
   async function handleLogout() {
     setMenuOpen(false)
@@ -23,7 +22,7 @@ export function Header() {
     return (
       <>
         <ThemeToggle />
-        {isStaff && (
+        {isAdmin && (
           <Link
             to="/admin"
             onClick={() => setMenuOpen(false)}

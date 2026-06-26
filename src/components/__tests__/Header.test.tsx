@@ -43,8 +43,21 @@ describe('Header', () => {
     expect(screen.queryByRole('button', { name: /déconnexion/i })).not.toBeInTheDocument()
   })
 
-  it('éditeur : Déconnexion + lien Admin', () => {
+  it('éditeur : Déconnexion mais pas de lien Admin', () => {
     renderHeader(editeur)
+    expect(screen.getByRole('button', { name: /déconnexion/i })).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: /admin/i })).not.toBeInTheDocument()
+  })
+
+  it('admin : Déconnexion + lien Admin', () => {
+    renderHeader({
+      id: 1,
+      prenom: 'A',
+      nom: 'D',
+      email: 'a@d.c',
+      role_id: 1,
+      role_nom: 'Administrateur',
+    })
     expect(screen.getByRole('button', { name: /déconnexion/i })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /admin/i })).toBeInTheDocument()
   })

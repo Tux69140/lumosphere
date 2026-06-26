@@ -1,25 +1,23 @@
-import { Routes, Route } from 'react-router'
+import { Navigate, Routes, Route } from 'react-router'
 import { MainLayout } from '@/layouts/MainLayout'
 import { AuthLayout } from '@/layouts/AuthLayout'
 import { AccueilPage } from '@/features/accueil/AccueilPage'
 import { LoginPage } from '@/features/auth/LoginPage'
-import { AdminPage } from '@/features/admin/AdminPage'
 import { NotFoundPage } from '@/features/NotFoundPage'
-import { RequireAuth } from '@/components/RequireAuth'
+import { RequireAdmin } from '@/components/RequireAdmin'
+import { UsersPage } from '@/features/admin/UsersPage'
+import { RolesAccessPage } from '@/features/admin/RolesAccessPage'
 
 export default function App() {
   return (
     <Routes>
       <Route element={<MainLayout />}>
         <Route index element={<AccueilPage />} />
-        <Route
-          path="admin"
-          element={
-            <RequireAuth>
-              <AdminPage />
-            </RequireAuth>
-          }
-        />
+        <Route path="admin" element={<RequireAdmin />}>
+          <Route index element={<Navigate to="/admin/utilisateurs" replace />} />
+          <Route path="utilisateurs" element={<UsersPage />} />
+          <Route path="roles" element={<RolesAccessPage />} />
+        </Route>
         <Route path="*" element={<NotFoundPage />} />
       </Route>
       <Route element={<AuthLayout />}>
