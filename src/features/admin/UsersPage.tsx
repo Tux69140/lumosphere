@@ -15,14 +15,14 @@ export function UsersPage() {
 
   const load = useCallback(() => {
     apiClient.findUsers().then((r) => {
-      if (r.status === 'ok' && r.data) setUsers(r.data as UserRow[])
+      if (r.status === 'ok') setUsers((r.data ?? []) as UserRow[])
     })
   }, [])
 
   useEffect(() => {
     load()
     apiClient.findRoles().then((r) => {
-      if (r.status === 'ok' && r.data) setRoles(r.data as Role[])
+      if (r.status === 'ok') setRoles((r.data ?? []) as Role[])
     })
   }, [load])
 

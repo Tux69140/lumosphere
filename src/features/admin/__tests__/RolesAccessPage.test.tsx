@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { RolesAccessPage } from '../RolesAccessPage'
@@ -30,11 +30,11 @@ beforeEach(() => vi.clearAllMocks())
 describe('RolesAccessPage', () => {
   it("coche l'état initial et enregistre les œuvres réservées d'Abo3", async () => {
     render(<RolesAccessPage />)
-    // Deux panneaux (Abo3 puis Abo4) ; on cible le premier (Abo3) via [0].
-    await waitFor(() => expect(screen.getAllByLabelText('Œuvre A')[0]).toBeChecked())
+    const abo3Panel = screen.getByTestId('panel-abo3')
+    await waitFor(() => expect(within(abo3Panel).getByLabelText('Œuvre A')).toBeChecked())
     // Réserver aussi l'œuvre B dans le panneau Abo3 puis enregistrer.
-    await userEvent.click(screen.getAllByLabelText('Œuvre B')[0]!)
-    await userEvent.click(screen.getByRole('button', { name: /enregistrer abo3/i }))
+    await userEvent.click(within(abo3Panel).getByLabelText('Œuvre B'))
+    await userEvent.click(within(abo3Panel).getByRole('button', { name: /enregistrer abo3/i }))
     await waitFor(() =>
       expect(apiClient.setRoleOeuvres).toHaveBeenCalledWith(4, expect.arrayContaining([1, 2])),
     )

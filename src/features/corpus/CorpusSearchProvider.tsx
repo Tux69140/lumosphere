@@ -1,4 +1,5 @@
 import { createContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { toast } from 'sonner'
 import { apiClient } from '@/services/api'
 import { useDebouncedValue } from '@/hooks/useDebouncedValue'
 import { buildThemeTree, toggleThemeNode } from './themeSelection'
@@ -41,9 +42,11 @@ export function CorpusSearchProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     apiClient.findOeuvres().then((res) => {
       if (res.status === 'ok' && res.data) setOeuvres(res.data as Oeuvre[])
+      else if (res.status !== 'ok') toast.error('Impossible de charger les œuvres.')
     })
     apiClient.findThemes().then((res) => {
       if (res.status === 'ok' && res.data) setThemes(res.data as Theme[])
+      else if (res.status !== 'ok') toast.error('Impossible de charger les thèmes.')
     })
   }, [])
 

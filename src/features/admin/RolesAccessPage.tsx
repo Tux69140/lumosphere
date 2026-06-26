@@ -19,6 +19,7 @@ function RolePanel({
   useEffect(() => {
     apiClient.getRoleOeuvres(roleId).then((r) => {
       if (r.status === 'ok' && r.data) setSelected(r.data.oeuvre_ids)
+      else if (r.status !== 'ok') toast.error('Impossible de charger les droits.')
     })
   }, [roleId])
 
@@ -32,14 +33,13 @@ function RolePanel({
   }
 
   return (
-    <section className="mb-6">
+    <section data-testid={`panel-${label.toLowerCase()}`} className="mb-6">
       <h2 className="mb-2 font-semibold text-(--color-text-primary)">{label}</h2>
       <div className="max-h-64 overflow-y-auto rounded-md border border-(--color-border) p-3">
         {oeuvres.map((o) => (
           <label key={o.id} className="flex items-center gap-2 py-0.5 text-sm">
             <input
               type="checkbox"
-              aria-label={o.nom}
               checked={selected.includes(o.id)}
               onChange={() => toggle(o.id)}
             />
@@ -62,7 +62,8 @@ export function RolesAccessPage() {
 
   useEffect(() => {
     apiClient.findOeuvres().then((r) => {
-      if (r.status === 'ok' && r.data) setOeuvres(r.data as Oeuvre[])
+      if (r.status === 'ok') setOeuvres((r.data ?? []) as Oeuvre[])
+      else toast.error('Impossible de charger les œuvres.')
     })
   }, [])
 

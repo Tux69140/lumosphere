@@ -454,6 +454,7 @@ function _dal_apply_id_list_filter(string &$where, array &$params, string $col, 
     if (empty($ids)) {
         return;
     }
+    $ids = array_slice($ids, 0, 100);
     $placeholders = [];
     foreach ($ids as $i => $id) {
         $key = ":{$prefix}_{$i}";

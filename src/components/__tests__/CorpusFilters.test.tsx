@@ -1,0 +1,58 @@
+import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { describe, it, expect, vi } from 'vitest'
+import { CorpusFilters } from '../CorpusFilters'
+import { useCorpusSearch } from '@/features/corpus/useCorpusSearch'
+import type { CorpusSearchContextValue } from '@/features/corpus/CorpusSearchProvider'
+
+vi.mock('@/features/corpus/useCorpusSearch', () => ({ useCorpusSearch: vi.fn() }))
+
+function makeSearch(overrides?: Partial<CorpusSearchContextValue>): CorpusSearchContextValue {
+  return {
+    query: '',
+    setQuery: vi.fn(),
+    oeuvres: [{ id: 1, nom: 'Œuvre Test', auteur_nom: 'Auteur' }],
+    themeTree: [],
+    selectedOeuvreIds: [],
+    selectedThemeIds: [],
+    toggleOeuvre: vi.fn(),
+    toggleTheme: vi.fn(),
+    reset: vi.fn(),
+    items: [],
+    loading: false,
+    error: null,
+    hasMore: false,
+    hasActiveFilters: false,
+    ...overrides,
+  } as CorpusSearchContextValue
+}
+
+describe('CorpusFilters', () => {
+  it('affiche le champ de recherche et appelle setQuery à la saisie', async () => {
+    const setQuery = vi.fn()
+    vi.mocked(useCorpusSearch).mockReturnValue(makeSearch({ setQuery }))
+    render(<CorpusFilters />)
+    const input = screen.getByLabelText('Rechercher dans le contenu')
+    expect(input).toBeInTheDocument()
+    await userEvent.type(input, 'test')
+    expect(setQuery).toHaveBeenCalled()
+  })
+
+  it('cocher une œuvre appelle toggleOeuvre avec son id', async () => {
+    const toggleOeuvre = vi.fn()
+    vi.mocked(useCorpusSearch).mockReturnValue(makeSearch({ toggleOeuvre }))
+    render(<CorpusFilters />)
+    await userEvent.click(screen.getByLabelText('Œuvre Test'))
+    expect(toggleOeuvre).toHaveBeenCalledWith(1)
+  })
+
+  it('bouton Réinitialiser visible uniquement si hasActiveFilters est vrai', () => {
+    vi.mocked(useCorpusSearch).mockReturnValue(makeSearch({ hasActiveFilters: false }))
+    const { rerender } = render(<CorpusFilters />)
+    expect(screen.queryByRole('button', { name: /réinitialiser/i })).not.toBeInTheDocument()
+
+    vi.mocked(useCorpusSearch).mockReturnValue(makeSearch({ hasActiveFilters: true }))
+    rerender(<CorpusFilters />)
+    expect(screen.getByRole('button', { name: /réinitialiser/i })).toBeInTheDocument()
+  })
+})
