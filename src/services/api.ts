@@ -7,13 +7,18 @@ type ApiResponse<T> = {
 let csrfToken: string | null = null
 let onSessionExpired: (() => void) | null = null
 
-async function request<T>(path: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
+async function request<T>(
+  path: string,
+  options: RequestInit = {},
+  retried = false,
+): Promise<ApiResponse<T>> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...(options.headers as Record<string, string>),
   }
 
-  if (options.method && ['POST', 'PUT', 'DELETE'].includes(options.method)) {
+  const isMutation = !!options.method && ['POST', 'PUT', 'DELETE'].includes(options.method)
+  if (isMutation) {
     if (!csrfToken) {
       const csrf = await fetchCsrf()
       csrfToken = csrf.data?.csrf_token ?? null
@@ -37,6 +42,11 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<ApiR
     const isCsrfError = body?.errors?.some((e: string) => e.toLowerCase().includes('csrf'))
     if (isCsrfError) {
       csrfToken = null
+      // Jeton périmé vis-à-vis de la session : on rafraîchit et on rejoue une seule fois.
+      if (isMutation && !retried) {
+        await fetchCsrf()
+        return request<T>(path, options, true)
+      }
     }
   }
 

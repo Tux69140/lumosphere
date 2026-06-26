@@ -13,6 +13,7 @@ const ETAT_A_REVISER  = 2;
 const ETAT_PUBLIEE    = 3;
 
 const PAGE_SIZE_DEFAULT = 50;
+const MAX_PAGE_SIZE     = 100;
 
 function dal_get_pdo(?array $config = null): PDO
 {

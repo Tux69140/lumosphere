@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Trash } from '@phosphor-icons/react'
+import { ROLE_VISITEUR } from '@/constants/roles'
 import { PERMISSION_GROUPS } from './permissionGroups'
 
 export type RoleDetailData = {
@@ -81,7 +82,7 @@ export function RoleDetail({ detail, loading, oeuvres, onSave, onDelete }: Props
         />
       </div>
 
-      {/* Œuvres accessibles — uniquement pour le rôle Visiteur */}
+      {/* Œuvres accessibles — pour tous les rôles non-Admin */}
       {detail.showOeuvres && (
         <div className="mb-8">
           <div className="mb-3 flex items-center gap-3">
@@ -91,7 +92,9 @@ export function RoleDetail({ detail, loading, oeuvres, onSave, onDelete }: Props
             <div className="h-px flex-1 bg-(--color-border)" />
           </div>
           <p className="mb-3 text-xs text-(--color-text-secondary)">
-            Cochez les œuvres que les visiteurs non connectés peuvent consulter.
+            {detail.id === ROLE_VISITEUR
+              ? 'Cochez les œuvres que les visiteurs non connectés peuvent consulter.'
+              : 'Cochez les œuvres que ce rôle peut consulter.'}
           </p>
           {oeuvres.length === 0 ? (
             <p className="text-xs text-(--color-text-placeholder)">Aucune œuvre disponible.</p>

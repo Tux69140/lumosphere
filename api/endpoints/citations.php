@@ -4,49 +4,50 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/dal/citations.php';
 
+/**
+ * Lit un paramètre liste CSV ("1,2,3") en tableau, ou null.
+ * Tolère un envoi tableau (?ids[]=1) sans déclencher de TypeError sur explode().
+ */
+function _citations_csv_param(string $key): ?array
+{
+    return isset($_GET[$key]) && is_string($_GET[$key]) ? explode(',', $_GET[$key]) : null;
+}
+
+/** Taille de page bornée pour préserver le serveur (keyset, page_size = 50 par défaut). */
+function _citations_page_size(): int
+{
+    $size = (int) ($_GET['page_size'] ?? PAGE_SIZE_DEFAULT);
+    return max(1, min(MAX_PAGE_SIZE, $size));
+}
+
+/** Construit le jeu de filtres commun (search / find / count) à partir de $_GET. */
+function _citations_filters(): array
+{
+    return array_filter([
+        'oeuvre_id'    => $_GET['oeuvre_id'] ?? null,
+        'theme_id'     => $_GET['theme_id'] ?? null,
+        'oeuvre_ids'   => _citations_csv_param('oeuvre_ids'),
+        'theme_ids'    => _citations_csv_param('theme_ids'),
+        'etat_id'      => $_GET['etat_id'] ?? null,
+        'auteur_id'    => $_GET['auteur_id'] ?? null,
+        'keyword_ids'  => _citations_csv_param('keyword_ids'),
+        'keyword_mode' => $_GET['keyword_mode'] ?? null,
+        'date_from'    => $_GET['date_from'] ?? null,
+        'date_to'      => $_GET['date_to'] ?? null,
+    ]);
+}
+
 function endpoint_citations(PDO $pdo, array $ctx, string $method, ?int $id, ?array $body, ?string $action): array
 {
     return match (true) {
-        $method === 'GET' && $id === null && isset($_GET['q']) => dal_search_citations(
-            $pdo, $ctx, $_GET['q'],
-            array_filter([
-                'oeuvre_id'    => $_GET['oeuvre_id'] ?? null,
-                'theme_id'     => $_GET['theme_id'] ?? null,
-                'oeuvre_ids'   => isset($_GET['oeuvre_ids']) ? explode(',', $_GET['oeuvre_ids']) : null,
-                'theme_ids'    => isset($_GET['theme_ids']) ? explode(',', $_GET['theme_ids']) : null,
-                'etat_id'      => $_GET['etat_id'] ?? null,
-                'auteur_id'    => $_GET['auteur_id'] ?? null,
-                'keyword_ids'  => isset($_GET['keyword_ids']) ? explode(',', $_GET['keyword_ids']) : null,
-                'keyword_mode' => $_GET['keyword_mode'] ?? null,
-                'date_from'    => $_GET['date_from'] ?? null,
-                'date_to'      => $_GET['date_to'] ?? null,
-            ]),
-            $_GET['cursor'] ?? null,
-            (int) ($_GET['page_size'] ?? PAGE_SIZE_DEFAULT)
+        $method === 'GET' && $id === null && isset($_GET['q']) && is_string($_GET['q']) => dal_search_citations(
+            $pdo, $ctx, $_GET['q'], _citations_filters(), $_GET['cursor'] ?? null, _citations_page_size()
         ),
         $method === 'GET' && $id === null && $action === 'count' => dal_count_citations(
-            $pdo, $ctx,
-            array_filter([
-                'oeuvre_id' => $_GET['oeuvre_id'] ?? null,
-                'etat_id'   => $_GET['etat_id'] ?? null,
-            ])
+            $pdo, $ctx, _citations_filters()
         ),
         $method === 'GET' && $id === null => dal_find_citations(
-            $pdo, $ctx,
-            array_filter([
-                'oeuvre_id'    => $_GET['oeuvre_id'] ?? null,
-                'theme_id'     => $_GET['theme_id'] ?? null,
-                'oeuvre_ids'   => isset($_GET['oeuvre_ids']) ? explode(',', $_GET['oeuvre_ids']) : null,
-                'theme_ids'    => isset($_GET['theme_ids']) ? explode(',', $_GET['theme_ids']) : null,
-                'etat_id'      => $_GET['etat_id'] ?? null,
-                'auteur_id'    => $_GET['auteur_id'] ?? null,
-                'keyword_ids'  => isset($_GET['keyword_ids']) ? explode(',', $_GET['keyword_ids']) : null,
-                'keyword_mode' => $_GET['keyword_mode'] ?? null,
-                'date_from'    => $_GET['date_from'] ?? null,
-                'date_to'      => $_GET['date_to'] ?? null,
-            ]),
-            $_GET['cursor'] ?? null,
-            (int) ($_GET['page_size'] ?? PAGE_SIZE_DEFAULT)
+            $pdo, $ctx, _citations_filters(), $_GET['cursor'] ?? null, _citations_page_size()
         ),
         $method === 'GET' && $id !== null => dal_get_citation($pdo, $ctx, $id),
         $method === 'POST' && $id === null => dal_create_citation($pdo, $ctx, $body ?? []),

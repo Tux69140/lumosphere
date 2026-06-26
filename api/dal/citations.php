@@ -45,52 +45,7 @@ function dal_find_citations(PDO $pdo, array $ctx, array $filters = [], ?string $
 
     $where .= dal_soft_delete_clause('c', $ctx);
     $where .= dal_oeuvre_access_clause('c.oeuvre_id', $ctx, $params);
-
-    if (!empty($filters['oeuvre_id'])) {
-        $where .= ' AND c.oeuvre_id = :f_oeuvre_id';
-        $params[':f_oeuvre_id'] = (int) $filters['oeuvre_id'];
-    }
-    if (!empty($filters['theme_id'])) {
-        $where .= ' AND c.theme_id = :f_theme_id';
-        $params[':f_theme_id'] = (int) $filters['theme_id'];
-    }
-    _dal_apply_id_list_filter($where, $params, 'c.oeuvre_id', 'oin', $filters['oeuvre_ids'] ?? null);
-    _dal_apply_id_list_filter($where, $params, 'c.theme_id', 'tin', $filters['theme_ids'] ?? null);
-    if (!empty($filters['etat_id'])) {
-        $where .= ' AND c.etat_id = :f_etat_id';
-        $params[':f_etat_id'] = (int) $filters['etat_id'];
-    }
-    if (!empty($filters['auteur_id'])) {
-        $where .= ' AND o.auteur_id = :f_auteur_id';
-        $params[':f_auteur_id'] = (int) $filters['auteur_id'];
-    }
-    if (!empty($filters['date_from'])) {
-        $where .= ' AND c.date_entree >= :f_date_from';
-        $params[':f_date_from'] = $filters['date_from'];
-    }
-    if (!empty($filters['date_to'])) {
-        $where .= ' AND c.date_entree <= :f_date_to';
-        $params[':f_date_to'] = $filters['date_to'];
-    }
-
-    // Keyword filter (OR / AND mode)
-    if (!empty($filters['keyword_ids']) && is_array($filters['keyword_ids'])) {
-        $kw_ids = array_map('intval', $filters['keyword_ids']);
-        $placeholders = [];
-        foreach ($kw_ids as $i => $kid) {
-            $key = ":kw_{$i}";
-            $placeholders[] = $key;
-            $params[$key] = $kid;
-        }
-        $in_list = implode(',', $placeholders);
-        $mode = ($filters['keyword_mode'] ?? 'or') === 'and' ? 'and' : 'or';
-        if ($mode === 'or') {
-            $where .= " AND c.id IN (SELECT citation_id FROM citation_keywords WHERE keyword_id IN ({$in_list}))";
-        } else {
-            $where .= " AND c.id IN (SELECT citation_id FROM citation_keywords WHERE keyword_id IN ({$in_list}) GROUP BY citation_id HAVING COUNT(DISTINCT keyword_id) = :kw_count)";
-            $params[':kw_count'] = count($kw_ids);
-        }
-    }
+    $where .= _dal_build_citation_where($filters, $params);
 
     $decoded_cursor = dal_decode_cursor($cursor);
     $where .= dal_keyset_clause('c.date_entree', 'c.id', $decoded_cursor, 'DESC', $params);
@@ -169,17 +124,13 @@ function dal_count_citations(PDO $pdo, array $ctx, array $filters = []): array
     $where = '1=1';
     $where .= dal_soft_delete_clause('c', $ctx);
     $where .= dal_oeuvre_access_clause('c.oeuvre_id', $ctx, $params);
+    $where .= _dal_build_citation_where($filters, $params);
 
-    if (!empty($filters['oeuvre_id'])) {
-        $where .= ' AND c.oeuvre_id = :f_oeuvre_id';
-        $params[':f_oeuvre_id'] = (int) $filters['oeuvre_id'];
-    }
-    if (!empty($filters['etat_id'])) {
-        $where .= ' AND c.etat_id = :f_etat_id';
-        $params[':f_etat_id'] = (int) $filters['etat_id'];
-    }
-
-    $sql = "SELECT COUNT(*) AS total FROM citations c WHERE {$where}";
+    // Jointure oeuvres requise par le filtre auteur (o.auteur_id).
+    $sql = "SELECT COUNT(*) AS total
+            FROM citations c
+            JOIN oeuvres o ON c.oeuvre_id = o.id
+            WHERE {$where}";
     $stmt = $pdo->prepare($sql);
     foreach ($params as $k => $v) {
         $stmt->bindValue($k, $v, is_int($v) ? PDO::PARAM_INT : PDO::PARAM_STR);
@@ -203,51 +154,7 @@ function dal_search_citations(PDO $pdo, array $ctx, string $query, array $filter
     $where = 'MATCH(c.contenu, c.notes, c.auteur_nom) AGAINST(:ft_query IN BOOLEAN MODE)';
     $where .= dal_soft_delete_clause('c', $ctx);
     $where .= dal_oeuvre_access_clause('c.oeuvre_id', $ctx, $params);
-
-    if (!empty($filters['oeuvre_id'])) {
-        $where .= ' AND c.oeuvre_id = :f_oeuvre_id';
-        $params[':f_oeuvre_id'] = (int) $filters['oeuvre_id'];
-    }
-    if (!empty($filters['theme_id'])) {
-        $where .= ' AND c.theme_id = :f_theme_id';
-        $params[':f_theme_id'] = (int) $filters['theme_id'];
-    }
-    _dal_apply_id_list_filter($where, $params, 'c.oeuvre_id', 'oin', $filters['oeuvre_ids'] ?? null);
-    _dal_apply_id_list_filter($where, $params, 'c.theme_id', 'tin', $filters['theme_ids'] ?? null);
-    if (!empty($filters['etat_id'])) {
-        $where .= ' AND c.etat_id = :f_etat_id';
-        $params[':f_etat_id'] = (int) $filters['etat_id'];
-    }
-    if (!empty($filters['auteur_id'])) {
-        $where .= ' AND o.auteur_id = :f_auteur_id';
-        $params[':f_auteur_id'] = (int) $filters['auteur_id'];
-    }
-    if (!empty($filters['date_from'])) {
-        $where .= ' AND c.date_entree >= :f_date_from';
-        $params[':f_date_from'] = $filters['date_from'];
-    }
-    if (!empty($filters['date_to'])) {
-        $where .= ' AND c.date_entree <= :f_date_to';
-        $params[':f_date_to'] = $filters['date_to'];
-    }
-
-    if (!empty($filters['keyword_ids']) && is_array($filters['keyword_ids'])) {
-        $kw_ids = array_map('intval', $filters['keyword_ids']);
-        $placeholders = [];
-        foreach ($kw_ids as $i => $kid) {
-            $key = ":kw_{$i}";
-            $placeholders[] = $key;
-            $params[$key] = $kid;
-        }
-        $in_list = implode(',', $placeholders);
-        $mode = ($filters['keyword_mode'] ?? 'or') === 'and' ? 'and' : 'or';
-        if ($mode === 'or') {
-            $where .= " AND c.id IN (SELECT citation_id FROM citation_keywords WHERE keyword_id IN ({$in_list}))";
-        } else {
-            $where .= " AND c.id IN (SELECT citation_id FROM citation_keywords WHERE keyword_id IN ({$in_list}) GROUP BY citation_id HAVING COUNT(DISTINCT keyword_id) = :kw_count)";
-            $params[':kw_count'] = count($kw_ids);
-        }
-    }
+    $where .= _dal_build_citation_where($filters, $params);
 
     $decoded_cursor = dal_decode_cursor($cursor);
     $where .= dal_keyset_clause('c.date_entree', 'c.id', $decoded_cursor, 'DESC', $params);
@@ -439,6 +346,64 @@ function dal_set_citation_keywords(PDO $pdo, array $ctx, int $citation_id, array
         $pdo->rollBack();
         return dal_error('Erreur lors de l\'association des mots-clés.');
     }
+}
+
+/**
+ * Construit la portion de WHERE commune aux filtres de citations
+ * (oeuvre/theme/etat/auteur/dates/mots-clés). Partagée par find / search / count
+ * pour garantir des résultats et un compteur cohérents.
+ * Ne couvre ni le soft-delete, ni l'access clause, ni le keyset (gérés à part).
+ */
+function _dal_build_citation_where(array $filters, array &$params): string
+{
+    $where = '';
+    if (!empty($filters['oeuvre_id'])) {
+        $where .= ' AND c.oeuvre_id = :f_oeuvre_id';
+        $params[':f_oeuvre_id'] = (int) $filters['oeuvre_id'];
+    }
+    if (!empty($filters['theme_id'])) {
+        $where .= ' AND c.theme_id = :f_theme_id';
+        $params[':f_theme_id'] = (int) $filters['theme_id'];
+    }
+    _dal_apply_id_list_filter($where, $params, 'c.oeuvre_id', 'oin', $filters['oeuvre_ids'] ?? null);
+    _dal_apply_id_list_filter($where, $params, 'c.theme_id', 'tin', $filters['theme_ids'] ?? null);
+    if (!empty($filters['etat_id'])) {
+        $where .= ' AND c.etat_id = :f_etat_id';
+        $params[':f_etat_id'] = (int) $filters['etat_id'];
+    }
+    if (!empty($filters['auteur_id'])) {
+        $where .= ' AND o.auteur_id = :f_auteur_id';
+        $params[':f_auteur_id'] = (int) $filters['auteur_id'];
+    }
+    if (!empty($filters['date_from'])) {
+        $where .= ' AND c.date_entree >= :f_date_from';
+        $params[':f_date_from'] = $filters['date_from'];
+    }
+    if (!empty($filters['date_to'])) {
+        $where .= ' AND c.date_entree <= :f_date_to';
+        $params[':f_date_to'] = $filters['date_to'];
+    }
+
+    // Filtre mots-clés (mode OR / AND)
+    if (!empty($filters['keyword_ids']) && is_array($filters['keyword_ids'])) {
+        $kw_ids = array_map('intval', $filters['keyword_ids']);
+        $placeholders = [];
+        foreach ($kw_ids as $i => $kid) {
+            $key = ":kw_{$i}";
+            $placeholders[] = $key;
+            $params[$key] = $kid;
+        }
+        $in_list = implode(',', $placeholders);
+        $mode = ($filters['keyword_mode'] ?? 'or') === 'and' ? 'and' : 'or';
+        if ($mode === 'or') {
+            $where .= " AND c.id IN (SELECT citation_id FROM citation_keywords WHERE keyword_id IN ({$in_list}))";
+        } else {
+            $where .= " AND c.id IN (SELECT citation_id FROM citation_keywords WHERE keyword_id IN ({$in_list}) GROUP BY citation_id HAVING COUNT(DISTINCT keyword_id) = :kw_count)";
+            $params[':kw_count'] = count($kw_ids);
+        }
+    }
+
+    return $where;
 }
 
 /**

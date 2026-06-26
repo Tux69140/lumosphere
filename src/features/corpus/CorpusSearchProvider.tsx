@@ -1,4 +1,12 @@
-import { createContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import {
+  createContext,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react'
 import { toast } from 'sonner'
 import { apiClient } from '@/services/api'
 import { useDebouncedValue } from '@/hooks/useDebouncedValue'
@@ -20,6 +28,8 @@ export type CorpusSearchContextValue = {
   loading: boolean
   error: string | null
   hasMore: boolean
+  loadingMore: boolean
+  loadMore: () => void
   hasActiveFilters: boolean
 }
 
@@ -34,7 +44,8 @@ export function CorpusSearchProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<Citation[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [hasMore, setHasMore] = useState(false)
+  const [nextCursor, setNextCursor] = useState<string | null>(null)
+  const [loadingMore, setLoadingMore] = useState(false)
 
   const themeTree = useMemo(() => buildThemeTree(themes), [themes])
 
@@ -64,8 +75,17 @@ export function CorpusSearchProvider({ children }: { children: ReactNode }) {
   // eslint-disable-next-line react-hooks/refs
   filtersRef.current = { query, selectedOeuvreIds, selectedThemeIds }
 
+  // Cursor courant + garde anti-course pour le chargement progressif.
+  const nextCursorRef = useRef<string | null>(null)
+  // eslint-disable-next-line react-hooks/refs
+  nextCursorRef.current = nextCursor
+  const loadingMoreRef = useRef(false)
+  // Génération de recherche : invalide un loadMore en vol si une nouvelle recherche démarre.
+  const searchGenRef = useRef(0)
+
   useEffect(() => {
     let cancelled = false
+    searchGenRef.current += 1
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true)
     setError(null)
@@ -76,7 +96,7 @@ export function CorpusSearchProvider({ children }: { children: ReactNode }) {
         if (cancelled) return
         if (res.status === 'ok' && res.data) {
           setItems(res.data.items as Citation[])
-          setHasMore(res.data.next_cursor !== null)
+          setNextCursor(res.data.next_cursor)
         } else {
           setError(res.errors?.[0] ?? 'Erreur de chargement')
         }
@@ -91,6 +111,30 @@ export function CorpusSearchProvider({ children }: { children: ReactNode }) {
       cancelled = true
     }
   }, [debouncedKey])
+
+  // Chargement progressif : déclenché quand la sentinelle de bas de liste devient visible.
+  const loadMore = useCallback(() => {
+    const cursor = nextCursorRef.current
+    if (cursor === null || loadingMoreRef.current) return
+    loadingMoreRef.current = true
+    const gen = searchGenRef.current
+    setLoadingMore(true)
+    const { query: q, selectedOeuvreIds: oi, selectedThemeIds: ti } = filtersRef.current
+    apiClient
+      .findCitations(buildCitationParams({ query: q, oeuvreIds: oi, themeIds: ti }, cursor))
+      .then((res) => {
+        // Ignore si une nouvelle recherche a démarré entre-temps.
+        if (gen !== searchGenRef.current) return
+        if (res.status === 'ok' && res.data) {
+          setItems((prev) => [...prev, ...(res.data!.items as Citation[])])
+          setNextCursor(res.data.next_cursor)
+        }
+      })
+      .finally(() => {
+        loadingMoreRef.current = false
+        setLoadingMore(false)
+      })
+  }, [])
 
   const value: CorpusSearchContextValue = {
     query,
@@ -112,7 +156,9 @@ export function CorpusSearchProvider({ children }: { children: ReactNode }) {
     items,
     loading,
     error,
-    hasMore,
+    hasMore: nextCursor !== null,
+    loadingMore,
+    loadMore,
     hasActiveFilters:
       query.trim() !== '' || selectedOeuvreIds.length > 0 || selectedThemeIds.length > 0,
   }

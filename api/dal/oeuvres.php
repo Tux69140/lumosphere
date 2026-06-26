@@ -31,14 +31,19 @@ function dal_find_oeuvres(PDO $pdo, array $ctx, ?int $auteur_id = null): array
 function dal_get_oeuvre(PDO $pdo, array $ctx, int $id): array
 {
     dal_require_permission($ctx, 'corpus.read');
-    $stmt = $pdo->prepare(
-        'SELECT o.id, o.auteur_id, o.nom, o.abreviation, o.url, o.ref_libraire, o.description,
-                o.created_at, o.updated_at, a.nom AS auteur_nom
-         FROM oeuvres o
-         JOIN auteurs a ON o.auteur_id = a.id
-         WHERE o.id = :id'
-    );
-    $stmt->execute(['id' => $id]);
+    // R8 — même filtre de visibilité que la liste : une œuvre réservée à un autre
+    // rôle renvoie « introuvable » au lieu de divulguer ses métadonnées.
+    $params = [':id' => $id];
+    $where = 'o.id = :id';
+    $where .= dal_oeuvre_visibility_clause('o.id', $ctx, $params);
+
+    $sql = "SELECT o.id, o.auteur_id, o.nom, o.abreviation, o.url, o.ref_libraire, o.description,
+                   o.created_at, o.updated_at, a.nom AS auteur_nom
+            FROM oeuvres o
+            JOIN auteurs a ON o.auteur_id = a.id
+            WHERE {$where}";
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
     $row = $stmt->fetch();
     return $row ? dal_ok($row) : dal_error('Œuvre introuvable.');
 }

@@ -1,4 +1,5 @@
 // src/features/accueil/AccueilPage.tsx
+import { useEffect, useRef } from 'react'
 import { CitationCard } from '@/components/CitationCard'
 import { ResultsInfoBar } from '@/components/ResultsInfoBar'
 import { useAuth } from '@/hooks/useAuth'
@@ -9,7 +10,22 @@ const ADMIN_ROLES = [1, 2] // Administrateur, Éditeur
 export function AccueilPage() {
   const { user } = useAuth()
   const canEdit = user ? ADMIN_ROLES.includes(user.role_id) : false
-  const { items, loading, error, hasMore } = useCorpusSearch()
+  const { items, loading, error, hasMore, loadingMore, loadMore } = useCorpusSearch()
+  const sentinelRef = useRef<HTMLDivElement | null>(null)
+
+  // Charge le paquet suivant dès que la sentinelle de bas de liste approche du viewport.
+  useEffect(() => {
+    const el = sentinelRef.current
+    if (!el || !hasMore) return
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) loadMore()
+      },
+      { rootMargin: '300px' },
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [hasMore, loadMore, items.length])
 
   return (
     <div>
@@ -40,10 +56,13 @@ export function AccueilPage() {
         ))}
       </div>
 
-      {!loading && hasMore && (
-        <p className="mt-4 text-center text-xs text-(--color-text-placeholder)">
-          Affinez votre recherche pour préciser les résultats.
-        </p>
+      {hasMore && (
+        <div
+          ref={sentinelRef}
+          className="mt-4 flex justify-center py-4 text-xs text-(--color-text-placeholder)"
+        >
+          {loadingMore ? 'Chargement…' : ''}
+        </div>
       )}
     </div>
   )

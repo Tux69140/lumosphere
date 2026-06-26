@@ -47,6 +47,16 @@ function dal_delete_role(PDO $pdo, array $ctx, int $id): array
     if ($id === ROLE_VISITEUR) {
         return dal_error('Le rôle Visiteur est un rôle système et ne peut pas être supprimé.');
     }
+    // Garde FK (fk_users_role = ON DELETE RESTRICT) : message clair plutôt qu'une
+    // PDOException remontée en « Erreur interne du serveur ».
+    $in_use = $pdo->prepare('SELECT COUNT(*) FROM users WHERE role_id = :id');
+    $in_use->execute(['id' => $id]);
+    $count = (int) $in_use->fetchColumn();
+    if ($count > 0) {
+        return dal_error(
+            "Ce rôle est encore attribué à {$count} utilisateur(s). Réassignez-les avant de le supprimer."
+        );
+    }
     $stmt = $pdo->prepare('DELETE FROM roles WHERE id = :id');
     $stmt->execute(['id' => $id]);
     return $stmt->rowCount() > 0 ? dal_ok() : dal_error('Rôle introuvable.');

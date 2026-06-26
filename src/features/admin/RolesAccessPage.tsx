@@ -87,6 +87,14 @@ export function RolesAccessPage() {
         return
       }
       const newRole = r.data as { id: number; nom: string }
+      // Les œuvres accessibles cochées doivent être enregistrées séparément
+      // (comme en édition) — sinon la sélection est silencieusement perdue.
+      if (detail.showOeuvres && data.oeuvreIds.length > 0) {
+        const ro = await apiClient.setRoleOeuvres(newRole.id, data.oeuvreIds)
+        if (ro.status !== 'ok') {
+          toast.error(ro.errors?.[0] ?? 'Rôle créé, mais œuvres accessibles non enregistrées.')
+        }
+      }
       setRoles((prev) => [...prev, newRole])
       await selectRole(newRole.id)
       toast.success(`Rôle « ${newRole.nom} » créé.`)
