@@ -17,7 +17,7 @@ function FilterPill({ label, onRemove }: { label: string; onRemove: () => void }
       {label}
       <button
         onClick={onRemove}
-        className="ml-1.5 rounded-full p-0.5 hover:bg-(--color-bg-button) focus:outline-none"
+        className="ml-1.5 rounded-full p-0.5 hover:bg-(--color-bg-button) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--color-action)"
         aria-label={`Supprimer le filtre ${label}`}
       >
         <X size={12} aria-hidden="true" />
@@ -44,13 +44,17 @@ export function ResultsInfoBar() {
 
   const countLabel = loading
     ? 'Recherche…'
-    : `${items.length} résultat${items.length !== 1 ? 's' : ''}${hasMore ? '+' : ''}`
+    : `${items.length}${hasMore ? '+' : ''} résultat${items.length !== 1 ? 's' : ''}`
 
   return (
     <div className="mb-4 space-y-2">
-      <div className="flex min-h-[58px] items-center justify-between rounded-lg border border-(--color-border) bg-(--color-bg-card) p-3 shadow-sm">
+      <div className="flex min-h-[58px] items-center justify-between rounded-lg border border-(--color-border) bg-(--color-bg-card) p-3">
         <div className="flex-1" />
-        <span className="rounded-full bg-(--color-bg-sidebar) px-3 py-1 text-sm font-medium text-(--color-text-secondary)">
+        <span
+          role="status"
+          aria-live="polite"
+          className="rounded-full bg-(--color-bg-sidebar) px-3 py-1 text-sm font-medium text-(--color-text-secondary)"
+        >
           {countLabel}
         </span>
       </div>

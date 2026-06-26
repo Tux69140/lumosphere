@@ -13,6 +13,7 @@ const MOCK_ROLES = vi.hoisted(() => [
 
 vi.mock('@/services/api', () => ({
   apiClient: {
+    getCsrf: vi.fn().mockResolvedValue({ status: 'ok', data: { csrf_token: 'test' }, errors: [] }),
     findRoles: vi.fn().mockResolvedValue({ status: 'ok', data: MOCK_ROLES, errors: [] }),
     findOeuvres: vi.fn().mockResolvedValue({
       status: 'ok',

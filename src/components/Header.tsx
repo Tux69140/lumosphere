@@ -1,16 +1,27 @@
 // src/components/Header.tsx
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router'
-import { SunHorizon, List, X, SignIn, SignOut, GearSix } from '@phosphor-icons/react'
+import { Link, useNavigate, useLocation } from 'react-router'
+import { SunHorizon, List, X, SignIn, SignOut, GearSix, Funnel } from '@phosphor-icons/react'
 import { ThemeToggle } from './ThemeToggle'
 import { useAuth } from '@/hooks/useAuth'
+import { useCorpusSearchOptional } from '@/features/corpus/useCorpusSearch'
 import { ROLE_ADMIN } from '@/constants/roles'
 
 export function Header() {
   const [menuOpen, setMenuOpen] = useState(false)
   const { user, logout } = useAuth()
   const navigate = useNavigate()
+  const { pathname } = useLocation()
   const isAdmin = user !== null && user.role_id === ROLE_ADMIN
+
+  // Bouton « Filtres » mobile : seulement sur la vue corpus (contexte présent, hors admin).
+  const corpus = useCorpusSearchOptional()
+  const showFilters = corpus !== null && !pathname.startsWith('/admin')
+  const activeFilters = corpus
+    ? (corpus.query.trim() !== '' ? 1 : 0) +
+      corpus.selectedOeuvreIds.length +
+      corpus.selectedThemeIds.length
+    : 0
 
   async function handleLogout() {
     setMenuOpen(false)
@@ -63,45 +74,66 @@ export function Header() {
           <span className="text-lg font-bold text-(--color-text-header)">Lumosphère</span>
         </Link>
 
-        <nav className="hidden items-center gap-2 md:flex">
-          <ThemeToggle />
-          <div className="h-6 w-px bg-(--color-border-header)" />
-          {isAdmin && (
-            <Link
-              to="/admin"
-              onClick={() => setMenuOpen(false)}
-              className="flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium text-(--color-link-header) hover:bg-(--color-bg-button) transition-colors"
-            >
-              <GearSix size={18} aria-hidden="true" />
-              <span className="hidden sm:inline">Admin</span>
-            </Link>
-          )}
-          {user ? (
+        <div className="flex items-center gap-2">
+          {/* Bouton « Filtres » à gauche du menu (mobile/tablette) — ouvre le panneau de la sidebar. */}
+          {showFilters && (
             <button
-              onClick={handleLogout}
-              className="flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium text-(--color-link-header) hover:bg-(--color-bg-button) transition-colors"
+              type="button"
+              onClick={corpus!.toggleFilters}
+              aria-expanded={corpus!.filtersOpen}
+              aria-controls="corpus-filters"
+              className="flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium text-(--color-link-header) transition-colors hover:bg-(--color-bg-button) lg:hidden"
             >
-              <SignOut size={18} aria-hidden="true" />
-              <span className="hidden sm:inline">Déconnexion</span>
+              <Funnel size={18} aria-hidden="true" />
+              <span>Filtres</span>
+              {activeFilters > 0 && (
+                <span className="rounded-full bg-(--color-tag-bg) px-1.5 text-xs font-medium text-(--color-tag-text)">
+                  {activeFilters}
+                </span>
+              )}
             </button>
-          ) : (
-            <Link
-              to="/login"
-              className="flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium text-(--color-link-header) hover:bg-(--color-bg-button) transition-colors"
-            >
-              <SignIn size={18} aria-hidden="true" />
-              <span className="hidden sm:inline">Connexion</span>
-            </Link>
           )}
-        </nav>
 
-        <button
-          onClick={() => setMenuOpen(!menuOpen)}
-          className="rounded-md p-2 text-(--color-icon-header) md:hidden"
-          aria-label={menuOpen ? 'Fermer le menu' : 'Ouvrir le menu'}
-        >
-          {menuOpen ? <X size={24} /> : <List size={24} />}
-        </button>
+          <nav className="hidden items-center gap-2 md:flex">
+            <ThemeToggle />
+            <div className="h-6 w-px bg-(--color-border-header)" />
+            {isAdmin && (
+              <Link
+                to="/admin"
+                onClick={() => setMenuOpen(false)}
+                className="flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium text-(--color-link-header) hover:bg-(--color-bg-button) transition-colors"
+              >
+                <GearSix size={18} aria-hidden="true" />
+                <span className="hidden sm:inline">Admin</span>
+              </Link>
+            )}
+            {user ? (
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium text-(--color-link-header) hover:bg-(--color-bg-button) transition-colors"
+              >
+                <SignOut size={18} aria-hidden="true" />
+                <span className="hidden sm:inline">Déconnexion</span>
+              </button>
+            ) : (
+              <Link
+                to="/login"
+                className="flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium text-(--color-link-header) hover:bg-(--color-bg-button) transition-colors"
+              >
+                <SignIn size={18} aria-hidden="true" />
+                <span className="hidden sm:inline">Connexion</span>
+              </Link>
+            )}
+          </nav>
+
+          <button
+            onClick={() => setMenuOpen(!menuOpen)}
+            className="rounded-md p-2 text-(--color-icon-header) md:hidden"
+            aria-label={menuOpen ? 'Fermer le menu' : 'Ouvrir le menu'}
+          >
+            {menuOpen ? <X size={24} /> : <List size={24} />}
+          </button>
+        </div>
       </div>
 
       {menuOpen && (

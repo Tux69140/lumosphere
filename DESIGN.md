@@ -8,6 +8,7 @@ colors:
   accent: "#d3b67b"
   accent-bg: "#ffffdf"
   accent-text: "#9a3412"
+  accent-ink: "#8a6d2f"
   bg-page: "#f8fefc"
   bg-card: "#ffffff"
   bg-sidebar: "#f8fafc"
@@ -134,7 +135,8 @@ Un système à économie chromatique : deux couleurs identitaires sur un fond de
 
 ### Primary
 - **Vert Éditorial** (`#2b4f35`): La couleur de toutes les actions primaires, états actifs de navigation, et liens interactifs. Sombre et organique, il ancre les gestes sans s'imposer. En mode sombre, son équivalent fonctionnel est l'Indigo Doux (`#818cf8`).
-- **Or Parchemin** (`#d3b67b`): L'accent identitaire. Réservé aux éléments qui méritent d'être remarqués : titres d'œuvres dans les cartes, icône de logo, badges de sélection, en-têtes de groupes de permissions dans l'admin. Jamais utilisé sur plus de 10 % d'un écran donné.
+- **Or Parchemin** (`#d3b67b`): L'accent identitaire. Réservé aux éléments **non-textuels** qui méritent d'être remarqués : icône de logo, badges de sélection, puces d'accent, fonds de pastilles. Jamais utilisé sur plus de 10 % d'un écran donné. **Ne jamais l'utiliser comme couleur de texte** (contraste ~1,95:1 sur blanc — illisible).
+- **Or Encre** (`#d3b67b` clair → `#8a6d2f`): Version foncée de l'Or Parchemin, **réservée au texte** qui doit rester or (noms d'œuvres dans les cartes, lien « Réinitialiser »). Token `--color-accent-ink`. Contraste ~4,86:1 sur blanc (WCAG AA ✓). En mode sombre, l'orange d'accent (`#fb923c`) est déjà lisible sur les cartes et sert d'équivalent.
 
 ### Secondary
 - **Indigo Marqueur** (`#4338ca`): Couleur des tags de filtrage et état hover sur les actions. Apparaît dans `--color-tag-text` et `--color-action-hover`. Transition inattendue du vert vers l'indigo au hover — signal de changement d'état net et délibéré.
@@ -183,6 +185,14 @@ L'exception délibérée : les **CartesCitation** (`shadow-sm` au repos, `shadow
 
 ### Named Rules
 **La Règle du Chrome Plat.** Tout l'UI chrome (header, sidebar, panneaux, modales, formulaires) est rendu plat avec des bordures. Aucune ombre sur les éléments de navigation ou d'administration. Les ombres sont réservées au contenu du corpus.
+
+## 4bis. Mise en page
+
+**Pleine largeur, sidebar à gauche.** Le header est pleine largeur ; en dessous, la sidebar est collée au bord gauche et le contenu occupe tout l'espace restant à droite (`flex lg:flex-row`, `main` fluide). Pas de coquille centrée ni de marges de page — l'app remplit l'écran.
+
+**Sidebar.** Largeur `lg:w-80` (320px) sur desktop. Sous `lg`, sur la vue corpus, elle est masquée par défaut et s'ouvre via le bouton **« Filtres »** placé dans le header (à gauche du menu hamburger), ce qui laisse les citations en premier. L'état ouvert/fermé vit dans le `CorpusSearchProvider` (`filtersOpen` / `toggleFilters`) ; le Header y accède via `useCorpusSearchOptional()` pour rester fonctionnel hors provider (page de connexion).
+
+**Cartes de citations.** La liste occupe quasi toute la largeur du `main`, plafonnée à `max-w-[90rem]` (~1440px) et centrée : sur très grand écran, seules de **petites marges symétriques** apparaissent (jamais de colonne étroite flottante). Le souffle de lecture vient du **padding horizontal de la carte** (`px-7`), qui marge le texte à gauche et à droite. La règle prose « 65–75ch » de la §3 ne s'applique pas ici : les citations sont courtes et encartées (en-tête thème/œuvre, pied mots-clés).
 
 ## 5. Components
 

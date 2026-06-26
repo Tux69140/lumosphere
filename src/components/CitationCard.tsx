@@ -26,7 +26,7 @@ export function CitationCard({
   const showNotes = notes != null && notes.trim() !== ''
 
   return (
-    <article className="group rounded-lg border border-(--color-border) bg-(--color-bg-card) p-5 shadow-sm transition-shadow hover:shadow-md">
+    <article className="group rounded-lg border border-(--color-border) bg-(--color-bg-card) px-7 py-5 shadow-sm transition-shadow hover:shadow-md">
       {/* En-tête : thème (gauche) + œuvre (droite) */}
       <div className="mb-3 flex items-start justify-between gap-4">
         <div className="flex-1 text-xs text-(--color-text-secondary)">
@@ -34,7 +34,9 @@ export function CitationCard({
           {theme_nom ?? 'Non spécifié'}
         </div>
         {oeuvre_nom && (
-          <span className="shrink-0 text-sm font-medium text-(--color-accent)">{oeuvre_nom}</span>
+          <span className="shrink-0 text-sm font-medium text-(--color-accent-ink)">
+            {oeuvre_nom}
+          </span>
         )}
       </div>
 
@@ -52,23 +54,19 @@ export function CitationCard({
       {showNotes && (
         <div
           data-testid="publication-notes"
-          style={{ borderTopColor: 'var(--color-border)' }}
-          className="prose-display mt-4 border-t pt-3 text-xs text-(--color-text-secondary)"
+          className="prose-display mt-4 border-t border-(--color-border) pt-3 text-xs text-(--color-text-secondary)"
         >
           <ReactMarkdown remarkPlugins={[remarkGfm]}>{notes}</ReactMarkdown>
         </div>
       )}
 
       {/* Pied : mots-clés (gauche) + actions inertes (droite) */}
-      <div
-        style={{ borderTopColor: '#f1f5f9' }}
-        className="mt-3 flex min-h-[30px] items-center justify-between gap-2 border-t pt-3"
-      >
+      <div className="mt-3 flex min-h-[30px] items-center justify-between gap-2 border-t border-(--color-border) pt-3">
         <div className="flex flex-1 flex-wrap gap-2">
           {mots_cles.map((mc) => (
             <span
               key={mc}
-              className="rounded-full bg-(--color-tag-bg) px-2 py-1 text-xs text-(--color-tag-text)"
+              className="rounded-full bg-(--color-bg-sidebar) px-2 py-1 text-xs text-(--color-text-secondary)"
             >
               {mc}
             </span>
@@ -82,7 +80,7 @@ export function CitationCard({
             aria-label="Ajouter aux favoris"
             className="rounded-full p-1.5 text-(--color-text-placeholder) disabled:cursor-not-allowed"
           >
-            <Heart className="h-5 w-5" aria-hidden="true" />
+            <Heart className="h-[18px] w-[18px]" aria-hidden="true" />
           </button>
           {canEdit && (
             <button
@@ -92,7 +90,7 @@ export function CitationCard({
               aria-label="Éditer cette entrée"
               className="rounded-full p-1.5 text-(--color-text-placeholder) disabled:cursor-not-allowed"
             >
-              <PencilSimple className="h-4 w-4" aria-hidden="true" />
+              <PencilSimple className="h-[18px] w-[18px]" aria-hidden="true" />
             </button>
           )}
         </div>

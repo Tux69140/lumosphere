@@ -31,6 +31,8 @@ export type CorpusSearchContextValue = {
   loadingMore: boolean
   loadMore: () => void
   hasActiveFilters: boolean
+  filtersOpen: boolean
+  toggleFilters: () => void
 }
 
 export const CorpusSearchContext = createContext<CorpusSearchContextValue | null>(null)
@@ -46,6 +48,8 @@ export function CorpusSearchProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null)
   const [nextCursor, setNextCursor] = useState<string | null>(null)
   const [loadingMore, setLoadingMore] = useState(false)
+  // État du panneau de filtres replié sur mobile (déclenché depuis le header).
+  const [filtersOpen, setFiltersOpen] = useState(false)
 
   const themeTree = useMemo(() => buildThemeTree(themes), [themes])
 
@@ -161,6 +165,8 @@ export function CorpusSearchProvider({ children }: { children: ReactNode }) {
     loadMore,
     hasActiveFilters:
       query.trim() !== '' || selectedOeuvreIds.length > 0 || selectedThemeIds.length > 0,
+    filtersOpen,
+    toggleFilters: () => setFiltersOpen((v) => !v),
   }
 
   return <CorpusSearchContext.Provider value={value}>{children}</CorpusSearchContext.Provider>

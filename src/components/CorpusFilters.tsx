@@ -46,14 +46,14 @@ export function CorpusFilters() {
             placeholder="Rechercher dans le contenu…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="w-full rounded-md border border-(--color-border) bg-(--color-bg-field) py-2 pl-9 pr-9 text-sm text-(--color-text-primary) placeholder:text-(--color-text-placeholder)"
+            className="w-full rounded-md border border-(--color-border) bg-(--color-bg-field) py-2 pl-9 pr-9 text-sm text-(--color-text-primary) placeholder:text-(--color-text-placeholder) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--color-action)"
           />
           {query && (
             <button
               type="button"
               aria-label="Effacer la recherche"
               onClick={() => setQuery('')}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-(--color-text-placeholder) hover:text-(--color-text-primary)"
+              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full text-(--color-text-placeholder) hover:text-(--color-text-primary) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--color-action)"
             >
               <X size={16} />
             </button>
@@ -130,7 +130,7 @@ export function CorpusFilters() {
         <button
           type="button"
           onClick={reset}
-          className="mt-1 text-sm text-(--color-accent) hover:underline"
+          className="mt-1 rounded-sm text-sm font-medium text-(--color-accent-ink) hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--color-action)"
         >
           Réinitialiser
         </button>

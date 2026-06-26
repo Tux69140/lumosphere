@@ -22,6 +22,7 @@
   --color-accent: var(--color-accent);
   --color-accent-bg: var(--color-accent-bg);
   --color-accent-text: var(--color-accent-text);
+  --color-accent-ink: var(--color-accent-ink);
   --color-tag-bg: var(--color-tag-bg);
   --color-tag-text: var(--color-tag-text);
   --color-border: var(--color-border);
@@ -56,6 +57,8 @@
   --color-accent: #d3b67b;
   --color-accent-bg: #ffffdf;
   --color-accent-text: #9a3412;
+  /* Or « encre » : version foncée de l'accent pour le TEXTE (contraste ≥ 4,5:1 sur blanc) */
+  --color-accent-ink: #8a6d2f;
   --color-tag-bg: #ececff;
   --color-tag-text: #4338ca;
   --color-border: #e2e8f0;
@@ -90,6 +93,8 @@
   --color-accent: #fb923c;
   --color-accent-bg: #000040;
   --color-accent-text: #fdba74;
+  /* En mode sombre, l'orange d'accent est déjà lisible sur les cartes (#1e293b) */
+  --color-accent-ink: #fb923c;
   --color-tag-bg: #312e81;
   --color-tag-text: #c7d2fe;
   --color-border: #475569;
