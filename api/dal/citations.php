@@ -54,6 +54,8 @@ function dal_find_citations(PDO $pdo, array $ctx, array $filters = [], ?string $
         $where .= ' AND c.theme_id = :f_theme_id';
         $params[':f_theme_id'] = (int) $filters['theme_id'];
     }
+    _dal_apply_id_list_filter($where, $params, 'c.oeuvre_id', 'oin', $filters['oeuvre_ids'] ?? null);
+    _dal_apply_id_list_filter($where, $params, 'c.theme_id', 'tin', $filters['theme_ids'] ?? null);
     if (!empty($filters['etat_id'])) {
         $where .= ' AND c.etat_id = :f_etat_id';
         $params[':f_etat_id'] = (int) $filters['etat_id'];
@@ -210,6 +212,8 @@ function dal_search_citations(PDO $pdo, array $ctx, string $query, array $filter
         $where .= ' AND c.theme_id = :f_theme_id';
         $params[':f_theme_id'] = (int) $filters['theme_id'];
     }
+    _dal_apply_id_list_filter($where, $params, 'c.oeuvre_id', 'oin', $filters['oeuvre_ids'] ?? null);
+    _dal_apply_id_list_filter($where, $params, 'c.theme_id', 'tin', $filters['theme_ids'] ?? null);
     if (!empty($filters['etat_id'])) {
         $where .= ' AND c.etat_id = :f_etat_id';
         $params[':f_etat_id'] = (int) $filters['etat_id'];
@@ -435,6 +439,28 @@ function dal_set_citation_keywords(PDO $pdo, array $ctx, int $citation_id, array
         $pdo->rollBack();
         return dal_error('Erreur lors de l\'association des mots-clés.');
     }
+}
+
+/**
+ * Append an "AND col IN (...)" clause from a list of ids, with bound params.
+ * Ignores empty/zero ids. No client input is concatenated.
+ */
+function _dal_apply_id_list_filter(string &$where, array &$params, string $col, string $prefix, mixed $value): void
+{
+    if (empty($value) || !is_array($value)) {
+        return;
+    }
+    $ids = array_values(array_filter(array_map('intval', $value), static fn (int $v): bool => $v > 0));
+    if (empty($ids)) {
+        return;
+    }
+    $placeholders = [];
+    foreach ($ids as $i => $id) {
+        $key = ":{$prefix}_{$i}";
+        $placeholders[] = $key;
+        $params[$key] = $id;
+    }
+    $where .= " AND {$col} IN (" . implode(',', $placeholders) . ')';
 }
 
 // --- Private helpers ---

@@ -12,6 +12,8 @@ function endpoint_citations(PDO $pdo, array $ctx, string $method, ?int $id, ?arr
             array_filter([
                 'oeuvre_id'    => $_GET['oeuvre_id'] ?? null,
                 'theme_id'     => $_GET['theme_id'] ?? null,
+                'oeuvre_ids'   => isset($_GET['oeuvre_ids']) ? explode(',', $_GET['oeuvre_ids']) : null,
+                'theme_ids'    => isset($_GET['theme_ids']) ? explode(',', $_GET['theme_ids']) : null,
                 'etat_id'      => $_GET['etat_id'] ?? null,
                 'auteur_id'    => $_GET['auteur_id'] ?? null,
                 'keyword_ids'  => isset($_GET['keyword_ids']) ? explode(',', $_GET['keyword_ids']) : null,
@@ -34,6 +36,8 @@ function endpoint_citations(PDO $pdo, array $ctx, string $method, ?int $id, ?arr
             array_filter([
                 'oeuvre_id'    => $_GET['oeuvre_id'] ?? null,
                 'theme_id'     => $_GET['theme_id'] ?? null,
+                'oeuvre_ids'   => isset($_GET['oeuvre_ids']) ? explode(',', $_GET['oeuvre_ids']) : null,
+                'theme_ids'    => isset($_GET['theme_ids']) ? explode(',', $_GET['theme_ids']) : null,
                 'etat_id'      => $_GET['etat_id'] ?? null,
                 'auteur_id'    => $_GET['auteur_id'] ?? null,
                 'keyword_ids'  => isset($_GET['keyword_ids']) ? explode(',', $_GET['keyword_ids']) : null,
