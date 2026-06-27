@@ -59,11 +59,11 @@
 
 ---
 
-## Tranche 3 — Bibliothèque complète
+## Tranche 3 — Index complet
 
 | # | Source | Tâche | Prérequis |
 |---|--------|-------|-----------|
-| T15 | Dev §I.5 + complément | Décision éditeur Markdown : évaluation candidats (TipTap/Milkdown/MDXEditor/BlockNote), prototype | — (peut commencer en parallèle) |
+| T15 | Dev §I.5 + complément | Décision éditeur Markdown : évaluation candidats (~TipTap/~ Milkdown ~/MDXEditor/BlockNote~), prototype | — (peut commencer en parallèle) |
 | T16 | Dev §III.2 | Référentiels CRUD admin : auteurs, œuvres, thèmes (≤2 niveaux), mots-clés (normalisés), états, emojis | T14 |
 | T17 | Dev §III.3 | Consultation publique complète : header sticky, panneau filtres, zone résultats, badges actifs, favoris et retour à la page précédente lors d'un login (reliquat de T09) | T13, T16 |
 | T18 | Dev §III.4 | Moteur de recherche complet : OR/AND mots-clés, pagination keyset, debounce 300ms, virtualisation >200 | T11, T17 |
