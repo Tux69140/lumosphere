@@ -50,14 +50,8 @@ function dal_update_auteur(PDO $pdo, array $ctx, int $id, array $data): array
     if (!$stmt->fetch()) {
         return dal_error('Auteur introuvable.');
     }
-    $fields = [];
     $params = ['id' => $id];
-    foreach (['nom', 'site', 'informations'] as $col) {
-        if (array_key_exists($col, $data)) {
-            $fields[] = "{$col} = :{$col}";
-            $params[$col] = $data[$col];
-        }
-    }
+    $fields = _dal_build_update_fields($data, ['nom', 'site', 'informations'], $params);
     if (empty($fields)) {
         return dal_error('Aucun champ à mettre à jour.');
     }

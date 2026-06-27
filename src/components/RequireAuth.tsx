@@ -1,8 +1,9 @@
 import { type ReactNode } from 'react'
 import { Navigate } from 'react-router'
 import { useAuth } from '@/hooks/useAuth'
+import { ROLE_ADMIN, ROLE_EDITEUR } from '@/constants/roles'
 
-const ALLOWED_ROLES = [1, 2] // Administrateur, Éditeur
+const ALLOWED_ROLES = [ROLE_ADMIN, ROLE_EDITEUR]
 
 export function RequireAuth({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth()

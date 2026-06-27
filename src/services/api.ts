@@ -79,6 +79,10 @@ function del<T>(path: string): Promise<ApiResponse<T>> {
   return request<T>(path, { method: 'DELETE' })
 }
 
+function buildQuery(params?: Record<string, string>): string {
+  return params ? '?' + new URLSearchParams(params).toString() : ''
+}
+
 async function fetchCsrf() {
   const result = await get<{ csrf_token: string }>('auth/csrf')
   if (result.status === 'ok' && result.data?.csrf_token) {
@@ -143,10 +147,8 @@ export const apiClient = {
   },
 
   // Citations
-  findCitations: (params?: Record<string, string>) => {
-    const qs = params ? '?' + new URLSearchParams(params).toString() : ''
-    return get<{ items: unknown[]; next_cursor: string | null }>(`citations${qs}`)
-  },
+  findCitations: (params?: Record<string, string>) =>
+    get<{ items: unknown[]; next_cursor: string | null }>(`citations${buildQuery(params)}`),
   getCitation: (id: number) => get<unknown>(`citations/${id}`),
   createCitation: (data: unknown) => post<{ id: number }>('citations', data),
   updateCitation: (id: number, data: unknown) => put<{ id: number }>(`citations/${id}`, data),
@@ -155,20 +157,14 @@ export const apiClient = {
     put<void>(`citations/${id}/keywords`, { keyword_ids: keywordIds }),
 
   // Auteurs
-  findAuteurs: (params?: Record<string, string>) => {
-    const qs = params ? '?' + new URLSearchParams(params).toString() : ''
-    return get<unknown[]>(`auteurs${qs}`)
-  },
+  findAuteurs: (params?: Record<string, string>) => get<unknown[]>(`auteurs${buildQuery(params)}`),
   getAuteur: (id: number) => get<unknown>(`auteurs/${id}`),
   createAuteur: (data: unknown) => post<{ id: number }>('auteurs', data),
   updateAuteur: (id: number, data: unknown) => put<{ id: number }>(`auteurs/${id}`, data),
   deleteAuteur: (id: number) => del<void>(`auteurs/${id}`),
 
   // Oeuvres
-  findOeuvres: (params?: Record<string, string>) => {
-    const qs = params ? '?' + new URLSearchParams(params).toString() : ''
-    return get<unknown[]>(`oeuvres${qs}`)
-  },
+  findOeuvres: (params?: Record<string, string>) => get<unknown[]>(`oeuvres${buildQuery(params)}`),
   getOeuvre: (id: number) => get<unknown>(`oeuvres/${id}`),
   createOeuvre: (data: unknown) => post<{ id: number }>('oeuvres', data),
   updateOeuvre: (id: number, data: unknown) => put<{ id: number }>(`oeuvres/${id}`, data),
@@ -182,10 +178,8 @@ export const apiClient = {
   deleteTheme: (id: number) => del<void>(`themes/${id}`),
 
   // Keywords
-  findKeywords: (params?: Record<string, string>) => {
-    const qs = params ? '?' + new URLSearchParams(params).toString() : ''
-    return get<unknown[]>(`keywords${qs}`)
-  },
+  findKeywords: (params?: Record<string, string>) =>
+    get<unknown[]>(`keywords${buildQuery(params)}`),
   createKeyword: (data: unknown) => post<{ id: number }>('keywords', data),
   deleteKeyword: (id: number) => del<void>(`keywords/${id}`),
 
@@ -218,10 +212,8 @@ export const apiClient = {
   setConfig: (key: string, value: string) => put<void>(`config/${key}`, { value }),
 
   // Favorites
-  findFavorites: (params?: Record<string, string>) => {
-    const qs = params ? '?' + new URLSearchParams(params).toString() : ''
-    return get<{ items: unknown[]; next_cursor: string | null }>(`favorites${qs}`)
-  },
+  findFavorites: (params?: Record<string, string>) =>
+    get<{ items: unknown[]; next_cursor: string | null }>(`favorites${buildQuery(params)}`),
   addFavorite: (citationId: number) => post<void>('favorites', { citation_id: citationId }),
   removeFavorite: (citationId: number) => del<void>(`favorites/${citationId}`),
 }

@@ -334,12 +334,14 @@ function dal_set_citation_keywords(PDO $pdo, array $ctx, int $citation_id, array
     dal_require_permission($ctx, 'corpus.write');
     $pdo->beginTransaction();
     try {
-        $pdo->prepare('DELETE FROM citation_keywords WHERE citation_id = :cid')
-            ->execute(['cid' => $citation_id]);
-        $stmt = $pdo->prepare('INSERT INTO citation_keywords (citation_id, keyword_id) VALUES (:cid, :kid)');
-        foreach ($keyword_ids as $kid) {
-            $stmt->execute(['cid' => $citation_id, 'kid' => (int) $kid]);
-        }
+        _dal_replace_associations(
+            $pdo,
+            'citation_keywords',
+            'citation_id',
+            $citation_id,
+            'keyword_id',
+            array_map('intval', $keyword_ids)
+        );
         $pdo->commit();
         return dal_ok();
     } catch (\Throwable $e) {

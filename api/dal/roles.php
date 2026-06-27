@@ -80,12 +80,14 @@ function dal_update_role_permissions(PDO $pdo, array $ctx, int $role_id, array $
 
     $pdo->beginTransaction();
     try {
-        $pdo->prepare('DELETE FROM role_permissions WHERE role_id = :role_id')
-            ->execute(['role_id' => $role_id]);
-        $stmt = $pdo->prepare('INSERT INTO role_permissions (role_id, permission_id) VALUES (:role_id, :perm_id)');
-        foreach ($permission_ids as $perm_id) {
-            $stmt->execute(['role_id' => $role_id, 'perm_id' => (int) $perm_id]);
-        }
+        _dal_replace_associations(
+            $pdo,
+            'role_permissions',
+            'role_id',
+            $role_id,
+            'permission_id',
+            array_map('intval', $permission_ids)
+        );
         $pdo->commit();
         return dal_ok();
     } catch (\Throwable $e) {
@@ -111,10 +113,7 @@ function dal_create_role(PDO $pdo, array $ctx, string $nom, array $permission_id
         $stmt = $pdo->prepare('INSERT INTO roles (nom) VALUES (:nom)');
         $stmt->execute(['nom' => $nom]);
         $id = (int) $pdo->lastInsertId();
-        $stmt = $pdo->prepare('INSERT INTO role_permissions (role_id, permission_id) VALUES (:role_id, :perm_id)');
-        foreach ($ids as $perm_id) {
-            $stmt->execute(['role_id' => $id, 'perm_id' => $perm_id]);
-        }
+        _dal_replace_associations($pdo, 'role_permissions', 'role_id', $id, 'permission_id', $ids);
         $pdo->commit();
         return dal_ok(['id' => $id, 'nom' => $nom]);
     } catch (\Throwable $e) {
@@ -163,11 +162,7 @@ function dal_set_role_oeuvre_access(PDO $pdo, array $ctx, int $role_id, array $o
     )));
     $pdo->beginTransaction();
     try {
-        $pdo->prepare('DELETE FROM role_oeuvre_access WHERE role_id = :rid')->execute(['rid' => $role_id]);
-        $stmt = $pdo->prepare('INSERT INTO role_oeuvre_access (role_id, oeuvre_id) VALUES (:rid, :oid)');
-        foreach ($ids as $oid) {
-            $stmt->execute(['rid' => $role_id, 'oid' => $oid]);
-        }
+        _dal_replace_associations($pdo, 'role_oeuvre_access', 'role_id', $role_id, 'oeuvre_id', $ids);
         $pdo->commit();
         return dal_ok(['oeuvre_ids' => $ids]);
     } catch (\Throwable $e) {

@@ -152,3 +152,48 @@ function dal_keyset_clause(string $sort_col, string $id_col, ?array $cursor, str
     $params[':cursor_id']    = $cursor['id'];
     return " AND ({$sort_col} {$op} :cursor_sort1 OR ({$sort_col} = :cursor_sort2 AND {$id_col} {$op} :cursor_id))";
 }
+
+/**
+ * Remplace en bloc les lignes d'une table de liaison (DELETE puis ré-INSERT en une
+ * seule requête multi-valeurs). À appeler à l'intérieur d'une transaction gérée par
+ * l'appelant. $table/$fk_col/$val_col sont des identifiants internes (jamais de saisie
+ * client) ; $ids est inséré via des paramètres liés.
+ *
+ * @param int[] $ids
+ */
+function _dal_replace_associations(PDO $pdo, string $table, string $fk_col, int $fk_id, string $val_col, array $ids): void
+{
+    $pdo->prepare("DELETE FROM {$table} WHERE {$fk_col} = :fk")->execute(['fk' => $fk_id]);
+    if (empty($ids)) {
+        return;
+    }
+    $placeholders = [];
+    $params = [];
+    foreach (array_values($ids) as $i => $val) {
+        $placeholders[]      = "(:fk_{$i}, :val_{$i})";
+        $params["fk_{$i}"]   = $fk_id;
+        $params["val_{$i}"]  = (int) $val;
+    }
+    $sql = "INSERT INTO {$table} ({$fk_col}, {$val_col}) VALUES " . implode(', ', $placeholders);
+    $pdo->prepare($sql)->execute($params);
+}
+
+/**
+ * Construit les fragments « col = :col » pour un UPDATE partiel, en ne retenant que
+ * les colonnes autorisées effectivement présentes dans $data, et renseigne $params.
+ * La liste blanche $allowed_cols reste de la responsabilité de l'appelant (sécurité).
+ *
+ * @param string[] $allowed_cols
+ * @return string[] fragments SET
+ */
+function _dal_build_update_fields(array $data, array $allowed_cols, array &$params): array
+{
+    $fields = [];
+    foreach ($allowed_cols as $col) {
+        if (array_key_exists($col, $data)) {
+            $fields[]     = "{$col} = :{$col}";
+            $params[$col] = $data[$col];
+        }
+    }
+    return $fields;
+}

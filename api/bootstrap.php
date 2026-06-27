@@ -9,6 +9,15 @@ ini_set('session.cookie_samesite', 'Lax');
 ini_set('session.gc_maxlifetime', '2592000'); // 30 jours : préserver les sessions « se souvenir de moi »
 session_start();
 
+/**
+ * Vide et détruit la session courante (expiration / révocation par un admin).
+ */
+function _clear_session(): void
+{
+    $_SESSION = [];
+    session_destroy();
+}
+
 // Load config (outside repo)
 $config = require dirname(__DIR__) . '/config/config.php';
 date_default_timezone_set($config['timezone'] ?? 'Europe/Paris');
@@ -62,8 +71,7 @@ if (isset($_SESSION['user_id'], $_SESSION['last_activity'])) {
         if ($token_hash !== null) {
             dal_auth_invalidate_session($pdo, $token_hash);
         }
-        $_SESSION = [];
-        session_destroy();
+        _clear_session();
         http_response_code(401);
         echo json_encode(['status' => 'error', 'data' => null, 'errors' => ['Session expirée.']]);
         exit;
@@ -72,8 +80,7 @@ if (isset($_SESSION['user_id'], $_SESSION['last_activity'])) {
     // Check if session was revoked by admin
     $token_hash = $_SESSION['session_token_hash'] ?? null;
     if ($token_hash !== null && dal_auth_is_session_revoked($pdo, $token_hash)) {
-        $_SESSION = [];
-        session_destroy();
+        _clear_session();
         http_response_code(401);
         echo json_encode(['status' => 'error', 'data' => null, 'errors' => ['Session révoquée par un administrateur.']]);
         exit;

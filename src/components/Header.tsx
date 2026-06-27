@@ -29,11 +29,15 @@ export function Header() {
     navigate('/')
   }
 
-  function renderActions(showLabels = false) {
+  function renderActions({
+    showLabels = false,
+    withDivider = false,
+  }: { showLabels?: boolean; withDivider?: boolean } = {}) {
     const labelClass = showLabels ? '' : 'hidden sm:inline'
     return (
       <>
         <ThemeToggle />
+        {withDivider && <div className="h-6 w-px bg-(--color-border-header)" />}
         {isAdmin && (
           <Link
             to="/admin"
@@ -95,35 +99,7 @@ export function Header() {
           )}
 
           <nav className="hidden items-center gap-2 md:flex">
-            <ThemeToggle />
-            <div className="h-6 w-px bg-(--color-border-header)" />
-            {isAdmin && (
-              <Link
-                to="/admin"
-                onClick={() => setMenuOpen(false)}
-                className="flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium text-(--color-link-header) hover:bg-(--color-bg-button) transition-colors"
-              >
-                <GearSix size={18} aria-hidden="true" />
-                <span className="hidden sm:inline">Admin</span>
-              </Link>
-            )}
-            {user ? (
-              <button
-                onClick={handleLogout}
-                className="flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium text-(--color-link-header) hover:bg-(--color-bg-button) transition-colors"
-              >
-                <SignOut size={18} aria-hidden="true" />
-                <span className="hidden sm:inline">Déconnexion</span>
-              </button>
-            ) : (
-              <Link
-                to="/login"
-                className="flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium text-(--color-link-header) hover:bg-(--color-bg-button) transition-colors"
-              >
-                <SignIn size={18} aria-hidden="true" />
-                <span className="hidden sm:inline">Connexion</span>
-              </Link>
-            )}
+            {renderActions({ withDivider: true })}
           </nav>
 
           <button
@@ -138,7 +114,7 @@ export function Header() {
 
       {menuOpen && (
         <div className="border-b border-(--color-border-header) bg-(--color-bg-header) p-4 md:hidden">
-          <div className="flex flex-col gap-3">{renderActions(true)}</div>
+          <div className="flex flex-col gap-3">{renderActions({ showLabels: true })}</div>
         </div>
       )}
     </header>

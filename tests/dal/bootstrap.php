@@ -69,7 +69,7 @@ function reset_test_db(PDO $pdo): void
     $pdo->exec('SET FOREIGN_KEY_CHECKS = 0');
     $tables = ['citations', 'citation_keywords', 'keywords', 'themes', 'oeuvres', 'auteurs',
                'users', 'user_favorites', 'local_favorites', 'role_oeuvre_access',
-               'active_sessions', 'notifications', 'mediatheque', 'bibliotheque',
+               'active_sessions', 'login_attempts', 'notifications', 'mediatheque', 'bibliotheque',
                'emojis', 'export_jobs', 'config', 'collect_sources'];
     foreach ($tables as $t) {
         $pdo->exec("TRUNCATE TABLE {$t}");

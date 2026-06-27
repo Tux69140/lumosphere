@@ -3,6 +3,10 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { Heart, PencilSimple } from '@phosphor-icons/react'
 
+// Auteur « maison » : ses citations n'affichent pas de signature d'auteur.
+const HOUSE_AUTHOR = 'Lulumineuse'
+const MARKDOWN_PLUGINS = [remarkGfm]
+
 type CitationCardProps = {
   contenu: string
   oeuvre_nom: string | null
@@ -22,7 +26,7 @@ export function CitationCard({
   mots_cles,
   canEdit = false,
 }: CitationCardProps) {
-  const showAuteur = auteur_nom != null && auteur_nom.trim() !== '' && auteur_nom !== 'Lulumineuse'
+  const showAuteur = auteur_nom != null && auteur_nom.trim() !== '' && auteur_nom !== HOUSE_AUTHOR
   const showNotes = notes != null && notes.trim() !== ''
 
   return (
@@ -42,7 +46,7 @@ export function CitationCard({
 
       {/* Contenu (Markdown) */}
       <div className="prose-display flow-root text-sm text-(--color-text-primary)">
-        <ReactMarkdown remarkPlugins={[remarkGfm]}>{contenu}</ReactMarkdown>
+        <ReactMarkdown remarkPlugins={MARKDOWN_PLUGINS}>{contenu}</ReactMarkdown>
       </div>
 
       {/* Auteur (uniquement si ≠ Lulumineuse) */}
@@ -56,7 +60,7 @@ export function CitationCard({
           data-testid="publication-notes"
           className="prose-display mt-4 border-t border-(--color-border) pt-3 text-xs text-(--color-text-secondary)"
         >
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{notes}</ReactMarkdown>
+          <ReactMarkdown remarkPlugins={MARKDOWN_PLUGINS}>{notes}</ReactMarkdown>
         </div>
       )}
 
