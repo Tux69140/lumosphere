@@ -36,7 +36,7 @@ keywords = ["db_pass", "db_password", "mysql_pwd"]
 [[rules]]
 id = "config-php-path"
 description = "config.php content committed (should be outside repo)"
-path = '''config/config\.php'''
+path = '''config/config\.php$'''
 
 [allowlist]
 paths = [

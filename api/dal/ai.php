@@ -190,7 +190,7 @@ PROMPT;
     $theme_id = (int) $parsed['theme_id'];
     $valid_ids = array_column($themes, 'id');
     if (!in_array($theme_id, $valid_ids, true)) {
-        return dal_error('L'IA a suggéré un identifiant de thème invalide.');
+        return dal_error('L\'IA a suggéré un identifiant de thème invalide.');
     }
 
     return dal_ok(['theme_id' => $theme_id]);
