@@ -1,54 +1,62 @@
-import { useEffect, useState, useRef } from 'react'
+import { useState, useRef } from 'react'
 import { MagnifyingGlass, Plus, Trash, X } from '@phosphor-icons/react'
 import { toast } from 'sonner'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@/services/api'
+import { queryKeys } from '@/services/queryKeys'
+import { useKeywords } from '@/services/referenceQueries'
 
 type Keyword = { id: number; mot: string }
 
 export function KeywordsPage() {
-  const [keywords, setKeywords] = useState<Keyword[]>([])
+  const qc = useQueryClient()
+  const { data: allKeywords = [] } = useKeywords() as { data?: Keyword[] }
+
   const [search, setSearch] = useState('')
   const [newMot, setNewMot] = useState('')
-  const [adding, setAdding] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  useEffect(() => {
-    const params = search.trim() ? { search: search.trim() } : undefined
-    apiClient.findKeywords(params).then((r) => {
-      if (r.status === 'ok') setKeywords((r.data ?? []) as Keyword[])
-      else toast.error('Impossible de charger les mots-clés.')
-    })
-  }, [search])
+  const keywords = search.trim()
+    ? allKeywords.filter((k) => k.mot.includes(search.trim().toLowerCase()))
+    : allKeywords
 
-  async function handleAdd(e: React.FormEvent) {
+  const createMut = useMutation({
+    mutationFn: (payload: { mot: string }) => apiClient.createKeyword(payload),
+    onSuccess: (r) => {
+      if (r.status !== 'ok') {
+        toast.error(r.errors?.[0] ?? 'Création impossible.')
+        return
+      }
+      qc.invalidateQueries({ queryKey: queryKeys.keywords })
+      setNewMot('')
+      inputRef.current?.focus()
+      toast.success(`Mot-clé ajouté.`)
+    },
+    onError: (err: Error) => toast.error(err.message || 'Erreur réseau.'),
+  })
+  const deleteMut = useMutation({
+    mutationFn: (id: number) => apiClient.deleteKeyword(id),
+    onSuccess: (r) => {
+      if (r.status !== 'ok') {
+        toast.error(r.errors?.[0] ?? 'Suppression impossible.')
+        return
+      }
+      qc.invalidateQueries({ queryKey: queryKeys.keywords })
+      toast.success(`Mot-clé supprimé.`)
+    },
+    onError: (err: Error) => toast.error(err.message || 'Erreur réseau.'),
+  })
+
+  function handleAdd(e: React.FormEvent) {
     e.preventDefault()
     const mot = newMot.trim().toLowerCase()
     if (!mot) return
-    setAdding(true)
-    const r = await apiClient.createKeyword({ mot })
-    setAdding(false)
-    if (r.status !== 'ok') {
-      toast.error((r as { errors?: string[] }).errors?.[0] ?? 'Création impossible.')
-      return
-    }
-    const created = r.data as { id: number }
-    setKeywords((prev) =>
-      [...prev, { id: created.id, mot }].sort((a, b) => a.mot.localeCompare(b.mot)),
-    )
-    setNewMot('')
-    inputRef.current?.focus()
-    toast.success(`Mot-clé « ${mot} » ajouté.`)
+    createMut.mutate({ mot })
   }
 
-  async function handleDelete(id: number, mot: string) {
+  function handleDelete(id: number, mot: string) {
     if (!window.confirm(`Supprimer le mot-clé « ${mot} » ? Cette action est irréversible.`)) return
-    const r = await apiClient.deleteKeyword(id)
-    if (r.status !== 'ok') {
-      toast.error((r as { errors?: string[] }).errors?.[0] ?? 'Suppression impossible.')
-      return
-    }
-    setKeywords((prev) => prev.filter((k) => k.id !== id))
-    toast.success(`Mot-clé « ${mot} » supprimé.`)
+    deleteMut.mutate(id)
   }
 
   return (
@@ -70,7 +78,7 @@ export function KeywordsPage() {
         />
         <button
           type="submit"
-          disabled={!newMot.trim() || adding}
+          disabled={!newMot.trim() || createMut.isPending}
           className="flex items-center gap-1.5 rounded-md bg-(--color-action) px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-(--color-action-hover) disabled:cursor-not-allowed disabled:opacity-50"
         >
           <Plus size={16} weight="bold" aria-hidden="true" />
@@ -99,7 +107,7 @@ export function KeywordsPage() {
         )}
       </div>
 
-      <div className="rounded-lg border border-(--color-border) divide-y divide-(--color-border)">
+      <div className="divide-y divide-(--color-border) rounded-lg border border-(--color-border)">
         {keywords.length === 0 ? (
           <p className="px-4 py-8 text-center text-sm text-(--color-text-placeholder)">
             {search ? 'Aucun mot-clé correspondant.' : 'Aucun mot-clé.'}
