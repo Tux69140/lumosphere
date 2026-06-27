@@ -18,9 +18,11 @@ function dal_find_oeuvres(PDO $pdo, array $ctx, ?int $auteur_id = null): array
     $where .= dal_oeuvre_visibility_clause('o.id', $ctx, $params);
 
     $sql = "SELECT o.id, o.auteur_id, o.nom, o.abreviation, o.url, o.ref_libraire, o.description,
-                   o.created_at, o.updated_at, a.nom AS auteur_nom
+                   o.created_at, o.updated_at, a.nom AS auteur_nom,
+                   cs.id AS source_id, cs.label AS source_label
             FROM oeuvres o
             JOIN auteurs a ON o.auteur_id = a.id
+            LEFT JOIN collect_sources cs ON cs.oeuvre_id = o.id
             WHERE {$where}
             ORDER BY o.nom";
     $stmt = $pdo->prepare($sql);
@@ -38,9 +40,11 @@ function dal_get_oeuvre(PDO $pdo, array $ctx, int $id): array
     $where .= dal_oeuvre_visibility_clause('o.id', $ctx, $params);
 
     $sql = "SELECT o.id, o.auteur_id, o.nom, o.abreviation, o.url, o.ref_libraire, o.description,
-                   o.created_at, o.updated_at, a.nom AS auteur_nom
+                   o.created_at, o.updated_at, a.nom AS auteur_nom,
+                   cs.id AS source_id, cs.label AS source_label
             FROM oeuvres o
             JOIN auteurs a ON o.auteur_id = a.id
+            LEFT JOIN collect_sources cs ON cs.oeuvre_id = o.id
             WHERE {$where}";
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);

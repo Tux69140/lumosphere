@@ -5,7 +5,7 @@ import { z } from 'zod'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@/services/api'
 import { queryKeys } from '@/services/queryKeys'
-import { useOeuvres, useAuteurs } from '@/services/referenceQueries'
+import { useOeuvres, useAuteurs, useCollectSources } from '@/services/referenceQueries'
 
 type Oeuvre = {
   id: number
@@ -16,6 +16,8 @@ type Oeuvre = {
   url: string | null
   ref_libraire: string | null
   description: string | null
+  source_id: number | null
+  source_label: string | null
 }
 
 type Auteur = { id: number; nom: string }
@@ -51,10 +53,12 @@ export function OeuvresPage() {
   const qc = useQueryClient()
   const { data: oeuvres = [] } = useOeuvres() as { data?: Oeuvre[] }
   const { data: auteurs = [] } = useAuteurs() as { data?: Auteur[] }
+  const { data: sources = [] } = useCollectSources()
 
   const [selectedId, setSelectedId] = useState<number | 'new' | null>(null)
   const [form, setForm] = useState<FormState>(emptyForm)
   const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({})
+  const [selectedSourceId, setSelectedSourceId] = useState<number | null>(null)
 
   const createMut = useMutation({
     mutationFn: (payload: Record<string, unknown>) => apiClient.createOeuvre(payload),
@@ -96,6 +100,21 @@ export function OeuvresPage() {
     },
     onError: (err: Error) => toast.error(err.message || 'Erreur réseau.'),
   })
+  const linkMut = useMutation({
+    mutationFn: (vars: { oeuvreId: number; sourceId: number | null }) =>
+      apiClient.linkOeuvreSource(vars.oeuvreId, vars.sourceId),
+    onSuccess: (r) => {
+      if (r.status !== 'ok') {
+        toast.error(r.errors?.[0] ?? 'Association impossible.')
+        return
+      }
+      qc.invalidateQueries({ queryKey: queryKeys.oeuvres })
+      qc.invalidateQueries({ queryKey: queryKeys.collectSources })
+      toast.success('Source associée.')
+    },
+    onError: (err: Error) => toast.error(err.message || 'Erreur réseau.'),
+  })
+
   const saving = createMut.isPending || updateMut.isPending
 
   function selectOeuvre(id: number) {
@@ -110,12 +129,14 @@ export function OeuvresPage() {
       ref_libraire: found.ref_libraire ?? '',
       description: found.description ?? '',
     })
+    setSelectedSourceId(found.source_id)
     setErrors({})
   }
 
   function startNew() {
     setSelectedId('new')
     setForm(emptyForm)
+    setSelectedSourceId(null)
     setErrors({})
   }
 
@@ -147,6 +168,13 @@ export function OeuvresPage() {
     if (typeof selectedId !== 'number') return
     if (!window.confirm('Supprimer cette œuvre ? Cette action est irréversible.')) return
     deleteMut.mutate(selectedId)
+  }
+
+  function handleSourceChange(e: React.ChangeEvent<HTMLSelectElement>) {
+    if (typeof selectedId !== 'number') return
+    const sourceId = e.target.value ? parseInt(e.target.value, 10) : null
+    setSelectedSourceId(sourceId)
+    linkMut.mutate({ oeuvreId: selectedId, sourceId })
   }
 
   const showPanel = selectedId !== null
@@ -323,6 +351,32 @@ export function OeuvresPage() {
                     className="w-full rounded-md border border-(--color-border) bg-(--color-bg-field) px-3 py-2 text-sm text-(--color-text-primary) placeholder:text-(--color-text-placeholder) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--color-action)"
                   />
                 </div>
+
+                {typeof selectedId === 'number' && (
+                  <div className="border-t border-(--color-border) pt-4">
+                    <label
+                      className="mb-1 block text-sm font-medium text-(--color-text-primary)"
+                      htmlFor="oeuvre-source"
+                    >
+                      Source de collecte
+                    </label>
+                    <select
+                      id="oeuvre-source"
+                      value={selectedSourceId ?? ''}
+                      onChange={handleSourceChange}
+                      disabled={linkMut.isPending}
+                      aria-label="Source de collecte"
+                      className="w-full rounded-md border border-(--color-border) bg-(--color-bg-field) px-3 py-2 text-sm text-(--color-text-primary) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--color-action) disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <option value="">— Aucune —</option>
+                      {sources.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.label} — {s.source_type}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
               </div>
 
               <div className="mt-6 flex items-center justify-between border-t border-(--color-border) pt-4">

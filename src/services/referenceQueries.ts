@@ -12,6 +12,15 @@ export async function unwrap<T>(
   return r.data as T
 }
 
+export type CollectSource = { id: number; label: string; source_type: string }
+
+export function useCollectSources() {
+  return useQuery({
+    queryKey: queryKeys.collectSources,
+    queryFn: () => unwrap<CollectSource[]>(apiClient.findCollectSources()),
+  })
+}
+
 export function useOeuvres() {
   return useQuery({
     queryKey: queryKeys.oeuvres,

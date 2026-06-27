@@ -171,6 +171,12 @@ export const apiClient = {
   updateAuteur: (id: number, data: unknown) => put<{ id: number }>(`auteurs/${id}`, data),
   deleteAuteur: (id: number) => del<void>(`auteurs/${id}`),
 
+  // Sources de collecte
+  findCollectSources: () =>
+    get<{ id: number; label: string; source_type: string }[]>('collect_sources'),
+  linkOeuvreSource: (oeuvreId: number, sourceId: number | null) =>
+    post<void>(`oeuvres/${oeuvreId}/source`, { source_id: sourceId }),
+
   // Oeuvres
   findOeuvres: (params?: Record<string, string>) => get<unknown[]>(`oeuvres${buildQuery(params)}`),
   getOeuvre: (id: number) => get<unknown>(`oeuvres/${id}`),
