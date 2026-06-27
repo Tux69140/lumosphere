@@ -11,7 +11,7 @@ export function Sidebar() {
 
   if (isAdmin) {
     return (
-      <aside className="w-full shrink-0 border-b border-(--color-border) bg-(--color-bg-sidebar) p-4 lg:w-80 lg:border-b-0 lg:border-r">
+      <aside className="w-full shrink-0 border-b border-(--color-border) bg-(--color-bg-sidebar) p-4 lg:sticky lg:top-16 lg:w-80 lg:self-start lg:border-b-0 lg:border-r lg:max-h-[calc(100vh-4rem)] lg:overflow-y-auto">
         <AdminNav />
       </aside>
     )
@@ -21,7 +21,7 @@ export function Sidebar() {
   return (
     <aside
       id="corpus-filters"
-      className={`w-full shrink-0 border-b border-(--color-border) bg-(--color-bg-sidebar) p-4 lg:block lg:w-80 lg:border-b-0 lg:border-r ${
+      className={`w-full shrink-0 border-b border-(--color-border) bg-(--color-bg-sidebar) p-4 lg:sticky lg:top-16 lg:block lg:w-80 lg:self-start lg:border-b-0 lg:border-r lg:max-h-[calc(100vh-4rem)] lg:overflow-y-auto ${
         filtersOpen ? 'block' : 'hidden'
       }`}
     >

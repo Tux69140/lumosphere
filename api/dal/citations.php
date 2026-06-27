@@ -436,7 +436,7 @@ function _dal_apply_id_list_filter(string &$where, array &$params, string $col, 
 
 function dal_bulk_update_citations(PDO $pdo, array $ctx, array $ids, array $fields): array
 {
-    dal_require_permission($ctx, 'admin.citations');
+    dal_require_permission($ctx, 'corpus.write');
 
     $ids = array_values(array_filter(array_map('intval', $ids), static fn(int $v): bool => $v > 0));
     if (empty($ids)) {
@@ -476,7 +476,7 @@ function dal_bulk_update_citations(PDO $pdo, array $ctx, array $ids, array $fiel
 
 function dal_bulk_delete_citations(PDO $pdo, array $ctx, array $ids): array
 {
-    dal_require_permission($ctx, 'admin.citations');
+    dal_require_permission($ctx, 'corpus.delete');
 
     $ids = array_values(array_filter(array_map('intval', $ids), static fn(int $v): bool => $v > 0));
     if (empty($ids)) {
