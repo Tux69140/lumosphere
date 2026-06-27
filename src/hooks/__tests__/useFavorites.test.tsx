@@ -1,4 +1,6 @@
 import { renderHook, act, waitFor } from '@testing-library/react'
+import type { ReactNode } from 'react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const { mockFindFavorites, mockAddFavorite, mockRemoveFavorite } = vi.hoisted(() => ({
@@ -34,6 +36,18 @@ const adminUser: AuthUser = {
   role_nom: 'Administrateur',
 }
 
+function makeWrapper() {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false, staleTime: 0 },
+      mutations: { retry: false },
+    },
+  })
+  return function Wrapper({ children }: { children: ReactNode }) {
+    return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+  }
+}
+
 beforeEach(() => {
   vi.clearAllMocks()
   localStorage.clear()
@@ -55,41 +69,53 @@ describe('useFavorites — utilisateur serveur (admin)', () => {
       data: { items: [{ citation_id: 10 }, { citation_id: 20 }], next_cursor: null },
       errors: [],
     })
-    const { result } = renderHook(() => useFavorites())
+    const { result } = renderHook(() => useFavorites(), { wrapper: makeWrapper() })
     await waitFor(() => expect(result.current.loading).toBe(false))
     expect(result.current.favoriteIds).toEqual(new Set([10, 20]))
   })
 
   it('toggle ajoute un favori via API', async () => {
-    mockFindFavorites.mockResolvedValue({
-      status: 'ok',
-      data: { items: [], next_cursor: null },
-      errors: [],
-    })
+    mockFindFavorites
+      .mockResolvedValueOnce({
+        status: 'ok',
+        data: { items: [], next_cursor: null },
+        errors: [],
+      })
+      .mockResolvedValue({
+        status: 'ok',
+        data: { items: [{ citation_id: 42 }], next_cursor: null },
+        errors: [],
+      })
     mockAddFavorite.mockResolvedValue({ status: 'ok', data: null, errors: [] })
-    const { result } = renderHook(() => useFavorites())
+    const { result } = renderHook(() => useFavorites(), { wrapper: makeWrapper() })
     await waitFor(() => expect(result.current.loading).toBe(false))
     act(() => {
       result.current.toggle(42)
     })
-    expect(result.current.favoriteIds.has(42)).toBe(true)
-    expect(mockAddFavorite).toHaveBeenCalledWith(42)
+    await waitFor(() => expect(result.current.favoriteIds.has(42)).toBe(true))
+    await waitFor(() => expect(mockAddFavorite).toHaveBeenCalledWith(42))
   })
 
   it('toggle retire un favori via API', async () => {
-    mockFindFavorites.mockResolvedValue({
-      status: 'ok',
-      data: { items: [{ citation_id: 42 }], next_cursor: null },
-      errors: [],
-    })
+    mockFindFavorites
+      .mockResolvedValueOnce({
+        status: 'ok',
+        data: { items: [{ citation_id: 42 }], next_cursor: null },
+        errors: [],
+      })
+      .mockResolvedValue({
+        status: 'ok',
+        data: { items: [], next_cursor: null },
+        errors: [],
+      })
     mockRemoveFavorite.mockResolvedValue({ status: 'ok', data: null, errors: [] })
-    const { result } = renderHook(() => useFavorites())
+    const { result } = renderHook(() => useFavorites(), { wrapper: makeWrapper() })
     await waitFor(() => expect(result.current.loading).toBe(false))
     act(() => {
       result.current.toggle(42)
     })
-    expect(result.current.favoriteIds.has(42)).toBe(false)
-    expect(mockRemoveFavorite).toHaveBeenCalledWith(42)
+    await waitFor(() => expect(result.current.favoriteIds.has(42)).toBe(false))
+    await waitFor(() => expect(mockRemoveFavorite).toHaveBeenCalledWith(42))
   })
 
   it("rollback optimiste si l'API échoue", async () => {
@@ -99,7 +125,7 @@ describe('useFavorites — utilisateur serveur (admin)', () => {
       errors: [],
     })
     mockAddFavorite.mockResolvedValue({ status: 'error', data: null, errors: ['Erreur'] })
-    const { result } = renderHook(() => useFavorites())
+    const { result } = renderHook(() => useFavorites(), { wrapper: makeWrapper() })
     await waitFor(() => expect(result.current.loading).toBe(false))
     act(() => {
       result.current.toggle(99)
@@ -120,13 +146,13 @@ describe('useFavorites — utilisateur anonyme (localStorage)', () => {
 
   it('charge les favoris depuis localStorage au montage', async () => {
     localStorage.setItem(LS_KEY, JSON.stringify([5, 7]))
-    const { result } = renderHook(() => useFavorites())
+    const { result } = renderHook(() => useFavorites(), { wrapper: makeWrapper() })
     await waitFor(() => expect(result.current.loading).toBe(false))
     expect(result.current.favoriteIds).toEqual(new Set([5, 7]))
   })
 
   it('toggle ajoute dans localStorage sans appel API', async () => {
-    const { result } = renderHook(() => useFavorites())
+    const { result } = renderHook(() => useFavorites(), { wrapper: makeWrapper() })
     await waitFor(() => expect(result.current.loading).toBe(false))
     act(() => {
       result.current.toggle(11)
@@ -139,7 +165,7 @@ describe('useFavorites — utilisateur anonyme (localStorage)', () => {
 
   it('toggle retire depuis localStorage sans appel API', async () => {
     localStorage.setItem(LS_KEY, JSON.stringify([11]))
-    const { result } = renderHook(() => useFavorites())
+    const { result } = renderHook(() => useFavorites(), { wrapper: makeWrapper() })
     await waitFor(() => expect(result.current.loading).toBe(false))
     act(() => {
       result.current.toggle(11)

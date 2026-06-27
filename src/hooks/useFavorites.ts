@@ -1,8 +1,11 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { apiClient } from '@/services/api'
 import { useAuth } from '@/hooks/useAuth'
 import { ROLE_ADMIN, ROLE_EDITEUR } from '@/constants/roles'
+import { queryKeys } from '@/services/queryKeys'
+import { unwrap } from '@/services/referenceQueries'
 
 const LS_KEY = 'lum_favorites'
 
@@ -22,6 +25,9 @@ function saveLocalFavorites(ids: Set<number>): void {
   localStorage.setItem(LS_KEY, JSON.stringify([...ids]))
 }
 
+type FavoriteItem = { citation_id?: number; id?: number }
+type FavoritesCache = { items: FavoriteItem[]; next_cursor: string | null }
+
 type UseFavoritesResult = {
   favoriteIds: Set<number>
   toggle: (id: number) => void
@@ -31,61 +37,62 @@ type UseFavoritesResult = {
 export function useFavorites(): UseFavoritesResult {
   const { user } = useAuth()
   const isServerUser = user !== null && [ROLE_ADMIN, ROLE_EDITEUR].includes(user.role_id)
+  const queryClient = useQueryClient()
 
-  const [favoriteIds, setFavoriteIds] = useState<Set<number>>(new Set())
-  const [loading, setLoading] = useState(true)
+  // Invité : état local (localStorage) — toujours initialisé, utilisé uniquement si !isServerUser
+  const [localFavoriteIds, setLocalFavoriteIds] = useState<Set<number>>(loadLocalFavorites)
 
-  useEffect(() => {
-    let cancelled = false
-    async function load() {
-      if (isServerUser) {
-        try {
-          const res = await apiClient.findFavorites()
-          if (cancelled) return
-          if (res.status === 'ok' && res.data) {
-            const ids = (res.data.items as { citation_id?: number; id?: number }[]).map(
-              (item) => item.citation_id ?? item.id ?? 0,
-            )
-            setFavoriteIds(new Set(ids.filter((id) => id > 0)))
+  // Utilisateur serveur : chargement via React Query
+  const query = useQuery({
+    queryKey: queryKeys.favorites,
+    queryFn: () => unwrap(apiClient.findFavorites()),
+    enabled: isServerUser,
+  })
+
+  const serverFavoriteIds = useMemo(() => {
+    if (!query.data) return new Set<number>()
+    const items = query.data.items as FavoriteItem[]
+    return new Set(items.map((item) => item.citation_id ?? item.id ?? 0).filter((id) => id > 0))
+  }, [query.data])
+
+  // Mutation optimiste pour les utilisateurs serveur
+  const { mutate: toggleMutation } = useMutation({
+    mutationFn: ({ id, action }: { id: number; action: 'add' | 'remove' }) =>
+      action === 'remove'
+        ? unwrap(apiClient.removeFavorite(id))
+        : unwrap(apiClient.addFavorite(id)),
+    onMutate: async ({ id, action }) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.favorites })
+      const snapshot = queryClient.getQueryData<FavoritesCache>(queryKeys.favorites)
+      queryClient.setQueryData<FavoritesCache>(queryKeys.favorites, (old) => {
+        if (!old) return old
+        if (action === 'remove') {
+          return {
+            ...old,
+            items: old.items.filter((item) => (item.citation_id ?? item.id) !== id),
           }
-        } finally {
-          if (!cancelled) setLoading(false)
         }
-      } else {
-        setFavoriteIds(loadLocalFavorites())
-        setLoading(false)
-      }
-    }
-    void load()
-    return () => {
-      cancelled = true
-    }
-  }, [isServerUser])
+        return { ...old, items: [...old.items, { citation_id: id }] }
+      })
+      return { snapshot }
+    },
+    onError: (_err, _vars, context) => {
+      queryClient.setQueryData(queryKeys.favorites, context?.snapshot)
+      toast.error('Impossible de mettre à jour le favori.')
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.favorites })
+    },
+  })
 
   const toggle = useCallback(
     (id: number) => {
       if (isServerUser) {
-        const wasSet = favoriteIds.has(id)
-        setFavoriteIds((prev) => {
-          const next = new Set(prev)
-          if (wasSet) next.delete(id)
-          else next.add(id)
-          return next
-        })
-        const call = wasSet ? apiClient.removeFavorite(id) : apiClient.addFavorite(id)
-        call.then((res) => {
-          if (res.status !== 'ok') {
-            setFavoriteIds((prev) => {
-              const next = new Set(prev)
-              if (wasSet) next.add(id)
-              else next.delete(id)
-              return next
-            })
-            toast.error('Impossible de mettre à jour le favori.')
-          }
-        })
+        const current = queryClient.getQueryData<FavoritesCache>(queryKeys.favorites)
+        const wasSet = current?.items.some((item) => (item.citation_id ?? item.id) === id) ?? false
+        toggleMutation({ id, action: wasSet ? 'remove' : 'add' })
       } else {
-        setFavoriteIds((prev) => {
+        setLocalFavoriteIds((prev) => {
           const next = new Set(prev)
           if (next.has(id)) next.delete(id)
           else next.add(id)
@@ -94,8 +101,12 @@ export function useFavorites(): UseFavoritesResult {
         })
       }
     },
-    [isServerUser, favoriteIds],
+    [isServerUser, toggleMutation, queryClient],
   )
 
-  return { favoriteIds, toggle, loading }
+  return {
+    favoriteIds: isServerUser ? serverFavoriteIds : localFavoriteIds,
+    toggle,
+    loading: isServerUser ? query.isLoading : false,
+  }
 }
