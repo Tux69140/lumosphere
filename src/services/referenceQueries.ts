@@ -3,7 +3,7 @@ import { apiClient } from '@/services/api'
 import { queryKeys } from '@/services/queryKeys'
 
 // Lève si status !== 'ok' → l'erreur remonte au QueryCache.onError (toast centralisé).
-async function unwrap<T>(
+export async function unwrap<T>(
   p: Promise<{ status: string; data: T | null; errors: string[] }>,
 ): Promise<T> {
   const r = await p

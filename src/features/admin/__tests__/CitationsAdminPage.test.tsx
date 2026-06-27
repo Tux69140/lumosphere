@@ -1,6 +1,7 @@
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { renderWithClient } from '@/test/renderWithClient'
 
 vi.mock('@/components/MarkdownEditor', () => ({
   MarkdownEditor: ({ value }: { value: string }) => <div data-testid="md">{value}</div>,
@@ -85,7 +86,7 @@ beforeEach(() => {
 
 describe('CitationsAdminPage', () => {
   it('affiche les lignes mocquees dans le tableau', async () => {
-    render(<CitationsAdminPage />)
+    renderWithClient(<CitationsAdminPage />)
     await waitFor(() => expect(screen.getByText(/La liberte commence/)).toBeInTheDocument())
     expect(screen.getByText(/Ceux qui revent/)).toBeInTheDocument()
     expect(screen.getByText('Victor Hugo')).toBeInTheDocument()
@@ -95,7 +96,7 @@ describe('CitationsAdminPage', () => {
   })
 
   it('la selection active la barre actions groupees', async () => {
-    render(<CitationsAdminPage />)
+    renderWithClient(<CitationsAdminPage />)
     await waitFor(() => screen.getByTestId('citation-row-1'))
 
     expect(screen.queryByTestId('bulk-actions-bar')).not.toBeInTheDocument()
@@ -111,7 +112,7 @@ describe('CitationsAdminPage', () => {
     api.bulkDeleteCitations.mockReturnValue(ok({ deleted: 1 }))
     vi.spyOn(window, 'confirm').mockReturnValue(true)
 
-    render(<CitationsAdminPage />)
+    renderWithClient(<CitationsAdminPage />)
     await waitFor(() => screen.getByTestId('citation-row-1'))
 
     const row = screen.getByTestId('citation-row-1')
@@ -128,7 +129,7 @@ describe('CitationsAdminPage', () => {
   it('bulk-update etat appelle bulkUpdateCitations avec les bons params', async () => {
     api.bulkUpdateCitations.mockReturnValue(ok({ updated: 1 }))
 
-    render(<CitationsAdminPage />)
+    renderWithClient(<CitationsAdminPage />)
     await waitFor(() => screen.getByTestId('citation-row-1'))
 
     const row = screen.getByTestId('citation-row-1')
@@ -149,7 +150,7 @@ describe('CitationsAdminPage', () => {
   })
 
   it('le bouton Editer ouvre CitationEditor', async () => {
-    render(<CitationsAdminPage />)
+    renderWithClient(<CitationsAdminPage />)
     await waitFor(() => screen.getByTestId('citation-row-1'))
 
     const row = screen.getByTestId('citation-row-1')

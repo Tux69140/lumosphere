@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   createColumnHelper,
   flexRender,
@@ -9,6 +10,8 @@ import {
 import { PencilSimple, Trash, CaretUp, CaretDown, CaretUpDown } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { apiClient } from '@/services/api'
+import { queryKeys } from '@/services/queryKeys'
+import { unwrap, useOeuvres, useEtats } from '@/services/referenceQueries'
 import { useDebouncedValue } from '@/hooks/useDebouncedValue'
 import { CitationEditor } from '@/features/corpus/CitationEditor'
 
@@ -96,46 +99,88 @@ function InlineCellSelect({
 }
 
 export function CitationsAdminPage() {
-  const [citations, setCitations] = useState<AdminCitation[]>([])
-  const [loading, setLoading] = useState(true)
-  const [etats, setEtats] = useState<EtatOption[]>([])
-  const [oeuvres, setOeuvres] = useState<OeuvreOption[]>([])
+  const qc = useQueryClient()
   const [rawQuery, setRawQuery] = useState('')
   const query = useDebouncedValue(rawQuery, 300)
   const [sorting, setSorting] = useState<SortingState>([])
   const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({})
   const [editorCitationId, setEditorCitationId] = useState<number | null>(null)
-
   const [bulkEtatId, setBulkEtatId] = useState<number>(0)
   const [bulkOeuvreId, setBulkOeuvreId] = useState<number>(0)
 
-  useEffect(() => {
-    Promise.all([apiClient.findEtats(), apiClient.findOeuvres()]).then(([etRes, oRes]) => {
-      if (etRes.status === 'ok' && etRes.data) setEtats(etRes.data as EtatOption[])
-      if (oRes.status === 'ok' && oRes.data) setOeuvres(oRes.data as OeuvreOption[])
-    })
-  }, [])
+  // Référentiels via hooks partagés
+  const { data: etatsRaw = [] } = useEtats()
+  const { data: oeuvresRaw = [] } = useOeuvres()
+  const etats = etatsRaw as unknown as EtatOption[]
+  const oeuvres = oeuvresRaw as unknown as OeuvreOption[]
 
-  useEffect(() => {
-    setLoading(true)
-    const params: Record<string, string> = {}
-    if (query.trim()) params['q'] = query.trim()
+  // Paramètres de filtrage sérialisés pour la clé de cache
+  const params = useMemo<Record<string, string>>(() => {
+    const p: Record<string, string> = {}
+    if (query.trim()) p['q'] = query.trim()
     const firstSort = sorting[0]
-    if (sorting.length > 0 && firstSort) {
-      params['sort_by'] = firstSort.id
-      params['sort_dir'] = firstSort.desc ? 'desc' : 'asc'
+    if (firstSort) {
+      p['sort_by'] = firstSort.id
+      p['sort_dir'] = firstSort.desc ? 'desc' : 'asc'
     }
-    apiClient
-      .findCitations(params)
-      .then((res) => {
-        if (res.status === 'ok' && res.data) {
-          setCitations(res.data.items as AdminCitation[])
-        } else {
-          toast.error(res.errors?.[0] ?? 'Impossible de charger les entrées.')
-        }
-      })
-      .finally(() => setLoading(false))
+    return p
   }, [query, sorting])
+
+  const filtersKey = useMemo(() => JSON.stringify(params), [params])
+
+  // Liste des citations via useQuery
+  const { data: citations = [], isLoading: loading } = useQuery({
+    queryKey: queryKeys.citationsAdmin(filtersKey),
+    queryFn: async () => {
+      const res = await apiClient.findCitations(params)
+      if (res.status !== 'ok') throw new Error(res.errors?.[0] ?? 'Chargement impossible.')
+      return (res.data?.items ?? []) as AdminCitation[]
+    },
+  })
+
+  // Mutations — invalidation préfixe ['citations'] couvre search ET admin
+  const inlineUpdateMutation = useMutation({
+    mutationFn: ({ id, fields }: { id: number; fields: Record<string, unknown> }) =>
+      unwrap(apiClient.updateCitation(id, fields)),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['citations'] })
+    },
+    onError: (err: Error) => toast.error(err.message),
+  })
+
+  const bulkUpdateEtatMutation = useMutation({
+    mutationFn: ({ ids, etatId }: { ids: number[]; etatId: number }) =>
+      unwrap(apiClient.bulkUpdateCitations(ids, { etat_id: etatId })),
+    onSuccess: (data, vars) => {
+      toast.success(`État mis à jour pour ${data.updated ?? vars.ids.length} entrée(s).`)
+      void qc.invalidateQueries({ queryKey: ['citations'] })
+      setBulkEtatId(0)
+      setRowSelection({})
+    },
+    onError: (err: Error) => toast.error(err.message),
+  })
+
+  const bulkUpdateOeuvreMutation = useMutation({
+    mutationFn: ({ ids, oeuvreId }: { ids: number[]; oeuvreId: number }) =>
+      unwrap(apiClient.bulkUpdateCitations(ids, { oeuvre_id: oeuvreId })),
+    onSuccess: (data, vars) => {
+      toast.success(`Œuvre mise à jour pour ${data.updated ?? vars.ids.length} entrée(s).`)
+      void qc.invalidateQueries({ queryKey: ['citations'] })
+      setBulkOeuvreId(0)
+      setRowSelection({})
+    },
+    onError: (err: Error) => toast.error(err.message),
+  })
+
+  const bulkDeleteMutation = useMutation({
+    mutationFn: (ids: number[]) => unwrap(apiClient.bulkDeleteCitations(ids)),
+    onSuccess: (data, ids) => {
+      toast.success(`${data.deleted ?? ids.length} entrée(s) supprimée(s).`)
+      void qc.invalidateQueries({ queryKey: ['citations'] })
+      setRowSelection({})
+    },
+    onError: (err: Error) => toast.error(err.message),
+  })
 
   const etatOptions = useMemo(() => etats.map((e) => ({ id: e.id, label: e.nom })), [etats])
   const oeuvreOptions = useMemo(
@@ -144,31 +189,8 @@ export function CitationsAdminPage() {
     [oeuvres],
   )
 
-  async function handleInlineUpdate(citationId: number, fields: Record<string, unknown>) {
-    const res = await apiClient.updateCitation(citationId, fields)
-    if (res.status !== 'ok') {
-      toast.error(res.errors?.[0] ?? 'Modification impossible.')
-      return
-    }
-    setCitations((prev) =>
-      prev.map((c) => {
-        if (c.id !== citationId) return c
-        const updated = { ...c }
-        if ('etat_id' in fields) {
-          updated.etat_id = fields.etat_id as number
-          const etat = etats.find((e) => e.id === fields.etat_id)
-          updated.etat_nom = etat?.nom ?? null
-          updated.etat_couleur = etat?.couleur ?? null
-        }
-        if ('oeuvre_id' in fields) {
-          updated.oeuvre_id = fields.oeuvre_id as number
-          const oeuvre = oeuvres.find((o) => o.id === fields.oeuvre_id)
-          updated.oeuvre_nom = oeuvre?.nom ?? null
-          updated.auteur_nom = oeuvre?.auteur_nom ?? null
-        }
-        return updated
-      }),
-    )
+  function handleInlineUpdate(citationId: number, fields: Record<string, unknown>) {
+    inlineUpdateMutation.mutate({ id: citationId, fields })
   }
 
   const columns = useMemo(
@@ -215,7 +237,7 @@ export function CitationsAdminPage() {
           <InlineCellSelect
             value={info.row.original.oeuvre_id}
             options={oeuvreOptions}
-            onConfirm={(id) => void handleInlineUpdate(info.row.original.id, { oeuvre_id: id })}
+            onConfirm={(id) => handleInlineUpdate(info.row.original.id, { oeuvre_id: id })}
           />
         ),
         enableSorting: true,
@@ -241,7 +263,7 @@ export function CitationsAdminPage() {
           <InlineCellSelect
             value={info.row.original.etat_id}
             options={etatOptions}
-            onConfirm={(id) => void handleInlineUpdate(info.row.original.id, { etat_id: id })}
+            onConfirm={(id) => handleInlineUpdate(info.row.original.id, { etat_id: id })}
           />
         ),
         enableSorting: true,
@@ -272,6 +294,7 @@ export function CitationsAdminPage() {
         size: 48,
       }),
     ],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [oeuvreOptions, etatOptions],
   )
 
@@ -291,7 +314,7 @@ export function CitationsAdminPage() {
     .filter((k) => rowSelection[k])
     .map(Number)
 
-  async function handleBulkDelete() {
+  function handleBulkDelete() {
     if (selectedIds.length === 0) return
     const first = window.confirm(
       `Supprimer ${selectedIds.length} entrée(s) sélectionnée(s) ? Cette action est irréversible.`,
@@ -301,65 +324,17 @@ export function CitationsAdminPage() {
       `Confirmer la suppression définitive de ${selectedIds.length} entrée(s) ?`,
     )
     if (!second) return
-
-    const res = await apiClient.bulkDeleteCitations(selectedIds)
-    if (res.status !== 'ok') {
-      toast.error(res.errors?.[0] ?? 'Suppression impossible.')
-      return
-    }
-    toast.success(`${res.data?.deleted ?? selectedIds.length} entrée(s) supprimée(s).`)
-    setCitations((prev) => prev.filter((c) => !selectedIds.includes(c.id)))
-    setRowSelection({})
+    bulkDeleteMutation.mutate(selectedIds)
   }
 
-  async function handleBulkUpdateEtat() {
+  function handleBulkUpdateEtat() {
     if (!bulkEtatId || selectedIds.length === 0) return
-    const res = await apiClient.bulkUpdateCitations(selectedIds, { etat_id: bulkEtatId })
-    if (res.status !== 'ok') {
-      toast.error(res.errors?.[0] ?? 'Modification impossible.')
-      return
-    }
-    const etat = etats.find((e) => e.id === bulkEtatId)
-    toast.success(`État mis à jour pour ${res.data?.updated ?? selectedIds.length} entrée(s).`)
-    setCitations((prev) =>
-      prev.map((c) =>
-        selectedIds.includes(c.id)
-          ? {
-              ...c,
-              etat_id: bulkEtatId,
-              etat_nom: etat?.nom ?? null,
-              etat_couleur: etat?.couleur ?? null,
-            }
-          : c,
-      ),
-    )
-    setBulkEtatId(0)
-    setRowSelection({})
+    bulkUpdateEtatMutation.mutate({ ids: selectedIds, etatId: bulkEtatId })
   }
 
-  async function handleBulkUpdateOeuvre() {
+  function handleBulkUpdateOeuvre() {
     if (!bulkOeuvreId || selectedIds.length === 0) return
-    const res = await apiClient.bulkUpdateCitations(selectedIds, { oeuvre_id: bulkOeuvreId })
-    if (res.status !== 'ok') {
-      toast.error(res.errors?.[0] ?? 'Modification impossible.')
-      return
-    }
-    const oeuvre = oeuvres.find((o) => o.id === bulkOeuvreId)
-    toast.success(`Œuvre mise à jour pour ${res.data?.updated ?? selectedIds.length} entrée(s).`)
-    setCitations((prev) =>
-      prev.map((c) =>
-        selectedIds.includes(c.id)
-          ? {
-              ...c,
-              oeuvre_id: bulkOeuvreId,
-              oeuvre_nom: oeuvre?.nom ?? null,
-              auteur_nom: oeuvre?.auteur_nom ?? null,
-            }
-          : c,
-      ),
-    )
-    setBulkOeuvreId(0)
-    setRowSelection({})
+    bulkUpdateOeuvreMutation.mutate({ ids: selectedIds, oeuvreId: bulkOeuvreId })
   }
 
   const selectClass =
@@ -413,7 +388,7 @@ export function CitationsAdminPage() {
             </select>
             <button
               disabled={!bulkEtatId}
-              onClick={() => void handleBulkUpdateEtat()}
+              onClick={() => handleBulkUpdateEtat()}
               className="rounded-md bg-(--color-action) px-3 py-1 text-sm font-medium text-white hover:bg-(--color-action-hover) disabled:cursor-not-allowed disabled:opacity-40"
             >
               Appliquer
@@ -437,7 +412,7 @@ export function CitationsAdminPage() {
             </select>
             <button
               disabled={!bulkOeuvreId}
-              onClick={() => void handleBulkUpdateOeuvre()}
+              onClick={() => handleBulkUpdateOeuvre()}
               className="rounded-md bg-(--color-action) px-3 py-1 text-sm font-medium text-white hover:bg-(--color-action-hover) disabled:cursor-not-allowed disabled:opacity-40"
             >
               Appliquer
@@ -445,7 +420,7 @@ export function CitationsAdminPage() {
           </div>
 
           <button
-            onClick={() => void handleBulkDelete()}
+            onClick={() => handleBulkDelete()}
             className="ml-auto flex items-center gap-1.5 text-sm text-(--color-danger-text) hover:underline"
             aria-label="Supprimer les entrées sélectionnées"
           >
@@ -539,13 +514,7 @@ export function CitationsAdminPage() {
           onClose={() => setEditorCitationId(null)}
           onSaved={() => {
             setEditorCitationId(null)
-            setLoading(true)
-            const params: Record<string, string> = {}
-            if (query.trim()) params['q'] = query.trim()
-            apiClient.findCitations(params).then((res) => {
-              if (res.status === 'ok' && res.data) setCitations(res.data.items as AdminCitation[])
-              setLoading(false)
-            })
+            void qc.invalidateQueries({ queryKey: ['citations'] })
           }}
         />
       )}
