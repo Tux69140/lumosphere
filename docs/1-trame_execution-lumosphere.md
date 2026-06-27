@@ -74,6 +74,8 @@
 
 **✓ VALIDATION** : bibliothèque complète fonctionnelle. Éditeur peut créer/modifier/publier. Recherche rapide à 50k entrées.
 
+> **Socle transverse T16–T20** : l'état serveur (données distantes) est géré par **TanStack Query**, branché **par-dessus** la couche de services (cache, chargement/erreur, invalidation après mutation). Détail : Dev §III.0 ; décision stack : §3 du document stack technique.
+
 ---
 
 ## Tranche 4 — Pont atelier→corpus + première chaîne

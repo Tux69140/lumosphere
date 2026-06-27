@@ -51,6 +51,7 @@ Document technique de référence de l'application unique **Lumosphère** (ateli
 - **PWA** : `manifest.json` + service worker minimal (installabilité + emballage magasins ; **pas de cache hors-ligne du corpus**). Emballage Microsoft Store (MSIX) et Google Play (TWA + `assetlinks.json`) via **PWABuilder**.
 - **Responsive** desktop/tablette/mobile (l'UI actuelle « bureau d'abord » est à adapter).
 - **Abstraction** : `abstraction/uiContract.ts` + `services/` (contrat `EpurielServices` : settings, lots, lotFiles, checkpoint, telegram, ia, intégration corpus, localStorage, nativeBridge). UI/UX **sans dépendance runtime**. Persistance des réglages via `localStorage`.
+- **État serveur (données distantes)** : **TanStack Query** (React Query) — cache, états chargement/erreur, invalidation/rafraîchissement après modification. Ses `queryFn`/`mutationFn` appellent la couche de services (`EpurielServices`/`apiClient`), **jamais `fetch` directement** → l'abstraction (et la portabilité Tauri) est préservée. Complète **TanStack Table** (grilles) et **TanStack Virtual** (> 200 lignes). Pas de cache hors-ligne (cohérent « online-only v1 »).
 - Pas d'Electron (retiré). Les fonctions internes gardent leur nommage `epuriel_*` (« Epuriel » = nom interne de l'atelier).
 
 ---

@@ -155,6 +155,11 @@ But : **voir les résultats** le plus tôt possible et valider schéma + droits 
 
 ## Phase III — Bibliothèque complète (cœur éditorial — cahier Phase 1)
 
+### III.0 — Convention transverse : état serveur via TanStack Query
+- [ ] **Toutes les données distantes** de la Phase III (consultation III.3, recherche III.4, référentiels III.2, gestion des entrées III.6, suggestions IA III.7, favoris) passent par **TanStack Query** : cache, états chargement/erreur, invalidation/rafraîchissement après mutation.
+- [ ] **Règle d'abstraction (impérative)** : les `queryFn`/`mutationFn` appellent la couche de services (`EpurielServices`/`apiClient`), **jamais `fetch` directement**. Clés de cache centralisées ; invalidation des clés impactées après chaque création/modification/suppression.
+- [ ] Socle : `QueryClientProvider` monté à la racine de l'app ; **pas de cache hors-ligne** (cohérent « online-only v1 »). N'altère ni la couche de services ni l'API PHP : Query se pose **par-dessus**.
+
 ### III.1 — Rôles et droits
 - [ ] Rôles Visiteur / Abo3 / Abo4 / Éditeur / Administrateur ; **Administrateur protégé**.
 - [ ] Gestion des rôles ; **accès aux œuvres par rôle** (`role_oeuvre_access`) appliqué **dans la DAL** sur toutes les lectures.
