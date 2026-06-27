@@ -198,6 +198,9 @@ export const apiClient = {
   findOrCreateKeyword: (mot: string) =>
     post<{ id: number; mot: string }>('keywords/find-or-create', { mot }),
   deleteKeyword: (id: number) => del<void>(`keywords/${id}`),
+  updateKeyword: (id: number, mot: string) => put<{ id: number }>(`keywords/${id}`, { mot }),
+  getKeywordUsages: (id: number) =>
+    get<{ citation_id: number; titre: string }[]>(`keywords/${id}/usages`),
 
   // Etats
   findEtats: () => get<unknown[]>('etats'),

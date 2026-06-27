@@ -42,6 +42,15 @@ export function useThemes() {
   })
 }
 
+export function useKeywordUsages(id: number | null) {
+  return useQuery({
+    queryKey: queryKeys.keywordUsages(id ?? 0),
+    queryFn: () =>
+      unwrap<{ citation_id: number; titre: string }[]>(apiClient.getKeywordUsages(id!)),
+    enabled: id !== null,
+  })
+}
+
 export function useKeywords() {
   return useQuery({
     queryKey: queryKeys.keywords,

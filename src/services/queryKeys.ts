@@ -7,6 +7,7 @@ export const queryKeys = {
   emojis: ['emojis'] as const,
   favorites: ['favorites'] as const,
   collectSources: ['collectSources'] as const,
+  keywordUsages: (id: number) => ['keywords', 'usages', id] as const,
   // Invalidation large spectrum (search + admin) — préfixe commun ['citations'].
   citationsAll: ['citations'] as const,
   // Recherche corpus paginée (clé = empreinte des filtres débouncés).

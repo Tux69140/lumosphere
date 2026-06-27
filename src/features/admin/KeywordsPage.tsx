@@ -1,12 +1,12 @@
 import { useState, useRef } from 'react'
-import { MagnifyingGlass, Plus, Trash, X } from '@phosphor-icons/react'
+import { MagnifyingGlass, Plus, Trash, X, PencilSimple } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@/services/api'
 import { queryKeys } from '@/services/queryKeys'
-import { useKeywords } from '@/services/referenceQueries'
+import { useKeywords, useKeywordUsages } from '@/services/referenceQueries'
 
-type Keyword = { id: number; mot: string }
+type Keyword = { id: number; mot: string; citation_count: number }
 
 export function KeywordsPage() {
   const qc = useQueryClient()
@@ -14,7 +14,13 @@ export function KeywordsPage() {
 
   const [search, setSearch] = useState('')
   const [newMot, setNewMot] = useState('')
+  const [editingId, setEditingId] = useState<number | null>(null)
+  const [editValue, setEditValue] = useState('')
+  const [openUsagesId, setOpenUsagesId] = useState<number | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const editRef = useRef<HTMLInputElement>(null)
+
+  const { data: usages = [], isFetching: usagesFetching } = useKeywordUsages(openUsagesId)
 
   const keywords = search.trim()
     ? allKeywords.filter((k) => k.mot.includes(search.trim().toLowerCase()))
@@ -30,10 +36,11 @@ export function KeywordsPage() {
       qc.invalidateQueries({ queryKey: queryKeys.keywords })
       setNewMot('')
       inputRef.current?.focus()
-      toast.success(`Mot-clé ajouté.`)
+      toast.success('Mot-clé ajouté.')
     },
     onError: (err: Error) => toast.error(err.message || 'Erreur réseau.'),
   })
+
   const deleteMut = useMutation({
     mutationFn: (id: number) => apiClient.deleteKeyword(id),
     onSuccess: (r) => {
@@ -42,7 +49,21 @@ export function KeywordsPage() {
         return
       }
       qc.invalidateQueries({ queryKey: queryKeys.keywords })
-      toast.success(`Mot-clé supprimé.`)
+      toast.success('Mot-clé supprimé.')
+    },
+    onError: (err: Error) => toast.error(err.message || 'Erreur réseau.'),
+  })
+
+  const updateMut = useMutation({
+    mutationFn: (vars: { id: number; mot: string }) => apiClient.updateKeyword(vars.id, vars.mot),
+    onSuccess: (r) => {
+      if (r.status !== 'ok') {
+        toast.error(r.errors?.[0] ?? 'Modification impossible.')
+        return
+      }
+      qc.invalidateQueries({ queryKey: queryKeys.keywords })
+      setEditingId(null)
+      toast.success('Mot-clé modifié.')
     },
     onError: (err: Error) => toast.error(err.message || 'Erreur réseau.'),
   })
@@ -57,6 +78,29 @@ export function KeywordsPage() {
   function handleDelete(id: number, mot: string) {
     if (!window.confirm(`Supprimer le mot-clé « ${mot} » ? Cette action est irréversible.`)) return
     deleteMut.mutate(id)
+  }
+
+  function startEdit(k: Keyword) {
+    setEditingId(k.id)
+    setEditValue(k.mot)
+    setTimeout(() => {
+      editRef.current?.focus()
+      editRef.current?.select()
+    }, 0)
+  }
+
+  function commitEdit() {
+    if (editingId === null) return
+    const mot = editValue.trim().toLowerCase()
+    if (!mot) {
+      setEditingId(null)
+      return
+    }
+    updateMut.mutate({ id: editingId, mot })
+  }
+
+  function toggleUsages(id: number) {
+    setOpenUsagesId(openUsagesId === id ? null : id)
   }
 
   return (
@@ -114,15 +158,81 @@ export function KeywordsPage() {
           </p>
         ) : (
           keywords.map((k) => (
-            <div key={k.id} className="flex items-center justify-between px-4 py-2">
-              <span className="text-sm text-(--color-text-primary)">{k.mot}</span>
-              <button
-                onClick={() => handleDelete(k.id, k.mot)}
-                className="rounded p-1 text-(--color-text-placeholder) transition-colors hover:bg-(--color-bg-button) hover:text-(--color-danger-text)"
-                aria-label={`Supprimer ${k.mot}`}
-              >
-                <Trash size={14} aria-hidden="true" />
-              </button>
+            <div key={k.id} className="group">
+              <div className="flex items-center justify-between px-4 py-2 hover:bg-(--color-bg-button)">
+                {editingId === k.id ? (
+                  <input
+                    ref={editRef}
+                    type="text"
+                    value={editValue}
+                    onChange={(e) => setEditValue(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
+                        commitEdit()
+                      }
+                      if (e.key === 'Escape') setEditingId(null)
+                    }}
+                    onBlur={() => setEditingId(null)}
+                    aria-label={`Modifier ${k.mot} en cours`}
+                    className="flex-1 rounded border border-(--color-action) bg-(--color-bg-field) px-2 py-0.5 text-sm text-(--color-text-primary) focus-visible:outline-none"
+                  />
+                ) : (
+                  <span className="text-sm text-(--color-text-primary)">{k.mot}</span>
+                )}
+
+                <div className="flex items-center gap-1">
+                  {editingId !== k.id && (
+                    <button
+                      onClick={() => startEdit(k)}
+                      className="rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 text-(--color-text-placeholder) hover:bg-(--color-bg-button) hover:text-(--color-text-primary)"
+                      aria-label={`Modifier ${k.mot}`}
+                    >
+                      <PencilSimple size={14} aria-hidden="true" />
+                    </button>
+                  )}
+                  {k.citation_count > 0 ? (
+                    <button
+                      onClick={() => toggleUsages(k.id)}
+                      className="rounded px-2 py-0.5 text-xs font-medium text-(--color-text-secondary) hover:bg-(--color-bg-button)"
+                      aria-label={`${k.citation_count} entrée${k.citation_count > 1 ? 's' : ''} utilisent ${k.mot}`}
+                    >
+                      {k.citation_count} entrée{k.citation_count > 1 ? 's' : ''}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleDelete(k.id, k.mot)}
+                      className="rounded p-1 text-(--color-text-placeholder) transition-colors hover:bg-(--color-bg-button) hover:text-(--color-danger-text)"
+                      aria-label={`Supprimer ${k.mot}`}
+                    >
+                      <Trash size={14} aria-hidden="true" />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {openUsagesId === k.id && (
+                <div className="border-t border-(--color-border) bg-(--color-bg-card) px-4 py-3">
+                  {usagesFetching ? (
+                    <p className="text-xs text-(--color-text-placeholder)">Chargement…</p>
+                  ) : usages.length === 0 ? (
+                    <p className="text-xs text-(--color-text-placeholder)">
+                      Aucune entrée trouvée.
+                    </p>
+                  ) : (
+                    <ul className="space-y-1">
+                      {usages.map((u) => (
+                        <li key={u.citation_id} className="text-xs text-(--color-text-secondary)">
+                          <span className="font-mono text-(--color-text-placeholder)">
+                            #{u.citation_id}
+                          </span>{' '}
+                          {u.titre}…
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
             </div>
           ))
         )}
