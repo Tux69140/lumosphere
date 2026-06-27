@@ -64,11 +64,11 @@
 | # | Source | Tâche | Prérequis |
 |---|--------|-------|-----------|
 | ~T15~ | Dev §I.5 + complément | Décision éditeur Markdown : évaluation candidats (~TipTap/~ Milkdown ~/MDXEditor/BlockNote~), prototype | — (peut commencer en parallèle) |
-| ~T16 | Dev §III.2 | Référentiels CRUD admin : auteurs, œuvres, thèmes (≤2 niveaux), mots-clés (normalisés), états, emojis | T14 |
-| ~T17 | Dev §III.3 | Consultation publique complète : header sticky, panneau filtres, zone résultats, badges actifs, favoris et retour à la page précédente lors d'un login (reliquat de T09) | T13, T16 |
-| ~T18 | Dev §III.4 | Moteur de recherche complet : OR/AND mots-clés, pagination keyset, debounce 300ms, virtualisation >200 | T11, T17 |
-| ~T19 | Dev §III.5 | Éditeur Markdown riche (implémentation selon T15) | T15 |
-| T20 | Dev §III.6 | Gestion entrées : table TanStack, bulk actions, soft-delete, quick edit, verrou concurrent | T16, T19 |
+| ~T16~ | Dev §III.2 | Référentiels CRUD admin : auteurs, œuvres, thèmes (≤2 niveaux), mots-clés (normalisés), états, emojis | T14 |
+| ~T17~ | Dev §III.3 | Consultation publique complète : header sticky, panneau filtres, zone résultats, badges actifs, favoris et retour à la page précédente lors d'un login (reliquat de T09) | T13, T16 |
+| ~T18~ | Dev §III.4 | Moteur de recherche complet : OR/AND mots-clés, pagination keyset, debounce 300ms, virtualisation >200 | T11, T17 |
+| ~T19~ | Dev §III.5 | Éditeur Markdown riche (implémentation selon T15) | T15 |
+| ~T20~ | Dev §III.6 | Gestion entrées : table TanStack, bulk actions, soft-delete, quick edit, verrou concurrent | T16, T19 |
 | T21 | Dev §III.7 | IA LiteLLM : config providers, suggestions mots-clés/thèmes, validation humaine obligatoire | T16 |
 | T22 | Dev §III.8 | Tests Phase III : unit DAL, droits Abo3/Abo4, perfs (1k/10k/50k), accessibilité | T14–T21 |
 

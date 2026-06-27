@@ -7,7 +7,6 @@ import { NotFoundPage } from '@/features/NotFoundPage'
 import { RequireAdmin } from '@/components/RequireAdmin'
 import { UsersPage } from '@/features/admin/UsersPage'
 import { RolesAccessPage } from '@/features/admin/RolesAccessPage'
-import { LaboEditeurPage } from '@/features/admin/LaboEditeurPage'
 import { AuteursPage } from '@/features/admin/AuteursPage'
 import { OeuvresPage } from '@/features/admin/OeuvresPage'
 import { ThemesPage } from '@/features/admin/ThemesPage'
@@ -26,7 +25,6 @@ export default function App() {
           <Route index element={<Navigate to="/admin/utilisateurs" replace />} />
           <Route path="utilisateurs" element={<UsersPage />} />
           <Route path="roles" element={<RolesAccessPage />} />
-          <Route path="labo-editeur" element={<LaboEditeurPage />} />
           <Route path="auteurs" element={<AuteursPage />} />
           <Route path="oeuvres" element={<OeuvresPage />} />
           <Route path="themes" element={<ThemesPage />} />
