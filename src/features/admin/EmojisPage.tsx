@@ -1,50 +1,55 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Plus, Trash } from '@phosphor-icons/react'
 import { toast } from 'sonner'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@/services/api'
+import { queryKeys } from '@/services/queryKeys'
+import { useEmojis } from '@/services/referenceQueries'
 
 type Emoji = { id: number; code: string }
 
 export function EmojisPage() {
-  const [emojis, setEmojis] = useState<Emoji[]>([])
+  const qc = useQueryClient()
+  const { data: emojis = [] } = useEmojis() as { data?: Emoji[] }
+
   const [newCode, setNewCode] = useState('')
-  const [adding, setAdding] = useState(false)
 
-  useEffect(() => {
-    apiClient.findEmojis().then((r) => {
-      if (r.status === 'ok') setEmojis((r.data ?? []) as Emoji[])
-      else toast.error('Impossible de charger les emojis.')
-    })
-  }, [])
+  const createMut = useMutation({
+    mutationFn: (payload: { code: string }) => apiClient.createEmoji(payload),
+    onSuccess: (r) => {
+      if (r.status !== 'ok') {
+        toast.error(r.errors?.[0] ?? 'Création impossible.')
+        return
+      }
+      qc.invalidateQueries({ queryKey: queryKeys.emojis })
+      setNewCode('')
+      toast.success('Emoji ajouté.')
+    },
+    onError: (err: Error) => toast.error(err.message || 'Erreur réseau.'),
+  })
+  const deleteMut = useMutation({
+    mutationFn: (id: number) => apiClient.deleteEmoji(id),
+    onSuccess: (r) => {
+      if (r.status !== 'ok') {
+        toast.error(r.errors?.[0] ?? 'Suppression impossible.')
+        return
+      }
+      qc.invalidateQueries({ queryKey: queryKeys.emojis })
+      toast.success('Emoji supprimé.')
+    },
+    onError: (err: Error) => toast.error(err.message || 'Erreur réseau.'),
+  })
 
-  async function handleAdd(e: React.FormEvent) {
+  function handleAdd(e: React.FormEvent) {
     e.preventDefault()
     const code = newCode.trim()
     if (!code) return
-    setAdding(true)
-    const r = await apiClient.createEmoji({ code })
-    setAdding(false)
-    if (r.status !== 'ok') {
-      toast.error((r as { errors?: string[] }).errors?.[0] ?? 'Création impossible.')
-      return
-    }
-    const created = r.data as { id: number }
-    setEmojis((prev) =>
-      [...prev, { id: created.id, code }].sort((a, b) => a.code.localeCompare(b.code)),
-    )
-    setNewCode('')
-    toast.success(`Emoji « ${code} » ajouté.`)
+    createMut.mutate({ code })
   }
 
-  async function handleDelete(id: number, code: string) {
+  function handleDelete(id: number, code: string) {
     if (!window.confirm(`Supprimer l'emoji « ${code} » ? Cette action est irréversible.`)) return
-    const r = await apiClient.deleteEmoji(id)
-    if (r.status !== 'ok') {
-      toast.error((r as { errors?: string[] }).errors?.[0] ?? 'Suppression impossible.')
-      return
-    }
-    setEmojis((prev) => prev.filter((e) => e.id !== id))
-    toast.success(`Emoji « ${code} » supprimé.`)
+    deleteMut.mutate(id)
   }
 
   return (
@@ -65,7 +70,7 @@ export function EmojisPage() {
         />
         <button
           type="submit"
-          disabled={!newCode.trim() || adding}
+          disabled={!newCode.trim() || createMut.isPending}
           className="flex items-center gap-1.5 rounded-md bg-(--color-action) px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-(--color-action-hover) disabled:cursor-not-allowed disabled:opacity-50"
         >
           <Plus size={16} weight="bold" aria-hidden="true" />
@@ -73,7 +78,7 @@ export function EmojisPage() {
         </button>
       </form>
 
-      <div className="rounded-lg border border-(--color-border) divide-y divide-(--color-border)">
+      <div className="divide-y divide-(--color-border) rounded-lg border border-(--color-border)">
         {emojis.length === 0 ? (
           <p className="px-4 py-8 text-center text-sm text-(--color-text-placeholder)">
             Aucun emoji enregistré.
