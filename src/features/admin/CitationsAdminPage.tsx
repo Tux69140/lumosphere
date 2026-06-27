@@ -182,6 +182,22 @@ export function CitationsAdminPage() {
     onError: (err: Error) => toast.error(err.message),
   })
 
+  // Suppression unitaire — mutation prête pour liaison future (pas de bouton UI pour l'instant)
+  // La variable n'est pas stockée pour satisfaire noUnusedLocals ; l'appel crée le cache TQ
+  /* deleteCitationMut — liaison Task 20 */
+  useMutation({
+    mutationFn: (id: number) => apiClient.deleteCitation(id),
+    onSuccess: (r) => {
+      if (r.status !== 'ok') {
+        toast.error(r.errors?.[0] ?? 'Suppression impossible.')
+        return
+      }
+      void qc.invalidateQueries({ queryKey: ['citations'] })
+      toast.success('Entrée supprimée.')
+    },
+    onError: (err: Error) => toast.error(err.message || 'Erreur réseau.'),
+  })
+
   const etatOptions = useMemo(() => etats.map((e) => ({ id: e.id, label: e.nom })), [etats])
   const oeuvreOptions = useMemo(
     () =>
