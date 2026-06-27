@@ -13,6 +13,7 @@ Browser (PWA)  --HTTPS, same-origin-->  PHP API (o2switch)  --PDO-->  single MyS
 - **PWA**: `manifest.json` + minimal service worker (installable; **no offline cache**). Stores via PWABuilder (MSIX, TWA + `assetlinks.json`).
 - **Responsive** desktop/tablet/mobile (current UI is desktop-first, to adapt).
 - **Mandatory abstraction**: UI never calls runtime directly; goes through `EpurielServices` contract (`abstraction/uiContract.ts`, `services/`). One adapter today (Web/`fetch`). Settings persisted in `localStorage`.
+- **Server state**: TanStack Query (React Query) — `queryFn`/`mutationFn` call `EpurielServices`/`apiClient`, **never** `fetch` directly; caching, loading/error states, post-mutation invalidation, abstraction preserved. (TanStack Table for grids, TanStack Virtual for >200 rows.)
 
 ## PHP API
 - Single router + `bootstrap.php` (CORS, config, PDO, helpers). `epuriel_*` functions kept.
@@ -25,6 +26,9 @@ All heavy work → **`server_jobs`** table drained by cron **`run_jobs.php`**. N
 
 ## AI
 LiteLLM (cloud). Configurable providers, default `gemini`, model allowlist, keys in server config.
+
+## Email
+PHPMailer + authenticated SMTP (o2switch). Sends: visitor contact acknowledgment, notification to admin/editor (routed by category), job error alerts, lot-ready digest (cron, frequency per user in days). Config in `config/config.php`.
 
 ## o2switch limits (shared, no VPS)
 | | |

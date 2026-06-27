@@ -1,0 +1,165 @@
+@import 'tailwindcss';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-bg-page: var(--color-bg-page);
+  --color-bg-card: var(--color-bg-card);
+  --color-bg-header: var(--color-bg-header);
+  --color-bg-sidebar: var(--color-bg-sidebar);
+  --color-bg-field: var(--color-bg-field);
+  --color-bg-button: var(--color-bg-button);
+  --color-text-primary: var(--color-text-primary);
+  --color-text-secondary: var(--color-text-secondary);
+  --color-text-placeholder: var(--color-text-placeholder);
+  --color-text-header: var(--color-text-header);
+  --color-text-header-secondary: var(--color-text-header-secondary);
+  --color-link-header: var(--color-link-header);
+  --color-icon-header: var(--color-icon-header);
+  --color-action: var(--color-action);
+  --color-action-hover: var(--color-action-hover);
+  --color-action-text: var(--color-action-text);
+  --color-accent: var(--color-accent);
+  --color-accent-bg: var(--color-accent-bg);
+  --color-accent-text: var(--color-accent-text);
+  --color-accent-ink: var(--color-accent-ink);
+  --color-tag-bg: var(--color-tag-bg);
+  --color-tag-text: var(--color-tag-text);
+  --color-border: var(--color-border);
+  --color-border-header: var(--color-border-header);
+  --color-success-bg: var(--color-success-bg);
+  --color-success-text: var(--color-success-text);
+  --color-warning: var(--color-warning);
+  --color-warning-bg: var(--color-warning-bg);
+  --color-warning-text: var(--color-warning-text);
+  --color-danger: var(--color-danger);
+  --color-danger-bg: var(--color-danger-bg);
+  --color-danger-text: var(--color-danger-text);
+}
+
+:root {
+  --color-bg-page: #f8fefc;
+  --color-bg-card: #ffffff;
+  --color-bg-header: #ffffff;
+  --color-bg-sidebar: #f8fafc;
+  --color-bg-field: #ffffff;
+  --color-bg-button: #fff4f4;
+  --color-text-primary: #3d3a35;
+  --color-text-secondary: #706b63;
+  --color-text-placeholder: #64748b;
+  --color-text-header: #38444d;
+  --color-text-header-secondary: #64748b;
+  --color-link-header: #1e293b;
+  --color-icon-header: #1e293b;
+  --color-action: #2b4f35;
+  --color-action-hover: #4338ca;
+  --color-action-text: #ffffff;
+  --color-accent: #d3b67b;
+  --color-accent-bg: #ffffdf;
+  --color-accent-text: #9a3412;
+  /* Or « encre » : version foncée de l'accent pour le TEXTE (contraste ≥ 4,5:1 sur blanc) */
+  --color-accent-ink: #8a6d2f;
+  --color-tag-bg: #ececff;
+  --color-tag-text: #4338ca;
+  --color-border: #e2e8f0;
+  --color-border-header: #e2e8f0;
+  --color-success-bg: #dcfce7;
+  --color-success-text: #166534;
+  --color-warning: #d97706;
+  --color-warning-bg: #fef3c7;
+  --color-warning-text: #92400e;
+  --color-danger: #dc2626;
+  --color-danger-bg: #fee2e2;
+  --color-danger-text: #991b1b;
+}
+
+.dark {
+  --color-bg-page: #0f172a;
+  --color-bg-card: #1e293b;
+  --color-bg-header: #1e293b;
+  --color-bg-sidebar: #334155;
+  --color-bg-field: #0f172a;
+  --color-bg-button: #334155;
+  --color-text-primary: #e2e8f0;
+  --color-text-secondary: #cbd5e1;
+  --color-text-placeholder: #94a3b8;
+  --color-text-header: #f8fafc;
+  --color-text-header-secondary: #cbd5e1;
+  --color-link-header: #e2e8f0;
+  --color-icon-header: #f8fafc;
+  --color-action: #818cf8;
+  --color-action-hover: #6366f1;
+  --color-action-text: #0f172a;
+  --color-accent: #fb923c;
+  --color-accent-bg: #000040;
+  --color-accent-text: #fdba74;
+  /* En mode sombre, l'orange d'accent est déjà lisible sur les cartes (#1e293b) */
+  --color-accent-ink: #fb923c;
+  --color-tag-bg: #312e81;
+  --color-tag-text: #c7d2fe;
+  --color-border: #475569;
+  --color-border-header: #475569;
+  --color-success-bg: #1f4d35;
+  --color-success-text: #86efac;
+  --color-warning: #f59e0b;
+  --color-warning-bg: #4b3514;
+  --color-warning-text: #fcd34d;
+  --color-danger: #f87171;
+  --color-danger-bg: #4f1d1d;
+  --color-danger-text: #fecaca;
+}
+
+body {
+  background-color: var(--color-bg-page);
+  color: var(--color-text-primary);
+  font-family: 'Inter', sans-serif;
+}
+
+/* Rendu Markdown des citations et des notes (carte de citation) */
+.prose-display p {
+  margin: 0.5rem 0;
+}
+.prose-display strong {
+  font-weight: 600;
+}
+.prose-display em {
+  font-style: italic;
+}
+.prose-display ul {
+  list-style: disc;
+  margin: 0.5rem 0;
+  padding-left: 1.5rem;
+}
+.prose-display ol {
+  list-style: decimal;
+  margin: 0.5rem 0;
+  padding-left: 1.5rem;
+}
+.prose-display li {
+  margin: 0.25rem 0;
+}
+.prose-display h1,
+.prose-display h2,
+.prose-display h3 {
+  font-weight: 600;
+  margin: 0.75rem 0 0.5rem;
+}
+.prose-display a {
+  color: var(--color-action);
+  text-decoration: underline;
+}
+.prose-display blockquote {
+  border-left: 3px solid var(--color-border);
+  padding-left: 0.75rem;
+  margin: 0.5rem 0;
+  color: var(--color-text-secondary);
+}
+.prose-display table {
+  border-collapse: collapse;
+  margin: 0.5rem 0;
+}
+.prose-display th,
+.prose-display td {
+  border: 1px solid var(--color-border);
+  padding: 0.25rem 0.5rem;
+}

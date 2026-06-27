@@ -1,0 +1,47 @@
+# Gitleaks — règles personnalisées Lumosphère
+# Complète les règles par défaut avec la détection des secrets d'auth/session.
+
+title = "Lumosphère custom rules"
+
+[[rules]]
+id = "php-session-id"
+description = "PHP session ID hardcoded"
+regex = '''(?i)(phpsessid|session_id)\s*[=:]\s*['"][a-zA-Z0-9,-]{26,}['"]'''
+keywords = ["phpsessid", "session_id"]
+
+[[rules]]
+id = "bcrypt-hash"
+description = "Bcrypt password hash in source code"
+regex = '''\$2[aby]\$\d{2}\$[./A-Za-z0-9]{53}'''
+keywords = ["$2a$", "$2b$", "$2y$"]
+
+[[rules]]
+id = "setup-secret"
+description = "Setup secret value hardcoded"
+regex = '''(?i)setup_secret\s*[=:]\s*['"][^'"]{8,}['"]'''
+keywords = ["setup_secret"]
+
+[[rules]]
+id = "csrf-token-hardcoded"
+description = "CSRF token hardcoded"
+regex = '''(?i)csrf_token\s*[=:]\s*['"][a-f0-9]{32,}['"]'''
+keywords = ["csrf_token"]
+
+[[rules]]
+id = "db-password"
+description = "Database password in source code"
+regex = '''(?i)(db_pass|db_password|mysql_pwd)\s*[=>'":]\s*['"][^'"]{4,}['"]'''
+keywords = ["db_pass", "db_password", "mysql_pwd"]
+
+[[rules]]
+id = "config-php-path"
+description = "config.php content committed (should be outside repo)"
+path = '''config/config\.php$'''
+
+[allowlist]
+paths = [
+  '''\.gitleaks\.toml$''',
+  '''docs/''',
+  '''db/migrations/''',
+  '''tests/''',
+]

@@ -1,0 +1,245 @@
+type ApiResponse<T> = {
+  status: 'ok' | 'error'
+  data: T | null
+  errors: string[]
+}
+
+let csrfToken: string | null = null
+let onSessionExpired: (() => void) | null = null
+
+async function request<T>(
+  path: string,
+  options: RequestInit = {},
+  retried = false,
+): Promise<ApiResponse<T>> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(options.headers as Record<string, string>),
+  }
+
+  const isMutation = !!options.method && ['POST', 'PUT', 'DELETE'].includes(options.method)
+  if (isMutation) {
+    if (!csrfToken) {
+      const csrf = await fetchCsrf()
+      csrfToken = csrf.data?.csrf_token ?? null
+    }
+    if (csrfToken) {
+      headers['X-CSRF-Token'] = csrfToken
+    }
+  }
+
+  const response = await fetch(`/api/${path}`, {
+    ...options,
+    headers,
+    credentials: 'include',
+  })
+
+  if (response.status === 403) {
+    const body = await response
+      .clone()
+      .json()
+      .catch(() => null)
+    const isCsrfError = body?.errors?.some((e: string) => e.toLowerCase().includes('csrf'))
+    if (isCsrfError) {
+      csrfToken = null
+      // Jeton périmé vis-à-vis de la session : on rafraîchit et on rejoue une seule fois.
+      if (isMutation && !retried) {
+        await fetchCsrf()
+        return request<T>(path, options, true)
+      }
+    }
+  }
+
+  if (response.status === 401) {
+    onSessionExpired?.()
+  }
+
+  return response.json() as Promise<ApiResponse<T>>
+}
+
+function get<T>(path: string): Promise<ApiResponse<T>> {
+  return request<T>(path)
+}
+
+function post<T>(path: string, body: unknown): Promise<ApiResponse<T>> {
+  return request<T>(path, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  })
+}
+
+function put<T>(path: string, body: unknown): Promise<ApiResponse<T>> {
+  return request<T>(path, {
+    method: 'PUT',
+    body: JSON.stringify(body),
+  })
+}
+
+function del<T>(path: string): Promise<ApiResponse<T>> {
+  return request<T>(path, { method: 'DELETE' })
+}
+
+function delWithBody<T>(path: string, body: unknown): Promise<ApiResponse<T>> {
+  return request<T>(path, { method: 'DELETE', body: JSON.stringify(body) })
+}
+
+function buildQuery(params?: Record<string, string>): string {
+  return params ? '?' + new URLSearchParams(params).toString() : ''
+}
+
+async function fetchCsrf() {
+  const result = await get<{ csrf_token: string }>('auth/csrf')
+  if (result.status === 'ok' && result.data?.csrf_token) {
+    csrfToken = result.data.csrf_token
+  }
+  return result
+}
+
+export const apiClient = {
+  // Auth
+  getCsrf: fetchCsrf,
+  getMe: () =>
+    get<{
+      id: number
+      prenom: string
+      nom: string
+      email: string
+      role_id: number
+      role_nom: string
+    } | null>('auth/me'),
+  login: (email: string, password: string, remember: boolean) =>
+    post<{
+      id: number
+      prenom: string
+      nom: string
+      email: string
+      role_id: number
+    }>('auth/login', { email, password, remember }),
+  logout: () => {
+    csrfToken = null
+    return post<void>('auth/logout', {})
+  },
+  setup: (data: {
+    setup_secret: string
+    prenom: string
+    nom: string
+    email: string
+    password: string
+    password_confirm: string
+  }) =>
+    post<{ id: number; prenom: string; nom: string; email: string; role_id: number }>(
+      'auth/setup',
+      data,
+    ),
+  findSessions: () =>
+    get<
+      {
+        id: number
+        user_id: number
+        prenom: string
+        nom: string
+        email: string
+        ip: string
+        user_agent: string
+        last_seen: string
+        created_at: string
+      }[]
+    >('auth/sessions'),
+  forceLogout: (sessionId: number) => del<void>(`auth/sessions/${sessionId}`),
+  onSessionExpired: (callback: () => void) => {
+    onSessionExpired = callback
+  },
+
+  // Citations
+  findCitations: (params?: Record<string, string>) =>
+    get<{ items: unknown[]; next_cursor: string | null }>(`citations${buildQuery(params)}`),
+  getCitation: (id: number) => get<unknown>(`citations/${id}`),
+  createCitation: (data: unknown) => post<{ id: number }>('citations', data),
+  updateCitation: (id: number, data: unknown) => put<{ id: number }>(`citations/${id}`, data),
+  deleteCitation: (id: number) => del<void>(`citations/${id}`),
+  setCitationKeywords: (id: number, keywordIds: number[]) =>
+    put<void>(`citations/${id}/keywords`, { keyword_ids: keywordIds }),
+  bulkUpdateCitations: (ids: number[], fields: Record<string, unknown>) =>
+    put<{ updated: number }>('citations/bulk', { ids, fields }),
+  bulkDeleteCitations: (ids: number[]) =>
+    delWithBody<{ deleted: number }>('citations/bulk', { ids }),
+
+  // Auteurs
+  findAuteurs: (params?: Record<string, string>) => get<unknown[]>(`auteurs${buildQuery(params)}`),
+  getAuteur: (id: number) => get<unknown>(`auteurs/${id}`),
+  createAuteur: (data: unknown) => post<{ id: number }>('auteurs', data),
+  updateAuteur: (id: number, data: unknown) => put<{ id: number }>(`auteurs/${id}`, data),
+  deleteAuteur: (id: number) => del<void>(`auteurs/${id}`),
+
+  // Oeuvres
+  findOeuvres: (params?: Record<string, string>) => get<unknown[]>(`oeuvres${buildQuery(params)}`),
+  getOeuvre: (id: number) => get<unknown>(`oeuvres/${id}`),
+  createOeuvre: (data: unknown) => post<{ id: number }>('oeuvres', data),
+  updateOeuvre: (id: number, data: unknown) => put<{ id: number }>(`oeuvres/${id}`, data),
+  deleteOeuvre: (id: number) => del<void>(`oeuvres/${id}`),
+
+  // Themes
+  findThemes: () => get<unknown[]>('themes'),
+  getTheme: (id: number) => get<unknown>(`themes/${id}`),
+  createTheme: (data: unknown) => post<{ id: number }>('themes', data),
+  updateTheme: (id: number, data: unknown) => put<{ id: number }>(`themes/${id}`, data),
+  deleteTheme: (id: number) => del<void>(`themes/${id}`),
+
+  // Keywords
+  findKeywords: (params?: Record<string, string>) =>
+    get<{ id: number; mot: string }[]>(`keywords${buildQuery(params)}`),
+  createKeyword: (data: unknown) => post<{ id: number }>('keywords', data),
+  findOrCreateKeyword: (mot: string) =>
+    post<{ id: number; mot: string }>('keywords/find-or-create', { mot }),
+  deleteKeyword: (id: number) => del<void>(`keywords/${id}`),
+
+  // Etats
+  findEtats: () => get<unknown[]>('etats'),
+  getEtat: (id: number) => get<unknown>(`etats/${id}`),
+  updateEtat: (id: number, data: unknown) => put<{ id: number }>(`etats/${id}`, data),
+  deleteEtat: (id: number) => del<void>(`etats/${id}`),
+
+  // Emojis
+  findEmojis: (params?: Record<string, string>) =>
+    get<{ id: number; code: string }[]>(`emojis${buildQuery(params)}`),
+  createEmoji: (data: { code: string }) => post<{ id: number }>('emojis', data),
+  deleteEmoji: (id: number) => del<void>(`emojis/${id}`),
+
+  // Roles
+  findRoles: () => get<unknown[]>('roles'),
+  getRoleWithPermissions: (id: number) =>
+    get<{ id: number; nom: string; permissions: { id: number; code: string }[] }>(`roles/${id}`),
+  updateRolePermissions: (id: number, permissionIds: number[]) =>
+    put<void>(`roles/${id}/permissions`, { permission_ids: permissionIds }),
+  createRole: (nom: string, permissionIds: number[]) =>
+    post<{ id: number; nom: string }>('roles', { nom, permission_ids: permissionIds }),
+  updateRole: (id: number, nom: string) => put<{ id: number; nom: string }>(`roles/${id}`, { nom }),
+  deleteRole: (id: number) => del<void>(`roles/${id}`),
+  getRoleOeuvres: (roleId: number) => get<{ oeuvre_ids: number[] }>(`roles/${roleId}/oeuvres`),
+  setRoleOeuvres: (roleId: number, oeuvreIds: number[]) =>
+    put<{ oeuvre_ids: number[] }>(`roles/${roleId}/oeuvres`, { oeuvre_ids: oeuvreIds }),
+
+  // Users
+  findUsers: () => get<unknown[]>('users'),
+  getUser: (id: number) => get<unknown>(`users/${id}`),
+  createUser: (data: unknown) => post<{ id: number }>('users', data),
+  updateUser: (id: number, data: unknown) => put<{ id: number }>(`users/${id}`, data),
+  deleteUser: (id: number) => del<void>(`users/${id}`),
+
+  // Config
+  getConfig: (key: string) => get<unknown>(`config/${key}`),
+  setConfig: (key: string, value: string) => put<void>(`config/${key}`, { value }),
+
+  // Favorites
+  findFavorites: (params?: Record<string, string>) =>
+    get<{ items: unknown[]; next_cursor: string | null }>(`favorites${buildQuery(params)}`),
+  addFavorite: (citationId: number) => post<void>('favorites', { citation_id: citationId }),
+  removeFavorite: (citationId: number) => del<void>(`favorites/${citationId}`),
+
+  // AI
+  aiSuggestKeywords: (citationId: number, contenu: string) =>
+    post<{ keywords: string[] }>('ai/suggest-keywords', { citation_id: citationId, contenu }),
+  aiSuggestTheme: (citationId: number, contenu: string) =>
+    post<{ theme_id: number }>('ai/suggest-theme', { citation_id: citationId, contenu }),
+  aiTestConnection: () => post<{ ok: boolean; model: string }>('ai/test-connection', {}),
+}

@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<ruleset name="Lumosphere">
+    <description>Lumosphère PHP coding standard</description>
+    <file>api</file>
+    <arg name="extensions" value="php"/>
+    <arg name="colors"/>
+    <arg value="sp"/>
+    <rule ref="PSR12"/>
+</ruleset>

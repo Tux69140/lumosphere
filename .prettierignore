@@ -1,0 +1,13 @@
+dist
+vendor
+node_modules
+pnpm-lock.yaml
+composer.json
+composer.lock
+docs/**
+.superpowers/**
+.claude/**
+.impeccable/**
+*.md
+public/**
+db/**

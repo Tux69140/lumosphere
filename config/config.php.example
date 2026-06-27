@@ -1,0 +1,16 @@
+<?php
+// Database
+$config['db_host'] = '127.0.0.1';
+$config['db_name'] = 'lumosphere';
+$config['db_user'] = 'lumosphere';
+$config['db_pass'] = 'secret';
+
+// App
+$config['timezone']       = 'Europe/Paris';
+$config['allowed_origin'] = 'https://your-domain.example.com';
+$config['setup_secret']   = 'change-me-before-first-run';
+
+// LiteLLM
+$config['litellm_base_url'] = 'https://your-litellm-proxy.example.com';
+$config['litellm_api_key']  = 'sk-...';
+$config['litellm_model']    = 'gpt-4o-mini'; // or any model on the proxy
