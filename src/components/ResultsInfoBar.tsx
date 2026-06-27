@@ -30,7 +30,7 @@ export function ResultsInfoBar() {
   const {
     items,
     loading,
-    hasMore,
+    total,
     hasActiveFilters,
     query,
     setQuery,
@@ -50,9 +50,11 @@ export function ResultsInfoBar() {
     setDateTo,
   } = useCorpusSearch()
 
-  const countLabel = loading
-    ? 'Recherche…'
-    : `${items.length}${hasMore ? '+' : ''} résultat${items.length !== 1 ? 's' : ''}`
+  const displayCount = total ?? items.length
+  const countLabel =
+    loading && total === null
+      ? 'Recherche…'
+      : `${displayCount.toLocaleString('fr-FR')} résultat${displayCount !== 1 ? 's' : ''}`
 
   return (
     <div className="mb-4 space-y-2">

@@ -153,6 +153,8 @@ export const apiClient = {
   // Citations
   findCitations: (params?: Record<string, string>) =>
     get<{ items: unknown[]; next_cursor: string | null }>(`citations${buildQuery(params)}`),
+  countCitations: (params?: Record<string, string>) =>
+    get<{ total: number }>(`citations/count${buildQuery(params)}`),
   getCitation: (id: number) => get<unknown>(`citations/${id}`),
   createCitation: (data: unknown) => post<{ id: number }>('citations', data),
   updateCitation: (id: number, data: unknown) => put<{ id: number }>(`citations/${id}`, data),

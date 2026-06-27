@@ -1,5 +1,5 @@
 import { createContext, useCallback, useMemo, useState, type ReactNode } from 'react'
-import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query'
+import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@/services/api'
 import { useDebouncedValue } from '@/hooks/useDebouncedValue'
 import { buildThemeTree, toggleThemeNode } from './themeSelection'
@@ -36,6 +36,7 @@ export type CorpusSearchContextValue = {
   loadingMore: boolean
   loadMore: () => void
   refresh: () => void
+  total: number | null
   hasActiveFilters: boolean
   filtersOpen: boolean
   toggleFilters: () => void
@@ -132,6 +133,22 @@ export function CorpusSearchProvider({ children }: { children: ReactNode }) {
     fetchNextPage,
   } = search
 
+  const countParams = buildCitationParams({
+    query,
+    oeuvreIds: selectedOeuvreIds,
+    themeIds: selectedThemeIds,
+    keywordIds,
+    keywordMode,
+    dateFrom,
+    dateTo,
+    sort,
+  })
+  const countQuery = useQuery({
+    queryKey: ['citations', 'count', debouncedKey],
+    queryFn: () => unwrap(apiClient.countCitations(countParams)) as Promise<{ total: number }>,
+    enabled: filtersKey === debouncedKey,
+  })
+
   const toggleKeyword = useCallback(
     (id: number) =>
       setKeywordIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id])),
@@ -185,6 +202,7 @@ export function CorpusSearchProvider({ children }: { children: ReactNode }) {
       refresh: () => {
         void qc.resetQueries({ queryKey: queryKeys.citationsSearch(debouncedKey) })
       },
+      total: countQuery.data?.total ?? null,
       hasActiveFilters:
         query.trim() !== '' ||
         selectedOeuvreIds.length > 0 ||
@@ -218,6 +236,7 @@ export function CorpusSearchProvider({ children }: { children: ReactNode }) {
       debouncedKey,
       qc,
       filtersOpen,
+      countQuery.data,
     ],
   )
 
