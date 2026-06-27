@@ -5,7 +5,9 @@ export function createQueryClient(): QueryClient {
   return new QueryClient({
     // Les erreurs de CHARGEMENT (queries) remontent ici une seule fois → toast centralisé.
     queryCache: new QueryCache({
-      onError: (error) => {
+      onError: (error, query) => {
+        // Ne pas toaster les erreurs de recherche corpus (bannière inline dans AccueilPage).
+        if (query.queryKey[0] === 'citations') return
         toast.error(error instanceof Error ? error.message : 'Erreur de chargement.')
       },
     }),

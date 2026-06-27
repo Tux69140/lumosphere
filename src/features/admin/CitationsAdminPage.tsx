@@ -143,7 +143,7 @@ export function CitationsAdminPage() {
     mutationFn: ({ id, fields }: { id: number; fields: Record<string, unknown> }) =>
       unwrap(apiClient.updateCitation(id, fields)),
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ['citations'] })
+      void qc.invalidateQueries({ queryKey: queryKeys.citationsAll })
     },
     onError: (err: Error) => toast.error(err.message),
   })
@@ -153,7 +153,7 @@ export function CitationsAdminPage() {
       unwrap(apiClient.bulkUpdateCitations(ids, { etat_id: etatId })),
     onSuccess: (data, vars) => {
       toast.success(`État mis à jour pour ${data.updated ?? vars.ids.length} entrée(s).`)
-      void qc.invalidateQueries({ queryKey: ['citations'] })
+      void qc.invalidateQueries({ queryKey: queryKeys.citationsAll })
       setBulkEtatId(0)
       setRowSelection({})
     },
@@ -165,7 +165,7 @@ export function CitationsAdminPage() {
       unwrap(apiClient.bulkUpdateCitations(ids, { oeuvre_id: oeuvreId })),
     onSuccess: (data, vars) => {
       toast.success(`Œuvre mise à jour pour ${data.updated ?? vars.ids.length} entrée(s).`)
-      void qc.invalidateQueries({ queryKey: ['citations'] })
+      void qc.invalidateQueries({ queryKey: queryKeys.citationsAll })
       setBulkOeuvreId(0)
       setRowSelection({})
     },
@@ -176,7 +176,7 @@ export function CitationsAdminPage() {
     mutationFn: (ids: number[]) => unwrap(apiClient.bulkDeleteCitations(ids)),
     onSuccess: (data, ids) => {
       toast.success(`${data.deleted ?? ids.length} entrée(s) supprimée(s).`)
-      void qc.invalidateQueries({ queryKey: ['citations'] })
+      void qc.invalidateQueries({ queryKey: queryKeys.citationsAll })
       setRowSelection({})
     },
     onError: (err: Error) => toast.error(err.message),
@@ -192,7 +192,7 @@ export function CitationsAdminPage() {
         toast.error(r.errors?.[0] ?? 'Suppression impossible.')
         return
       }
-      void qc.invalidateQueries({ queryKey: ['citations'] })
+      void qc.invalidateQueries({ queryKey: queryKeys.citationsAll })
       toast.success('Entrée supprimée.')
     },
     onError: (err: Error) => toast.error(err.message || 'Erreur réseau.'),
@@ -530,7 +530,7 @@ export function CitationsAdminPage() {
           onClose={() => setEditorCitationId(null)}
           onSaved={() => {
             setEditorCitationId(null)
-            void qc.invalidateQueries({ queryKey: ['citations'] })
+            void qc.invalidateQueries({ queryKey: queryKeys.citationsAll })
           }}
         />
       )}

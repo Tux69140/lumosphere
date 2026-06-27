@@ -8,7 +8,8 @@ export async function unwrap<T>(
 ): Promise<T> {
   const r = await p
   if (r.status !== 'ok') throw new Error(r.errors?.[0] ?? 'Erreur de chargement.')
-  return (r.data ?? ([] as unknown as T)) as T
+  if (r.data === null || r.data === undefined) throw new Error('Réponse API vide.')
+  return r.data as T
 }
 
 export function useOeuvres() {

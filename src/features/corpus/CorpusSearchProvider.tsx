@@ -1,5 +1,5 @@
 import { createContext, useCallback, useMemo, useState, type ReactNode } from 'react'
-import { useInfiniteQuery } from '@tanstack/react-query'
+import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@/services/api'
 import { useDebouncedValue } from '@/hooks/useDebouncedValue'
 import { buildThemeTree, toggleThemeNode } from './themeSelection'
@@ -44,6 +44,8 @@ export type CorpusSearchContextValue = {
 export const CorpusSearchContext = createContext<CorpusSearchContextValue | null>(null)
 
 export function CorpusSearchProvider({ children }: { children: ReactNode }) {
+  const qc = useQueryClient()
+
   const [query, setQuery] = useState('')
   const [selectedOeuvreIds, setSelectedOeuvreIds] = useState<number[]>([])
   const [selectedThemeIds, setSelectedThemeIds] = useState<number[]>([])
@@ -59,8 +61,15 @@ export function CorpusSearchProvider({ children }: { children: ReactNode }) {
   const themesQuery = useThemes()
   const keywordsQuery = useKeywords()
 
-  const oeuvres = (oeuvresQuery.data as Oeuvre[] | undefined) ?? []
-  const keywords = (keywordsQuery.data as Keyword[] | undefined) ?? []
+  // useMemo pour stabiliser la référence tableau (évite deps instables dans la valeur mémoisée).
+  const oeuvres = useMemo<Oeuvre[]>(
+    () => (oeuvresQuery.data as Oeuvre[] | undefined) ?? [],
+    [oeuvresQuery.data],
+  )
+  const keywords = useMemo<Keyword[]>(
+    () => (keywordsQuery.data as Keyword[] | undefined) ?? [],
+    [keywordsQuery.data],
+  )
 
   const themeTree = useMemo(
     () => buildThemeTree((themesQuery.data as Theme[] | undefined) ?? []),
@@ -85,6 +94,8 @@ export function CorpusSearchProvider({ children }: { children: ReactNode }) {
     sort
   const debouncedKey = useDebouncedValue(filtersKey, 300)
 
+  // C1 — queryFn aligné sur debouncedKey : enabled=false pendant le debounce
+  // évite que fetchNextPage mélange des résultats de deux recherches différentes.
   const search = useInfiniteQuery({
     queryKey: queryKeys.citationsSearch(debouncedKey),
     queryFn: ({ pageParam }) =>
@@ -107,7 +118,19 @@ export function CorpusSearchProvider({ children }: { children: ReactNode }) {
       ) as Promise<{ items: Citation[]; next_cursor: string | null }>,
     initialPageParam: null as string | null,
     getNextPageParam: (lastPage) => lastPage.next_cursor,
+    enabled: filtersKey === debouncedKey,
   })
+
+  // Destructure pour des deps exhaustive-deps propres dans useMemo.
+  const {
+    data: searchData,
+    isLoading: searchIsLoading,
+    isError: searchIsError,
+    error: searchError,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = search
 
   const toggleKeyword = useCallback(
     (id: number) =>
@@ -115,60 +138,88 @@ export function CorpusSearchProvider({ children }: { children: ReactNode }) {
     [],
   )
 
-  const value: CorpusSearchContextValue = {
-    query,
-    setQuery,
-    oeuvres,
-    themeTree,
-    keywords,
-    selectedOeuvreIds,
-    selectedThemeIds,
-    keywordIds,
-    keywordMode,
-    dateFrom,
-    dateTo,
-    sort,
-    toggleOeuvre: (id) =>
-      setSelectedOeuvreIds((prev) =>
-        prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
-      ),
-    toggleTheme: (id) => setSelectedThemeIds((prev) => toggleThemeNode(prev, themeTree, id)),
-    toggleKeyword,
-    setKeywordMode,
-    setDateFrom,
-    setDateTo,
-    setSort,
-    reset: () => {
-      setQuery('')
-      setSelectedOeuvreIds([])
-      setSelectedThemeIds([])
-      setKeywordIds([])
-      setKeywordMode(null)
-      setDateFrom('')
-      setDateTo('')
-      setSort('date')
-    },
-    items: search.data?.pages.flatMap((p) => p.items) ?? [],
-    loading: search.isLoading,
-    error: search.isError ? (search.error as Error).message : null,
-    hasMore: search.hasNextPage,
-    loadingMore: search.isFetchingNextPage,
-    loadMore: () => {
-      void search.fetchNextPage()
-    },
-    refresh: () => {
-      void search.refetch()
-    },
-    hasActiveFilters:
-      query.trim() !== '' ||
-      selectedOeuvreIds.length > 0 ||
-      selectedThemeIds.length > 0 ||
-      keywordIds.length > 0 ||
-      dateFrom !== '' ||
-      dateTo !== '',
-    filtersOpen,
-    toggleFilters: () => setFiltersOpen((v) => !v),
-  }
+  // I5 — value mémoisé pour éviter les re-renders en cascade sur les consommateurs.
+  const value = useMemo<CorpusSearchContextValue>(
+    () => ({
+      query,
+      setQuery,
+      oeuvres,
+      themeTree,
+      keywords,
+      selectedOeuvreIds,
+      selectedThemeIds,
+      keywordIds,
+      keywordMode,
+      dateFrom,
+      dateTo,
+      sort,
+      toggleOeuvre: (id) =>
+        setSelectedOeuvreIds((prev) =>
+          prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+        ),
+      toggleTheme: (id) => setSelectedThemeIds((prev) => toggleThemeNode(prev, themeTree, id)),
+      toggleKeyword,
+      setKeywordMode,
+      setDateFrom,
+      setDateTo,
+      setSort,
+      reset: () => {
+        setQuery('')
+        setSelectedOeuvreIds([])
+        setSelectedThemeIds([])
+        setKeywordIds([])
+        setKeywordMode(null)
+        setDateFrom('')
+        setDateTo('')
+        setSort('date')
+      },
+      items: searchData?.pages.flatMap((p) => p.items) ?? [],
+      loading: searchIsLoading,
+      error: searchIsError ? (searchError as Error).message : null,
+      hasMore: hasNextPage,
+      loadingMore: isFetchingNextPage,
+      loadMore: () => {
+        void fetchNextPage()
+      },
+      // I3 — resetQueries repart de la page 1 (refetch rechargerait N pages en série).
+      refresh: () => {
+        void qc.resetQueries({ queryKey: queryKeys.citationsSearch(debouncedKey) })
+      },
+      hasActiveFilters:
+        query.trim() !== '' ||
+        selectedOeuvreIds.length > 0 ||
+        selectedThemeIds.length > 0 ||
+        keywordIds.length > 0 ||
+        dateFrom !== '' ||
+        dateTo !== '',
+      filtersOpen,
+      toggleFilters: () => setFiltersOpen((v) => !v),
+    }),
+    [
+      query,
+      oeuvres,
+      themeTree,
+      keywords,
+      selectedOeuvreIds,
+      selectedThemeIds,
+      keywordIds,
+      keywordMode,
+      dateFrom,
+      dateTo,
+      sort,
+      toggleKeyword,
+      searchData,
+      searchIsLoading,
+      searchIsError,
+      searchError,
+      hasNextPage,
+      isFetchingNextPage,
+      fetchNextPage,
+      debouncedKey,
+      qc,
+      filtersOpen,
+    ],
+  )
 
   return <CorpusSearchContext.Provider value={value}>{children}</CorpusSearchContext.Provider>
 }
