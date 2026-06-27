@@ -34,6 +34,7 @@ function _citations_filters(): array
         'keyword_mode' => $_GET['keyword_mode'] ?? null,
         'date_from'    => $_GET['date_from'] ?? null,
         'date_to'      => $_GET['date_to'] ?? null,
+        'sort'         => $_GET['sort'] ?? null,
     ]);
 }
 
@@ -51,11 +52,17 @@ function endpoint_citations(PDO $pdo, array $ctx, string $method, ?int $id, ?arr
         ),
         $method === 'GET' && $id !== null => dal_get_citation($pdo, $ctx, $id),
         $method === 'POST' && $id === null => dal_create_citation($pdo, $ctx, $body ?? []),
+        $method === 'PUT' && $id === null && $action === 'bulk' => dal_bulk_update_citations(
+            $pdo, $ctx, $body['ids'] ?? [], $body['fields'] ?? []
+        ),
         $method === 'PUT' && $id !== null && $action === 'keywords' => dal_set_citation_keywords(
             $pdo, $ctx, $id, $body['keyword_ids'] ?? []
         ),
         $method === 'PUT' && $id !== null && $action === 'restore' => dal_restore_citation($pdo, $ctx, $id),
         $method === 'PUT' && $id !== null => dal_update_citation($pdo, $ctx, $id, $body ?? []),
+        $method === 'DELETE' && $id === null && $action === 'bulk' => dal_bulk_delete_citations(
+            $pdo, $ctx, $body['ids'] ?? []
+        ),
         $method === 'DELETE' && $id !== null => dal_soft_delete_citation($pdo, $ctx, $id),
         default => dal_error('Méthode non supportée.'),
     };

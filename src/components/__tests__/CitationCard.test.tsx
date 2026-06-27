@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react'
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
+import userEvent from '@testing-library/user-event'
 import { CitationCard } from '../CitationCard'
 
 const base = {
@@ -59,15 +60,28 @@ describe('CitationCard', () => {
     expect(badge.closest('button')).toBeNull()
   })
 
-  it('affiche un bouton Favori désactivé', () => {
+  it('affiche un bouton Favori activé', () => {
     render(<CitationCard {...base} />)
-    expect(screen.getByLabelText('Ajouter aux favoris')).toBeDisabled()
+    expect(screen.getByLabelText('Ajouter aux favoris')).not.toBeDisabled()
   })
 
-  it('affiche le bouton Éditer (désactivé) seulement si canEdit', () => {
+  it('le bouton Favori est rempli (fill) quand isFavorited=true', () => {
+    render(<CitationCard {...base} isFavorited={true} onToggleFavorite={vi.fn()} />)
+    const btn = screen.getByLabelText('Retirer des favoris')
+    expect(btn).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('affiche le bouton Éditer seulement si canEdit', () => {
     const { rerender } = render(<CitationCard {...base} canEdit={false} />)
     expect(screen.queryByLabelText('Éditer cette entrée')).not.toBeInTheDocument()
     rerender(<CitationCard {...base} canEdit />)
-    expect(screen.getByLabelText('Éditer cette entrée')).toBeDisabled()
+    expect(screen.getByLabelText('Éditer cette entrée')).toBeEnabled()
+  })
+
+  it('déclenche onEdit au clic sur Éditer', async () => {
+    const onEdit = vi.fn()
+    render(<CitationCard {...base} canEdit onEdit={onEdit} />)
+    await userEvent.click(screen.getByLabelText('Éditer cette entrée'))
+    expect(onEdit).toHaveBeenCalledOnce()
   })
 })

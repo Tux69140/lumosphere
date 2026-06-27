@@ -6,7 +6,18 @@ export type ThemeNode = { id: number; nom: string; children: Theme[] }
 
 export type CheckState = 'checked' | 'indeterminate' | 'unchecked'
 
-export type CorpusFilters = { query: string; oeuvreIds: number[]; themeIds: number[] }
+export type Keyword = { id: number; mot: string }
+
+export type CorpusFilters = {
+  query: string
+  oeuvreIds: number[]
+  themeIds: number[]
+  keywordIds: number[]
+  keywordMode: 'AND' | 'OR' | null
+  dateFrom: string
+  dateTo: string
+  sort: 'date' | 'score'
+}
 
 export type Citation = {
   id: number

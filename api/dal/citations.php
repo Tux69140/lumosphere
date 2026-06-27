@@ -159,6 +159,9 @@ function dal_search_citations(PDO $pdo, array $ctx, string $query, array $filter
     $decoded_cursor = dal_decode_cursor($cursor);
     $where .= dal_keyset_clause('c.date_entree', 'c.id', $decoded_cursor, 'DESC', $params);
 
+    $sort_by_score = ($filters['sort'] ?? null) === 'score';
+    $order_by = $sort_by_score ? 'relevance DESC, c.date_entree DESC' : 'c.date_entree DESC, c.id DESC';
+
     $limit = $page_size + 1;
     $sql = "SELECT c.id, c.contenu, c.notes, c.oeuvre_id, c.theme_id, c.etat_id,
                    c.auteur_nom, c.date_entree, c.created_at, c.updated_at,
@@ -169,7 +172,7 @@ function dal_search_citations(PDO $pdo, array $ctx, string $query, array $filter
             LEFT JOIN themes t ON c.theme_id = t.id
             JOIN etats e ON c.etat_id = e.id
             WHERE {$where}
-            ORDER BY c.date_entree DESC, c.id DESC
+            ORDER BY {$order_by}
             LIMIT {$limit}";
 
     $stmt = $pdo->prepare($sql);
@@ -429,6 +432,73 @@ function _dal_apply_id_list_filter(string &$where, array &$params, string $col, 
         $params[$key] = $id;
     }
     $where .= " AND {$col} IN (" . implode(',', $placeholders) . ')';
+}
+
+function dal_bulk_update_citations(PDO $pdo, array $ctx, array $ids, array $fields): array
+{
+    dal_require_permission($ctx, 'admin.citations');
+
+    $ids = array_values(array_filter(array_map('intval', $ids), static fn(int $v): bool => $v > 0));
+    if (empty($ids)) {
+        return dal_error('Aucun identifiant fourni.');
+    }
+    $ids = array_slice($ids, 0, 500);
+
+    $allowed = ['etat_id', 'oeuvre_id', 'theme_id'];
+    $set_parts = [];
+    $params = [];
+    foreach ($allowed as $col) {
+        if (array_key_exists($col, $fields)) {
+            $set_parts[] = "{$col} = :{$col}";
+            $params[":{$col}"] = $fields[$col] === null ? null : (int) $fields[$col];
+        }
+    }
+    if (empty($set_parts)) {
+        return dal_error('Aucun champ modifiable fourni.');
+    }
+
+    $placeholders = [];
+    foreach ($ids as $i => $id) {
+        $key = ":id_{$i}";
+        $placeholders[] = $key;
+        $params[$key] = $id;
+    }
+    $in = implode(',', $placeholders);
+
+    $sql = 'UPDATE citations SET ' . implode(', ', $set_parts) . " WHERE id IN ({$in}) AND deleted_at IS NULL";
+    $stmt = $pdo->prepare($sql);
+    foreach ($params as $k => $v) {
+        $stmt->bindValue($k, $v, $v === null ? PDO::PARAM_NULL : PDO::PARAM_INT);
+    }
+    $stmt->execute();
+    return dal_ok(['updated' => $stmt->rowCount()]);
+}
+
+function dal_bulk_delete_citations(PDO $pdo, array $ctx, array $ids): array
+{
+    dal_require_permission($ctx, 'admin.citations');
+
+    $ids = array_values(array_filter(array_map('intval', $ids), static fn(int $v): bool => $v > 0));
+    if (empty($ids)) {
+        return dal_error('Aucun identifiant fourni.');
+    }
+    $ids = array_slice($ids, 0, 500);
+
+    $placeholders = [];
+    $params = [];
+    foreach ($ids as $i => $id) {
+        $key = ":id_{$i}";
+        $placeholders[] = $key;
+        $params[$key] = $id;
+    }
+    $in = implode(',', $placeholders);
+
+    $stmt = $pdo->prepare("UPDATE citations SET deleted_at = NOW() WHERE id IN ({$in}) AND deleted_at IS NULL");
+    foreach ($params as $k => $v) {
+        $stmt->bindValue($k, $v, PDO::PARAM_INT);
+    }
+    $stmt->execute();
+    return dal_ok(['deleted' => $stmt->rowCount()]);
 }
 
 // --- Private helpers ---

@@ -25,6 +25,27 @@ function dal_get_etat(PDO $pdo, array $ctx, int $id): array
     return dal_ok($row);
 }
 
+function dal_update_etat(PDO $pdo, array $ctx, int $id, array $data): array
+{
+    dal_require_permission($ctx, 'admin.settings');
+    $stmt = $pdo->prepare('SELECT est_modifiable FROM etats WHERE id = :id');
+    $stmt->execute(['id' => $id]);
+    $row = $stmt->fetch();
+    if (!$row) {
+        return dal_error('État introuvable.');
+    }
+    if ((int) $row['est_modifiable'] === 0) {
+        return dal_error('Les états système ne peuvent pas être modifiés.');
+    }
+    $nom = trim($data['nom'] ?? '');
+    if ($nom === '') {
+        return dal_error('Le nom est requis.');
+    }
+    $stmt = $pdo->prepare('UPDATE etats SET nom = :nom, couleur = :couleur WHERE id = :id');
+    $stmt->execute(['nom' => $nom, 'couleur' => $data['couleur'] ?? null, 'id' => $id]);
+    return dal_ok(['id' => $id]);
+}
+
 /**
  * R3 — System states (est_modifiable=0) cannot be deleted.
  */

@@ -7,6 +7,15 @@ import { NotFoundPage } from '@/features/NotFoundPage'
 import { RequireAdmin } from '@/components/RequireAdmin'
 import { UsersPage } from '@/features/admin/UsersPage'
 import { RolesAccessPage } from '@/features/admin/RolesAccessPage'
+import { LaboEditeurPage } from '@/features/admin/LaboEditeurPage'
+import { AuteursPage } from '@/features/admin/AuteursPage'
+import { OeuvresPage } from '@/features/admin/OeuvresPage'
+import { ThemesPage } from '@/features/admin/ThemesPage'
+import { KeywordsPage } from '@/features/admin/KeywordsPage'
+import { EtatsPage } from '@/features/admin/EtatsPage'
+import { EmojisPage } from '@/features/admin/EmojisPage'
+import { CitationsAdminPage } from '@/features/admin/CitationsAdminPage'
+import { LiteLLMConfigPage } from '@/features/admin/LiteLLMConfigPage'
 
 export default function App() {
   return (
@@ -17,6 +26,15 @@ export default function App() {
           <Route index element={<Navigate to="/admin/utilisateurs" replace />} />
           <Route path="utilisateurs" element={<UsersPage />} />
           <Route path="roles" element={<RolesAccessPage />} />
+          <Route path="labo-editeur" element={<LaboEditeurPage />} />
+          <Route path="auteurs" element={<AuteursPage />} />
+          <Route path="oeuvres" element={<OeuvresPage />} />
+          <Route path="themes" element={<ThemesPage />} />
+          <Route path="mots-cles" element={<KeywordsPage />} />
+          <Route path="etats" element={<EtatsPage />} />
+          <Route path="emojis" element={<EmojisPage />} />
+          <Route path="citations" element={<CitationsAdminPage />} />
+          <Route path="ia" element={<LiteLLMConfigPage />} />
         </Route>
         <Route path="*" element={<NotFoundPage />} />
       </Route>

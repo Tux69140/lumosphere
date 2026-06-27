@@ -1,6 +1,5 @@
 # Secrets et configuration sensible — jamais versionnés
 config/config.php
-**/config.php
 .env
 .env.*
 !.env.example

@@ -79,6 +79,10 @@ function del<T>(path: string): Promise<ApiResponse<T>> {
   return request<T>(path, { method: 'DELETE' })
 }
 
+function delWithBody<T>(path: string, body: unknown): Promise<ApiResponse<T>> {
+  return request<T>(path, { method: 'DELETE', body: JSON.stringify(body) })
+}
+
 function buildQuery(params?: Record<string, string>): string {
   return params ? '?' + new URLSearchParams(params).toString() : ''
 }
@@ -155,6 +159,10 @@ export const apiClient = {
   deleteCitation: (id: number) => del<void>(`citations/${id}`),
   setCitationKeywords: (id: number, keywordIds: number[]) =>
     put<void>(`citations/${id}/keywords`, { keyword_ids: keywordIds }),
+  bulkUpdateCitations: (ids: number[], fields: Record<string, unknown>) =>
+    put<{ updated: number }>('citations/bulk', { ids, fields }),
+  bulkDeleteCitations: (ids: number[]) =>
+    delWithBody<{ deleted: number }>('citations/bulk', { ids }),
 
   // Auteurs
   findAuteurs: (params?: Record<string, string>) => get<unknown[]>(`auteurs${buildQuery(params)}`),
@@ -179,12 +187,23 @@ export const apiClient = {
 
   // Keywords
   findKeywords: (params?: Record<string, string>) =>
-    get<unknown[]>(`keywords${buildQuery(params)}`),
+    get<{ id: number; mot: string }[]>(`keywords${buildQuery(params)}`),
   createKeyword: (data: unknown) => post<{ id: number }>('keywords', data),
+  findOrCreateKeyword: (mot: string) =>
+    post<{ id: number; mot: string }>('keywords/find-or-create', { mot }),
   deleteKeyword: (id: number) => del<void>(`keywords/${id}`),
 
   // Etats
   findEtats: () => get<unknown[]>('etats'),
+  getEtat: (id: number) => get<unknown>(`etats/${id}`),
+  updateEtat: (id: number, data: unknown) => put<{ id: number }>(`etats/${id}`, data),
+  deleteEtat: (id: number) => del<void>(`etats/${id}`),
+
+  // Emojis
+  findEmojis: (params?: Record<string, string>) =>
+    get<{ id: number; code: string }[]>(`emojis${buildQuery(params)}`),
+  createEmoji: (data: { code: string }) => post<{ id: number }>('emojis', data),
+  deleteEmoji: (id: number) => del<void>(`emojis/${id}`),
 
   // Roles
   findRoles: () => get<unknown[]>('roles'),
@@ -216,4 +235,11 @@ export const apiClient = {
     get<{ items: unknown[]; next_cursor: string | null }>(`favorites${buildQuery(params)}`),
   addFavorite: (citationId: number) => post<void>('favorites', { citation_id: citationId }),
   removeFavorite: (citationId: number) => del<void>(`favorites/${citationId}`),
+
+  // AI
+  aiSuggestKeywords: (citationId: number, contenu: string) =>
+    post<{ keywords: string[] }>('ai/suggest-keywords', { citation_id: citationId, contenu }),
+  aiSuggestTheme: (citationId: number, contenu: string) =>
+    post<{ theme_id: number }>('ai/suggest-theme', { citation_id: citationId, contenu }),
+  aiTestConnection: () => post<{ ok: boolean; model: string }>('ai/test-connection', {}),
 }

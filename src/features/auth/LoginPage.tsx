@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { Navigate, useNavigate } from 'react-router'
+import { Navigate, useLocation, useNavigate } from 'react-router'
 import { Eye, EyeSlash } from '@phosphor-icons/react'
 import { z } from 'zod'
 import { useAuth } from '@/hooks/useAuth'
@@ -15,6 +15,7 @@ const loginSchema = z.object({
 export function LoginPage() {
   const { user, login } = useAuth()
   const navigate = useNavigate()
+  const { state } = useLocation()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [remember, setRemember] = useState(false)
@@ -35,7 +36,7 @@ export function LoginPage() {
     setSubmitting(true)
     const res = await login(email, password, remember)
     setSubmitting(false)
-    if (res.ok) navigate('/')
+    if (res.ok) navigate((state as { from?: { pathname?: string } } | null)?.from?.pathname ?? '/')
     else setError(res.error ?? 'Connexion impossible.')
   }
 

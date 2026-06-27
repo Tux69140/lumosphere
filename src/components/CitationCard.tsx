@@ -1,4 +1,3 @@
-// src/components/CitationCard.tsx
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { Heart, PencilSimple } from '@phosphor-icons/react'
@@ -15,6 +14,9 @@ type CitationCardProps = {
   notes: string | null
   mots_cles: string[]
   canEdit?: boolean
+  onEdit?: () => void
+  isFavorited?: boolean
+  onToggleFavorite?: () => void
 }
 
 export function CitationCard({
@@ -25,13 +27,15 @@ export function CitationCard({
   notes,
   mots_cles,
   canEdit = false,
+  onEdit,
+  isFavorited = false,
+  onToggleFavorite,
 }: CitationCardProps) {
   const showAuteur = auteur_nom != null && auteur_nom.trim() !== '' && auteur_nom !== HOUSE_AUTHOR
   const showNotes = notes != null && notes.trim() !== ''
 
   return (
     <article className="group rounded-lg border border-(--color-border) bg-(--color-bg-card) px-7 py-5 shadow-sm transition-shadow hover:shadow-md">
-      {/* En-tête : thème (gauche) + œuvre (droite) */}
       <div className="mb-3 flex items-start justify-between gap-4">
         <div className="flex-1 text-xs text-(--color-text-secondary)">
           <span className="font-medium text-(--color-text-primary)">Thème :&nbsp;</span>
@@ -44,17 +48,14 @@ export function CitationCard({
         )}
       </div>
 
-      {/* Contenu (Markdown) */}
       <div className="prose-display flow-root text-sm text-(--color-text-primary)">
         <ReactMarkdown remarkPlugins={MARKDOWN_PLUGINS}>{contenu}</ReactMarkdown>
       </div>
 
-      {/* Auteur (uniquement si ≠ Lulumineuse) */}
       {showAuteur && (
         <p className="mt-2 text-xs font-medium text-(--color-text-secondary)">— {auteur_nom}</p>
       )}
 
-      {/* Notes de publication (uniquement si non vides) */}
       {showNotes && (
         <div
           data-testid="publication-notes"
@@ -64,7 +65,6 @@ export function CitationCard({
         </div>
       )}
 
-      {/* Pied : mots-clés (gauche) + actions inertes (droite) */}
       <div className="mt-3 flex min-h-[30px] items-center justify-between gap-2 border-t border-(--color-border) pt-3">
         <div className="flex flex-1 flex-wrap gap-2">
           {mots_cles.map((mc) => (
@@ -79,20 +79,29 @@ export function CitationCard({
         <div className="flex items-center gap-1">
           <button
             type="button"
-            disabled
-            title="Favori (bientôt disponible)"
-            aria-label="Ajouter aux favoris"
-            className="rounded-full p-1.5 text-(--color-text-placeholder) disabled:cursor-not-allowed"
+            onClick={onToggleFavorite}
+            title={isFavorited ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+            aria-label={isFavorited ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+            aria-pressed={isFavorited}
+            className={`rounded-full p-1.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--color-action) ${
+              isFavorited
+                ? 'text-(--color-accent-ink)'
+                : 'text-(--color-text-placeholder) hover:text-(--color-accent-ink)'
+            }`}
           >
-            <Heart className="h-[18px] w-[18px]" aria-hidden="true" />
+            <Heart
+              className="h-[18px] w-[18px]"
+              aria-hidden="true"
+              weight={isFavorited ? 'fill' : 'regular'}
+            />
           </button>
           {canEdit && (
             <button
               type="button"
-              disabled
-              title="Éditer (bientôt disponible)"
+              onClick={onEdit}
+              title="Éditer cette entrée"
               aria-label="Éditer cette entrée"
-              className="rounded-full p-1.5 text-(--color-text-placeholder) disabled:cursor-not-allowed"
+              className="rounded-full p-1.5 text-(--color-text-secondary) hover:bg-(--color-bg-button) hover:text-(--color-text-primary)"
             >
               <PencilSimple className="h-[18px] w-[18px]" aria-hidden="true" />
             </button>

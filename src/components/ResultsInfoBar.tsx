@@ -36,10 +36,18 @@ export function ResultsInfoBar() {
     setQuery,
     oeuvres,
     themeTree,
+    keywords,
     selectedOeuvreIds,
     selectedThemeIds,
+    keywordIds,
+    keywordMode,
+    dateFrom,
+    dateTo,
     toggleOeuvre,
     toggleTheme,
+    toggleKeyword,
+    setDateFrom,
+    setDateTo,
   } = useCorpusSearch()
 
   const countLabel = loading
@@ -84,6 +92,19 @@ export function ResultsInfoBar() {
               />
             )
           })}
+          {keywordIds.map((id) => {
+            const mot = keywords.find((k) => k.id === id)?.mot ?? String(id)
+            const modeLabel = keywordIds.length > 1 && keywordMode ? ` (${keywordMode})` : ''
+            return (
+              <FilterPill
+                key={`kw-${id}`}
+                label={`Mot-clé : ${mot}${modeLabel}`}
+                onRemove={() => toggleKeyword(id)}
+              />
+            )
+          })}
+          {dateFrom && <FilterPill label={`Du : ${dateFrom}`} onRemove={() => setDateFrom('')} />}
+          {dateTo && <FilterPill label={`Au : ${dateTo}`} onRemove={() => setDateTo('')} />}
         </div>
       )}
     </div>

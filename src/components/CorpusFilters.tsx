@@ -1,4 +1,3 @@
-// src/components/CorpusFilters.tsx
 import { useEffect, useRef, type InputHTMLAttributes } from 'react'
 import { MagnifyingGlass, X } from '@phosphor-icons/react'
 import { useCorpusSearch } from '@/features/corpus/useCorpusSearch'
@@ -24,10 +23,21 @@ export function CorpusFilters() {
     setQuery,
     oeuvres,
     themeTree,
+    keywords,
     selectedOeuvreIds,
     selectedThemeIds,
+    keywordIds,
+    keywordMode,
+    dateFrom,
+    dateTo,
+    sort,
     toggleOeuvre,
     toggleTheme,
+    toggleKeyword,
+    setKeywordMode,
+    setDateFrom,
+    setDateTo,
+    setSort,
     reset,
     hasActiveFilters,
   } = useCorpusSearch()
@@ -38,6 +48,7 @@ export function CorpusFilters() {
         <div className="relative">
           <MagnifyingGlass
             size={16}
+            aria-hidden="true"
             className="absolute left-3 top-1/2 -translate-y-1/2 text-(--color-text-placeholder)"
           />
           <input
@@ -55,11 +66,41 @@ export function CorpusFilters() {
               onClick={() => setQuery('')}
               className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full text-(--color-text-placeholder) hover:text-(--color-text-primary) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--color-action)"
             >
-              <X size={16} />
+              <X size={16} aria-hidden="true" />
             </button>
           )}
         </div>
       </div>
+
+      {query.trim() && (
+        <div className="mb-3">
+          <h3 className={sectionTitle}>Trier par</h3>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setSort('date')}
+              className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                sort === 'date'
+                  ? 'bg-(--color-action) text-(--color-action-text)'
+                  : 'bg-(--color-bg-sidebar) text-(--color-text-secondary) hover:bg-(--color-bg-button)'
+              }`}
+            >
+              Date
+            </button>
+            <button
+              type="button"
+              onClick={() => setSort('score')}
+              className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                sort === 'score'
+                  ? 'bg-(--color-action) text-(--color-action-text)'
+                  : 'bg-(--color-bg-sidebar) text-(--color-text-secondary) hover:bg-(--color-bg-button)'
+              }`}
+            >
+              Pertinence
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="mb-3">
         <h3 className={sectionTitle}>
@@ -122,8 +163,79 @@ export function CorpusFilters() {
       </div>
 
       <div className="mb-3">
-        <h3 className={sectionTitle}>Mots-clés</h3>
-        <p className="text-xs text-(--color-text-placeholder)">À venir</p>
+        <h3 className={sectionTitle}>
+          Mots-clés{keywordIds.length ? ` (${keywordIds.length})` : ''}
+        </h3>
+        {keywords.length === 0 ? (
+          <p className="text-xs text-(--color-text-placeholder)">Aucun mot-clé</p>
+        ) : (
+          <>
+            <div className="max-h-48 overflow-y-auto pr-1">
+              {keywords.map((k) => (
+                <label key={k.id} className={rowLabel}>
+                  <input
+                    type="checkbox"
+                    aria-label={k.mot}
+                    checked={keywordIds.includes(k.id)}
+                    onChange={() => toggleKeyword(k.id)}
+                  />
+                  <span>{k.mot}</span>
+                </label>
+              ))}
+            </div>
+            {keywordIds.length >= 1 && (
+              <div className="mt-2 flex items-center gap-2">
+                <span className="text-xs text-(--color-text-secondary)">Mode :</span>
+                <button
+                  type="button"
+                  onClick={() => setKeywordMode('OR')}
+                  className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                    keywordMode === 'OR'
+                      ? 'bg-(--color-action) text-(--color-action-text)'
+                      : 'bg-(--color-bg-sidebar) text-(--color-text-secondary) hover:bg-(--color-bg-button)'
+                  }`}
+                >
+                  OU
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setKeywordMode('AND')}
+                  className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                    keywordMode === 'AND'
+                      ? 'bg-(--color-action) text-(--color-action-text)'
+                      : 'bg-(--color-bg-sidebar) text-(--color-text-secondary) hover:bg-(--color-bg-button)'
+                  }`}
+                >
+                  ET
+                </button>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
+      <div className="mb-3">
+        <h3 className={sectionTitle}>Période</h3>
+        <div className="flex flex-col gap-2">
+          <label className="flex flex-col gap-0.5">
+            <span className="text-xs text-(--color-text-secondary)">Du</span>
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className="rounded-md border border-(--color-border) bg-(--color-bg-field) px-2 py-1 text-sm text-(--color-text-primary) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--color-action)"
+            />
+          </label>
+          <label className="flex flex-col gap-0.5">
+            <span className="text-xs text-(--color-text-secondary)">Au</span>
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              className="rounded-md border border-(--color-border) bg-(--color-bg-field) px-2 py-1 text-sm text-(--color-text-primary) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--color-action)"
+            />
+          </label>
+        </div>
       </div>
 
       {hasActiveFilters && (

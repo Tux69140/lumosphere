@@ -35,8 +35,9 @@ function route(PDO $pdo, array $ctx): void
     }
 
     $body = null;
-    if (in_array($method, ['POST', 'PUT'], true)) {
-        $body = json_decode(file_get_contents('php://input'), true) ?? [];
+    if (in_array($method, ['POST', 'PUT', 'DELETE'], true)) {
+        $raw = file_get_contents('php://input');
+        $body = ($raw !== false && $raw !== '') ? (json_decode($raw, true) ?? []) : [];
     }
 
     try {

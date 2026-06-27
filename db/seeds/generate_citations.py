@@ -1,12 +1,25 @@
 #!/usr/bin/env python3
 """
 Génère db/seeds/seed_citations_generated.sql
-Usage : python3 db/seeds/generate_citations.py > db/seeds/seed_citations_generated.sql
+Usage : python3 db/seeds/generate_citations.py [--n N]
+  --n N   Nombre de citations à générer (défaut : 100, max conseillé : 10000)
+
+Exemples :
+  python generate_citations.py              # génère 100 citations (défaut)
+  python generate_citations.py --n 1000     # génère 1000 citations
+  python generate_citations.py --n 10000    # génère 10000 citations
 """
+import argparse
+import os
 import random
 
+parser = argparse.ArgumentParser(description='Génère un fichier SQL de seed de citations.')
+parser.add_argument('--n', type=int, default=100,
+                    help='Nombre de citations à générer (défaut : 100)')
+args = parser.parse_args()
+
 SEED = 42
-N = 100
+N = args.n
 random.seed(SEED)
 
 # ── Lexique ───────────────────────────────────────────────────────────────────
@@ -103,8 +116,15 @@ THEMES_ALL = [
     "Vie intérieure et transformation personnelle",
 ]
 
-# Distribution états : 60 Publiée / 25 À Corriger / 15 À Réviser
-ETATS_DIST = ["Publiée"] * 60 + ["À Corriger"] * 25 + ["À Réviser"] * 15
+# Distribution états : ~60 % Publiée / ~25 % À Corriger / ~15 % À Réviser
+# Scaled to N so the script works for any number of citations.
+_n_publiee   = max(1, round(N * 0.60))
+_n_corriger  = max(1, round(N * 0.25))
+_n_reviser   = N - _n_publiee - _n_corriger
+if _n_reviser < 1:
+    _n_reviser = 1
+    _n_publiee = N - _n_corriger - _n_reviser
+ETATS_DIST = ["Publiée"] * _n_publiee + ["À Corriger"] * _n_corriger + ["À Réviser"] * _n_reviser
 random.shuffle(ETATS_DIST)
 ETAT_VARS = {
     "Publiée":    "@etat_publiee",
@@ -112,8 +132,14 @@ ETAT_VARS = {
     "À Réviser":  "@etat_reviser",
 }
 
-# Distribution longueurs : 30 court / 50 moyen / 20 long
-LONGUEURS_DIST = ["court"] * 30 + ["moyen"] * 50 + ["long"] * 20
+# Distribution longueurs : ~30 % court / ~50 % moyen / ~20 % long
+_n_court = max(1, round(N * 0.30))
+_n_long  = max(1, round(N * 0.20))
+_n_moyen = N - _n_court - _n_long
+if _n_moyen < 1:
+    _n_moyen = 1
+    _n_court = N - _n_moyen - _n_long
+LONGUEURS_DIST = ["court"] * _n_court + ["moyen"] * _n_moyen + ["long"] * _n_long
 random.shuffle(LONGUEURS_DIST)
 
 KEYWORDS = [
@@ -129,9 +155,9 @@ def esc(s):
 # ── Génération SQL ────────────────────────────────────────────────────────────
 out = []
 out.append("-- ┌──────────────────────────────────────────────────────────────────────────┐")
-out.append("-- │ GÉNÉRÉ par db/seeds/generate_citations.py (SEED=42, N=100)              │")
+out.append(f"-- │ GÉNÉRÉ par db/seeds/generate_citations.py (SEED=42, N={N})              │")
 out.append("-- │ NE PAS MODIFIER — régénérer :                                           │")
-out.append("-- │   python3 db/seeds/generate_citations.py > db/seeds/seed_citations_generated.sql │")
+out.append("-- │   python3 db/seeds/generate_citations.py --n <N>                        │")
 out.append("-- └──────────────────────────────────────────────────────────────────────────┘")
 out.append("")
 out.append("START TRANSACTION;")
@@ -201,4 +227,10 @@ for i in range(N):
     out.append("")
 
 out.append("COMMIT;")
-print("\n".join(out))
+
+# Écriture dans le fichier SQL (même répertoire que ce script)
+_script_dir = os.path.dirname(os.path.abspath(__file__))
+_output_path = os.path.join(_script_dir, "seed_citations_generated.sql")
+with open(_output_path, "w", encoding="utf-8") as _f:
+    _f.write("\n".join(out) + "\n")
+print(f"Fichier généré : {_output_path} ({N} citations)")
