@@ -1,8 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Plus, Trash } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { z } from 'zod'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@/services/api'
+import { queryKeys } from '@/services/queryKeys'
+import { useOeuvres, useAuteurs } from '@/services/referenceQueries'
 
 type Oeuvre = {
   id: number
@@ -45,21 +48,52 @@ const emptyForm: FormState = {
 }
 
 export function OeuvresPage() {
-  const [oeuvres, setOeuvres] = useState<Oeuvre[]>([])
-  const [auteurs, setAuteurs] = useState<Auteur[]>([])
+  const qc = useQueryClient()
+  const { data: oeuvres = [] } = useOeuvres() as { data?: Oeuvre[] }
+  const { data: auteurs = [] } = useAuteurs() as { data?: Auteur[] }
+
   const [selectedId, setSelectedId] = useState<number | 'new' | null>(null)
   const [form, setForm] = useState<FormState>(emptyForm)
   const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({})
-  const [saving, setSaving] = useState(false)
 
-  useEffect(() => {
-    Promise.all([apiClient.findOeuvres(), apiClient.findAuteurs()]).then(([ro, ra]) => {
-      if (ro.status === 'ok') setOeuvres((ro.data ?? []) as Oeuvre[])
-      else toast.error('Impossible de charger les œuvres.')
-      if (ra.status === 'ok') setAuteurs((ra.data ?? []) as Auteur[])
-      else toast.error('Impossible de charger les auteurs.')
-    })
-  }, [])
+  const createMut = useMutation({
+    mutationFn: (payload: Record<string, unknown>) => apiClient.createOeuvre(payload),
+    onSuccess: (r) => {
+      if (r.status !== 'ok') {
+        toast.error(r.errors?.[0] ?? 'Création impossible.')
+        return
+      }
+      qc.invalidateQueries({ queryKey: queryKeys.oeuvres })
+      setSelectedId((r.data as { id: number }).id)
+      toast.success('Œuvre créée.')
+    },
+  })
+  const updateMut = useMutation({
+    mutationFn: (vars: { id: number; payload: Record<string, unknown> }) =>
+      apiClient.updateOeuvre(vars.id, vars.payload),
+    onSuccess: (r) => {
+      if (r.status !== 'ok') {
+        toast.error(r.errors?.[0] ?? 'Modification impossible.')
+        return
+      }
+      qc.invalidateQueries({ queryKey: queryKeys.oeuvres })
+      toast.success('Modifications enregistrées.')
+    },
+  })
+  const deleteMut = useMutation({
+    mutationFn: (id: number) => apiClient.deleteOeuvre(id),
+    onSuccess: (r) => {
+      if (r.status !== 'ok') {
+        toast.error(r.errors?.[0] ?? 'Suppression impossible.')
+        return
+      }
+      qc.invalidateQueries({ queryKey: queryKeys.oeuvres })
+      setSelectedId(null)
+      setForm(emptyForm)
+      toast.success('Œuvre supprimée.')
+    },
+  })
+  const saving = createMut.isPending || updateMut.isPending
 
   function selectOeuvre(id: number) {
     const found = oeuvres.find((o) => o.id === id)
@@ -89,14 +123,11 @@ export function OeuvresPage() {
     })
     if (!parsed.success) {
       const fieldErrors: Partial<Record<keyof FormState, string>> = {}
-      for (const issue of parsed.error.issues) {
-        const key = issue.path[0] as keyof FormState
-        fieldErrors[key] = issue.message
-      }
+      for (const issue of parsed.error.issues)
+        fieldErrors[issue.path[0] as keyof FormState] = issue.message
       setErrors(fieldErrors)
       return
     }
-    setSaving(true)
     const payload = {
       nom: form.nom.trim(),
       auteur_id: parseInt(form.auteur_id, 10),
@@ -105,68 +136,14 @@ export function OeuvresPage() {
       ref_libraire: form.ref_libraire.trim() || null,
       description: form.description.trim() || null,
     }
-    if (selectedId === 'new') {
-      const r = await apiClient.createOeuvre(payload)
-      setSaving(false)
-      if (r.status !== 'ok') {
-        toast.error((r as { errors?: string[] }).errors?.[0] ?? 'Création impossible.')
-        return
-      }
-      const created = r.data as { id: number }
-      const auteurNom = auteurs.find((a) => a.id === payload.auteur_id)?.nom ?? null
-      const newOeuvre: Oeuvre = {
-        id: created.id,
-        auteur_nom: auteurNom,
-        ...payload,
-        abreviation: payload.abreviation ?? null,
-        url: payload.url ?? null,
-        ref_libraire: payload.ref_libraire ?? null,
-        description: payload.description ?? null,
-      }
-      setOeuvres((prev) => [...prev, newOeuvre].sort((a, b) => a.nom.localeCompare(b.nom)))
-      setSelectedId(created.id)
-      toast.success(`Œuvre « ${payload.nom} » créée.`)
-    } else if (typeof selectedId === 'number') {
-      const r = await apiClient.updateOeuvre(selectedId, payload)
-      setSaving(false)
-      if (r.status !== 'ok') {
-        toast.error((r as { errors?: string[] }).errors?.[0] ?? 'Modification impossible.')
-        return
-      }
-      const auteurNom = auteurs.find((a) => a.id === payload.auteur_id)?.nom ?? null
-      setOeuvres((prev) =>
-        prev
-          .map((o) =>
-            o.id === selectedId
-              ? {
-                  ...o,
-                  ...payload,
-                  auteur_nom: auteurNom,
-                  abreviation: payload.abreviation ?? null,
-                  url: payload.url ?? null,
-                  ref_libraire: payload.ref_libraire ?? null,
-                  description: payload.description ?? null,
-                }
-              : o,
-          )
-          .sort((a, b) => a.nom.localeCompare(b.nom)),
-      )
-      toast.success('Modifications enregistrées.')
-    }
+    if (selectedId === 'new') createMut.mutate(payload)
+    else if (typeof selectedId === 'number') updateMut.mutate({ id: selectedId, payload })
   }
 
-  async function handleDelete() {
+  function handleDelete() {
     if (typeof selectedId !== 'number') return
     if (!window.confirm('Supprimer cette œuvre ? Cette action est irréversible.')) return
-    const r = await apiClient.deleteOeuvre(selectedId)
-    if (r.status !== 'ok') {
-      toast.error((r as { errors?: string[] }).errors?.[0] ?? 'Suppression impossible.')
-      return
-    }
-    setOeuvres((prev) => prev.filter((o) => o.id !== selectedId))
-    setSelectedId(null)
-    setForm(emptyForm)
-    toast.success('Œuvre supprimée.')
+    deleteMut.mutate(selectedId)
   }
 
   const showPanel = selectedId !== null
