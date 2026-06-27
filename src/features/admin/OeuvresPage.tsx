@@ -67,6 +67,7 @@ export function OeuvresPage() {
       setSelectedId((r.data as { id: number }).id)
       toast.success('Œuvre créée.')
     },
+    onError: (err: Error) => toast.error(err.message || 'Erreur réseau.'),
   })
   const updateMut = useMutation({
     mutationFn: (vars: { id: number; payload: Record<string, unknown> }) =>
@@ -79,6 +80,7 @@ export function OeuvresPage() {
       qc.invalidateQueries({ queryKey: queryKeys.oeuvres })
       toast.success('Modifications enregistrées.')
     },
+    onError: (err: Error) => toast.error(err.message || 'Erreur réseau.'),
   })
   const deleteMut = useMutation({
     mutationFn: (id: number) => apiClient.deleteOeuvre(id),
@@ -92,6 +94,7 @@ export function OeuvresPage() {
       setForm(emptyForm)
       toast.success('Œuvre supprimée.')
     },
+    onError: (err: Error) => toast.error(err.message || 'Erreur réseau.'),
   })
   const saving = createMut.isPending || updateMut.isPending
 
