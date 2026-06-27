@@ -1,8 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Plus, Trash } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { z } from 'zod'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@/services/api'
+import { queryKeys } from '@/services/queryKeys'
+import { useThemes } from '@/services/referenceQueries'
 
 type Theme = {
   id: number
@@ -23,18 +26,54 @@ type FormState = { nom: string; parent_id: string; description: string }
 const emptyForm: FormState = { nom: '', parent_id: '', description: '' }
 
 export function ThemesPage() {
-  const [themes, setThemes] = useState<Theme[]>([])
+  const qc = useQueryClient()
+  const { data: themes = [] } = useThemes() as { data?: Theme[] }
+
   const [selectedId, setSelectedId] = useState<number | 'new' | null>(null)
   const [form, setForm] = useState<FormState>(emptyForm)
   const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({})
-  const [saving, setSaving] = useState(false)
 
-  useEffect(() => {
-    apiClient.findThemes().then((r) => {
-      if (r.status === 'ok') setThemes((r.data ?? []) as Theme[])
-      else toast.error('Impossible de charger les thèmes.')
-    })
-  }, [])
+  const createMut = useMutation({
+    mutationFn: (payload: Record<string, unknown>) => apiClient.createTheme(payload),
+    onSuccess: (r) => {
+      if (r.status !== 'ok') {
+        toast.error(r.errors?.[0] ?? 'Création impossible.')
+        return
+      }
+      qc.invalidateQueries({ queryKey: queryKeys.themes })
+      setSelectedId((r.data as { id: number }).id)
+      toast.success('Thème créé.')
+    },
+    onError: (err: Error) => toast.error(err.message || 'Erreur réseau.'),
+  })
+  const updateMut = useMutation({
+    mutationFn: (vars: { id: number; payload: Record<string, unknown> }) =>
+      apiClient.updateTheme(vars.id, vars.payload),
+    onSuccess: (r) => {
+      if (r.status !== 'ok') {
+        toast.error(r.errors?.[0] ?? 'Modification impossible.')
+        return
+      }
+      qc.invalidateQueries({ queryKey: queryKeys.themes })
+      toast.success('Modifications enregistrées.')
+    },
+    onError: (err: Error) => toast.error(err.message || 'Erreur réseau.'),
+  })
+  const deleteMut = useMutation({
+    mutationFn: (id: number) => apiClient.deleteTheme(id),
+    onSuccess: (r) => {
+      if (r.status !== 'ok') {
+        toast.error(r.errors?.[0] ?? 'Suppression impossible.')
+        return
+      }
+      qc.invalidateQueries({ queryKey: queryKeys.themes })
+      setSelectedId(null)
+      setForm(emptyForm)
+      toast.success('Thème supprimé.')
+    },
+    onError: (err: Error) => toast.error(err.message || 'Erreur réseau.'),
+  })
+  const saving = createMut.isPending || updateMut.isPending
 
   function selectTheme(id: number) {
     const found = themes.find((t) => t.id === id)
@@ -54,7 +93,7 @@ export function ThemesPage() {
     setErrors({})
   }
 
-  async function handleSave() {
+  function handleSave() {
     const parsed = schema.safeParse({
       nom: form.nom,
       parent_id: form.parent_id ? parseInt(form.parent_id, 10) : null,
@@ -69,68 +108,19 @@ export function ThemesPage() {
       setErrors(fieldErrors)
       return
     }
-    setSaving(true)
     const payload = {
       nom: form.nom.trim(),
       parent_id: form.parent_id ? parseInt(form.parent_id, 10) : null,
       description: form.description.trim() || null,
     }
-    if (selectedId === 'new') {
-      const r = await apiClient.createTheme(payload)
-      setSaving(false)
-      if (r.status !== 'ok') {
-        toast.error((r as { errors?: string[] }).errors?.[0] ?? 'Création impossible.')
-        return
-      }
-      const created = r.data as { id: number }
-      const parentNom =
-        payload.parent_id !== null ? themes.find((t) => t.id === payload.parent_id)?.nom : null
-      const chemin = parentNom ? `${parentNom}/${payload.nom}` : payload.nom
-      const newTheme: Theme = {
-        id: created.id,
-        nom: payload.nom,
-        parent_id: payload.parent_id,
-        chemin,
-        description: payload.description,
-      }
-      setThemes((prev) => [...prev, newTheme].sort((a, b) => a.chemin.localeCompare(b.chemin)))
-      setSelectedId(created.id)
-      toast.success(`Thème « ${payload.nom} » créé.`)
-    } else if (typeof selectedId === 'number') {
-      const r = await apiClient.updateTheme(selectedId, payload)
-      setSaving(false)
-      if (r.status !== 'ok') {
-        toast.error((r as { errors?: string[] }).errors?.[0] ?? 'Modification impossible.')
-        return
-      }
-      const parentNom =
-        payload.parent_id !== null ? themes.find((t) => t.id === payload.parent_id)?.nom : null
-      const chemin = parentNom ? `${parentNom}/${payload.nom}` : payload.nom
-      setThemes((prev) =>
-        prev
-          .map((t) =>
-            t.id === selectedId
-              ? { ...t, ...payload, chemin, description: payload.description }
-              : t,
-          )
-          .sort((a, b) => a.chemin.localeCompare(b.chemin)),
-      )
-      toast.success('Modifications enregistrées.')
-    }
+    if (selectedId === 'new') createMut.mutate(payload)
+    else if (typeof selectedId === 'number') updateMut.mutate({ id: selectedId, payload })
   }
 
-  async function handleDelete() {
+  function handleDelete() {
     if (typeof selectedId !== 'number') return
     if (!window.confirm('Supprimer ce thème ? Cette action est irréversible.')) return
-    const r = await apiClient.deleteTheme(selectedId)
-    if (r.status !== 'ok') {
-      toast.error((r as { errors?: string[] }).errors?.[0] ?? 'Suppression impossible.')
-      return
-    }
-    setThemes((prev) => prev.filter((t) => t.id !== selectedId))
-    setSelectedId(null)
-    setForm(emptyForm)
-    toast.success('Thème supprimé.')
+    deleteMut.mutate(selectedId)
   }
 
   const rootThemes = themes.filter((t) => t.parent_id === null)

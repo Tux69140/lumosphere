@@ -1,6 +1,7 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { renderWithClient } from '@/test/renderWithClient'
 import { ThemesPage } from '../ThemesPage'
 
 const MOCK_THEMES = vi.hoisted(() => [
@@ -25,32 +26,32 @@ beforeEach(() => vi.clearAllMocks())
 
 describe('ThemesPage', () => {
   it('affiche les thèmes racines et leurs sous-thèmes', async () => {
-    render(<ThemesPage />)
+    renderWithClient(<ThemesPage />)
     await waitFor(() => expect(screen.getByText('Philosophie')).toBeInTheDocument())
     expect(screen.getByText('Éthique')).toBeInTheDocument()
     expect(screen.getByText('Littérature')).toBeInTheDocument()
   })
 
   it('les thèmes racines ont un testid correspondant', async () => {
-    render(<ThemesPage />)
+    renderWithClient(<ThemesPage />)
     await waitFor(() => screen.getByTestId('theme-item-1'))
     expect(screen.getByTestId('theme-item-3')).toBeInTheDocument()
   })
 
   it('les sous-thèmes sont présents avec leur testid', async () => {
-    render(<ThemesPage />)
+    renderWithClient(<ThemesPage />)
     await waitFor(() => screen.getByTestId('theme-item-2'))
   })
 
   it('affiche le formulaire de détail en cliquant sur un thème racine', async () => {
-    render(<ThemesPage />)
+    renderWithClient(<ThemesPage />)
     await waitFor(() => screen.getByTestId('theme-item-1'))
     await userEvent.click(screen.getByTestId('theme-item-1'))
     expect((screen.getByLabelText('Nom du thème') as HTMLInputElement).value).toBe('Philosophie')
   })
 
   it('affiche le parent dans le sélecteur pour un sous-thème', async () => {
-    render(<ThemesPage />)
+    renderWithClient(<ThemesPage />)
     await waitFor(() => screen.getByTestId('theme-item-2'))
     await userEvent.click(screen.getByTestId('theme-item-2'))
     const select = screen.getByLabelText('Thème parent') as HTMLSelectElement
@@ -58,7 +59,7 @@ describe('ThemesPage', () => {
   })
 
   it('affiche une erreur si le nom est vide', async () => {
-    render(<ThemesPage />)
+    renderWithClient(<ThemesPage />)
     await waitFor(() => screen.getByLabelText('Créer un nouveau thème'))
     await userEvent.click(screen.getByLabelText('Créer un nouveau thème'))
     await userEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
@@ -67,7 +68,7 @@ describe('ThemesPage', () => {
   })
 
   it('appelle createTheme avec les bonnes données', async () => {
-    render(<ThemesPage />)
+    renderWithClient(<ThemesPage />)
     await waitFor(() => screen.getByLabelText('Créer un nouveau thème'))
     await userEvent.click(screen.getByLabelText('Créer un nouveau thème'))
     await userEvent.type(screen.getByLabelText('Nom du thème'), 'Poésie')
