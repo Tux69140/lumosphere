@@ -1,6 +1,7 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { renderWithClient } from '@/test/renderWithClient'
 import { AuteursPage } from '../AuteursPage'
 
 const MOCK_AUTEURS = vi.hoisted(() => [
@@ -24,13 +25,13 @@ beforeEach(() => vi.clearAllMocks())
 
 describe('AuteursPage', () => {
   it('affiche la liste des auteurs au chargement', async () => {
-    render(<AuteursPage />)
+    renderWithClient(<AuteursPage />)
     await waitFor(() => expect(screen.getByText('Simone de Beauvoir')).toBeInTheDocument())
     expect(screen.getByText('Albert Camus')).toBeInTheDocument()
   })
 
   it('affiche le panneau de détail en cliquant sur un auteur', async () => {
-    render(<AuteursPage />)
+    renderWithClient(<AuteursPage />)
     await waitFor(() => screen.getByTestId('auteur-item-2'))
     await userEvent.click(screen.getByTestId('auteur-item-2'))
     expect((screen.getByLabelText("Nom de l'auteur") as HTMLInputElement).value).toBe(
@@ -42,14 +43,14 @@ describe('AuteursPage', () => {
   })
 
   it('ouvre un formulaire vide en cliquant sur Créer', async () => {
-    render(<AuteursPage />)
+    renderWithClient(<AuteursPage />)
     await waitFor(() => screen.getByLabelText('Créer un nouvel auteur'))
     await userEvent.click(screen.getByLabelText('Créer un nouvel auteur'))
     expect((screen.getByLabelText("Nom de l'auteur") as HTMLInputElement).value).toBe('')
   })
 
   it('affiche une erreur si le nom est vide à la soumission', async () => {
-    render(<AuteursPage />)
+    renderWithClient(<AuteursPage />)
     await waitFor(() => screen.getByLabelText('Créer un nouvel auteur'))
     await userEvent.click(screen.getByLabelText('Créer un nouvel auteur'))
     await userEvent.click(screen.getByRole('button', { name: 'Enregistrer' }))
@@ -58,7 +59,7 @@ describe('AuteursPage', () => {
   })
 
   it('appelle createAuteur avec les bonnes données', async () => {
-    render(<AuteursPage />)
+    renderWithClient(<AuteursPage />)
     await waitFor(() => screen.getByLabelText('Créer un nouvel auteur'))
     await userEvent.click(screen.getByLabelText('Créer un nouvel auteur'))
     await userEvent.type(screen.getByLabelText("Nom de l'auteur"), 'Victor Hugo')
@@ -71,7 +72,7 @@ describe('AuteursPage', () => {
   })
 
   it('appelle updateAuteur lors de la modification', async () => {
-    render(<AuteursPage />)
+    renderWithClient(<AuteursPage />)
     await waitFor(() => screen.getByTestId('auteur-item-1'))
     await userEvent.click(screen.getByTestId('auteur-item-1'))
     const input = screen.getByLabelText("Nom de l'auteur") as HTMLInputElement
@@ -88,7 +89,7 @@ describe('AuteursPage', () => {
 
   it('appelle deleteAuteur après confirmation', async () => {
     vi.spyOn(window, 'confirm').mockReturnValueOnce(true)
-    render(<AuteursPage />)
+    renderWithClient(<AuteursPage />)
     await waitFor(() => screen.getByTestId('auteur-item-1'))
     await userEvent.click(screen.getByTestId('auteur-item-1'))
     await waitFor(() => screen.getByRole('button', { name: /supprimer/i }))

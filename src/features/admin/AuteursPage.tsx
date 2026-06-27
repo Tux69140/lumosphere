@@ -1,8 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Plus, Trash } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { z } from 'zod'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@/services/api'
+import { queryKeys } from '@/services/queryKeys'
+import { useAuteurs } from '@/services/referenceQueries'
 
 type Auteur = {
   id: number
@@ -22,18 +25,54 @@ type FormState = { nom: string; site: string; informations: string }
 const emptyForm: FormState = { nom: '', site: '', informations: '' }
 
 export function AuteursPage() {
-  const [auteurs, setAuteurs] = useState<Auteur[]>([])
+  const qc = useQueryClient()
+  const { data: auteurs = [] } = useAuteurs() as { data?: Auteur[] }
+
   const [selectedId, setSelectedId] = useState<number | 'new' | null>(null)
   const [form, setForm] = useState<FormState>(emptyForm)
   const [errors, setErrors] = useState<Partial<FormState>>({})
-  const [saving, setSaving] = useState(false)
 
-  useEffect(() => {
-    apiClient.findAuteurs().then((r) => {
-      if (r.status === 'ok') setAuteurs((r.data ?? []) as Auteur[])
-      else toast.error('Impossible de charger les auteurs.')
-    })
-  }, [])
+  const createMut = useMutation({
+    mutationFn: (payload: Record<string, unknown>) => apiClient.createAuteur(payload),
+    onSuccess: (r) => {
+      if (r.status !== 'ok') {
+        toast.error(r.errors?.[0] ?? 'Création impossible.')
+        return
+      }
+      qc.invalidateQueries({ queryKey: queryKeys.auteurs })
+      setSelectedId((r.data as { id: number }).id)
+      toast.success('Auteur créé.')
+    },
+    onError: (err: Error) => toast.error(err.message || 'Erreur réseau.'),
+  })
+  const updateMut = useMutation({
+    mutationFn: (vars: { id: number; payload: Record<string, unknown> }) =>
+      apiClient.updateAuteur(vars.id, vars.payload),
+    onSuccess: (r) => {
+      if (r.status !== 'ok') {
+        toast.error(r.errors?.[0] ?? 'Modification impossible.')
+        return
+      }
+      qc.invalidateQueries({ queryKey: queryKeys.auteurs })
+      toast.success('Modifications enregistrées.')
+    },
+    onError: (err: Error) => toast.error(err.message || 'Erreur réseau.'),
+  })
+  const deleteMut = useMutation({
+    mutationFn: (id: number) => apiClient.deleteAuteur(id),
+    onSuccess: (r) => {
+      if (r.status !== 'ok') {
+        toast.error(r.errors?.[0] ?? 'Suppression impossible.')
+        return
+      }
+      qc.invalidateQueries({ queryKey: queryKeys.auteurs })
+      setSelectedId(null)
+      setForm(emptyForm)
+      toast.success('Auteur supprimé.')
+    },
+    onError: (err: Error) => toast.error(err.message || 'Erreur réseau.'),
+  })
+  const saving = createMut.isPending || updateMut.isPending
 
   function selectAuteur(id: number) {
     const found = auteurs.find((a) => a.id === id)
@@ -49,7 +88,7 @@ export function AuteursPage() {
     setErrors({})
   }
 
-  async function handleSave() {
+  function handleSave() {
     const parsed = schema.safeParse(form)
     if (!parsed.success) {
       const fieldErrors: Partial<FormState> = {}
@@ -60,66 +99,19 @@ export function AuteursPage() {
       setErrors(fieldErrors)
       return
     }
-    setSaving(true)
     const payload = {
       nom: form.nom.trim(),
       site: form.site.trim() || null,
       informations: form.informations.trim() || null,
     }
-    if (selectedId === 'new') {
-      const r = await apiClient.createAuteur(payload)
-      setSaving(false)
-      if (r.status !== 'ok') {
-        toast.error((r as { errors?: string[] }).errors?.[0] ?? 'Création impossible.')
-        return
-      }
-      const created = r.data as { id: number }
-      const newAuteur: Auteur = {
-        id: created.id,
-        nom: payload.nom,
-        site: payload.site ?? null,
-        informations: payload.informations ?? null,
-      }
-      setAuteurs((prev) => [...prev, newAuteur].sort((a, b) => a.nom.localeCompare(b.nom)))
-      setSelectedId(created.id)
-      toast.success(`Auteur « ${payload.nom} » créé.`)
-    } else if (typeof selectedId === 'number') {
-      const r = await apiClient.updateAuteur(selectedId, payload)
-      setSaving(false)
-      if (r.status !== 'ok') {
-        toast.error((r as { errors?: string[] }).errors?.[0] ?? 'Modification impossible.')
-        return
-      }
-      setAuteurs((prev) =>
-        prev
-          .map((a) =>
-            a.id === selectedId
-              ? {
-                  ...a,
-                  ...payload,
-                  site: payload.site ?? null,
-                  informations: payload.informations ?? null,
-                }
-              : a,
-          )
-          .sort((a, b) => a.nom.localeCompare(b.nom)),
-      )
-      toast.success('Modifications enregistrées.')
-    }
+    if (selectedId === 'new') createMut.mutate(payload)
+    else if (typeof selectedId === 'number') updateMut.mutate({ id: selectedId, payload })
   }
 
-  async function handleDelete() {
+  function handleDelete() {
     if (typeof selectedId !== 'number') return
     if (!window.confirm('Supprimer cet auteur ? Cette action est irréversible.')) return
-    const r = await apiClient.deleteAuteur(selectedId)
-    if (r.status !== 'ok') {
-      toast.error((r as { errors?: string[] }).errors?.[0] ?? 'Suppression impossible.')
-      return
-    }
-    setAuteurs((prev) => prev.filter((a) => a.id !== selectedId))
-    setSelectedId(null)
-    setForm(emptyForm)
-    toast.success('Auteur supprimé.')
+    deleteMut.mutate(selectedId)
   }
 
   const showPanel = selectedId !== null
