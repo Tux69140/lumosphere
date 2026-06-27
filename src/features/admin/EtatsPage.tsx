@@ -1,6 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { toast } from 'sonner'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@/services/api'
+import { queryKeys } from '@/services/queryKeys'
+import { useEtats } from '@/services/referenceQueries'
 
 type Etat = {
   id: number
@@ -11,19 +14,27 @@ type Etat = {
 }
 
 export function EtatsPage() {
-  const [etats, setEtats] = useState<Etat[]>([])
+  const qc = useQueryClient()
+  const { data: etats = [] } = useEtats() as { data?: Etat[] }
+
   const [editId, setEditId] = useState<number | null>(null)
   const [editNom, setEditNom] = useState('')
   const [editCouleur, setEditCouleur] = useState('')
-  const [saving, setSaving] = useState(false)
 
-  useEffect(() => {
-    apiClient.findEtats().then((r) => {
-      if (r.status === 'ok') setEtats((r.data ?? []) as Etat[])
-      else toast.error('Impossible de charger les états.')
-    })
-  }, [])
-
+  const updateMut = useMutation({
+    mutationFn: (vars: { id: number; payload: { nom: string; couleur: string } }) =>
+      apiClient.updateEtat(vars.id, vars.payload),
+    onSuccess: (r) => {
+      if (r.status !== 'ok') {
+        toast.error(r.errors?.[0] ?? 'Modification impossible.')
+        return
+      }
+      qc.invalidateQueries({ queryKey: queryKeys.etats })
+      setEditId(null)
+      toast.success('État mis à jour.')
+    },
+    onError: (err: Error) => toast.error(err.message || 'Erreur réseau.'),
+  })
   function startEdit(etat: Etat) {
     if (!etat.est_modifiable) return
     setEditId(etat.id)
@@ -35,22 +46,13 @@ export function EtatsPage() {
     setEditId(null)
   }
 
-  async function handleSave(id: number) {
+  function handleSave(id: number) {
     const nom = editNom.trim()
     if (!nom) {
       toast.error('Le nom est requis.')
       return
     }
-    setSaving(true)
-    const r = await apiClient.updateEtat(id, { nom, couleur: editCouleur })
-    setSaving(false)
-    if (r.status !== 'ok') {
-      toast.error((r as { errors?: string[] }).errors?.[0] ?? 'Modification impossible.')
-      return
-    }
-    setEtats((prev) => prev.map((e) => (e.id === id ? { ...e, nom, couleur: editCouleur } : e)))
-    setEditId(null)
-    toast.success('État mis à jour.')
+    updateMut.mutate({ id, payload: { nom, couleur: editCouleur } })
   }
 
   return (
@@ -60,7 +62,7 @@ export function EtatsPage() {
         Gérez les états des citations. Les états système (non modifiables) sont verrouillés.
       </p>
 
-      <div className="rounded-lg border border-(--color-border) divide-y divide-(--color-border)">
+      <div className="divide-y divide-(--color-border) rounded-lg border border-(--color-border)">
         {etats.map((etat) => (
           <div key={etat.id} className="px-4 py-3">
             {editId === etat.id ? (
@@ -89,7 +91,7 @@ export function EtatsPage() {
                 </label>
                 <button
                   onClick={() => handleSave(etat.id)}
-                  disabled={saving}
+                  disabled={updateMut.isPending}
                   className="rounded-md bg-(--color-action) px-3 py-1 text-sm font-medium text-white transition-colors hover:bg-(--color-action-hover) disabled:opacity-50"
                 >
                   OK
