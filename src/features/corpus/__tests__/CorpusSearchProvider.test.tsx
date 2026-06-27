@@ -1,5 +1,6 @@
-import { render, screen, act, waitFor } from '@testing-library/react'
+import { screen, act, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { renderWithClient } from '@/test/renderWithClient'
 import { CorpusSearchProvider } from '@/features/corpus/CorpusSearchProvider'
 import { useCorpusSearch } from '@/features/corpus/useCorpusSearch'
 
@@ -59,7 +60,7 @@ afterEach(() => vi.useRealTimers())
 
 describe('CorpusSearchProvider', () => {
   it('charge les citations au montage', async () => {
-    render(
+    renderWithClient(
       <CorpusSearchProvider>
         <Probe />
       </CorpusSearchProvider>,
@@ -71,7 +72,7 @@ describe('CorpusSearchProvider', () => {
   })
 
   it('relance une recherche débouncée avec q après saisie', async () => {
-    render(
+    renderWithClient(
       <CorpusSearchProvider>
         <Probe />
       </CorpusSearchProvider>,
@@ -85,7 +86,7 @@ describe('CorpusSearchProvider', () => {
   })
 
   it('toggleKeyword ajoute et retire les IDs de mots-clés', async () => {
-    render(
+    renderWithClient(
       <CorpusSearchProvider>
         <Probe />
       </CorpusSearchProvider>,
@@ -102,7 +103,7 @@ describe('CorpusSearchProvider', () => {
   })
 
   it('setKeywordMode met à jour le mode ET/OU', async () => {
-    render(
+    renderWithClient(
       <CorpusSearchProvider>
         <Probe />
       </CorpusSearchProvider>,
@@ -118,7 +119,7 @@ describe('CorpusSearchProvider', () => {
   })
 
   it('les dates sont incluses dans la clé de debounce', async () => {
-    render(
+    renderWithClient(
       <CorpusSearchProvider>
         <Probe />
       </CorpusSearchProvider>,
@@ -140,7 +141,7 @@ describe('CorpusSearchProvider', () => {
   })
 
   it('setSort met à jour le tri et passe sort=score quand query est vide', async () => {
-    render(
+    renderWithClient(
       <CorpusSearchProvider>
         <Probe />
       </CorpusSearchProvider>,
@@ -156,7 +157,7 @@ describe('CorpusSearchProvider', () => {
   })
 
   it('passe keyword_ids et keyword_mode dans les params après debounce', async () => {
-    render(
+    renderWithClient(
       <CorpusSearchProvider>
         <Probe />
       </CorpusSearchProvider>,
