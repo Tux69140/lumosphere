@@ -23,4 +23,5 @@ export const queryKeys = {
   lotsCounts: ['lots', 'counts'] as const,
   lotDetail: (id: number) => ['lots', 'detail', id] as const,
   lotJournal: (id: number) => ['lots', 'journal', id] as const,
+  collecte: ['collecte'] as const,
 }

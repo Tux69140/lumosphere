@@ -295,6 +295,10 @@ export const apiClient = {
   deleteLotDocument: (lotId: number, docId: number) =>
     delWithBody<void>(`lots/${lotId}/document`, { document_id: docId }),
 
+  // Collecte manuelle (atelier)
+  collecteRun: () => post<{ lots: string[] }>('collecte/run', {}),
+  collecteTopup: (more = 0) => post<{ created: number }>('collecte/topup', { more }),
+
   // AI
   aiSuggestKeywords: (citationId: number, contenu: string) =>
     post<{ keywords: string[] }>('ai/suggest-keywords', { citation_id: citationId, contenu }),
