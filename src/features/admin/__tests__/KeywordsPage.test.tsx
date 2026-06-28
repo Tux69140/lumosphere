@@ -5,9 +5,15 @@ import { renderWithClient } from '@/test/renderWithClient'
 import { KeywordsPage } from '../KeywordsPage'
 
 const MOCK_KEYWORDS = vi.hoisted(() => [
-  { id: 1, mot: 'philosophie' },
-  { id: 2, mot: 'éthique' },
-  { id: 3, mot: 'littérature' },
+  { id: 1, mot: 'philosophie', citation_count: 0 },
+  { id: 2, mot: 'éthique', citation_count: 3 },
+  { id: 3, mot: 'littérature', citation_count: 0 },
+])
+
+const MOCK_USAGES = vi.hoisted(() => [
+  { citation_id: 10, titre: 'La morale kantienne selon…' },
+  { citation_id: 11, titre: 'Éthique et politique dans…' },
+  { citation_id: 12, titre: 'Une approche pragmatique…' },
 ])
 
 vi.mock('@/services/api', () => ({
@@ -15,6 +21,8 @@ vi.mock('@/services/api', () => ({
     findKeywords: vi.fn().mockResolvedValue({ status: 'ok', data: MOCK_KEYWORDS, errors: [] }),
     createKeyword: vi.fn().mockResolvedValue({ status: 'ok', data: { id: 4 }, errors: [] }),
     deleteKeyword: vi.fn().mockResolvedValue({ status: 'ok', data: null, errors: [] }),
+    updateKeyword: vi.fn().mockResolvedValue({ status: 'ok', data: { id: 1 }, errors: [] }),
+    getKeywordUsages: vi.fn().mockResolvedValue({ status: 'ok', data: MOCK_USAGES, errors: [] }),
   },
 }))
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
@@ -47,7 +55,7 @@ describe('KeywordsPage', () => {
     await waitFor(() => expect(apiClient.createKeyword).toHaveBeenCalledWith({ mot: 'poésie' }))
   })
 
-  it('appelle deleteKeyword après confirmation', async () => {
+  it('appelle deleteKeyword après confirmation pour un mot-clé non utilisé', async () => {
     vi.spyOn(window, 'confirm').mockReturnValueOnce(true)
     renderWithClient(<KeywordsPage />)
     await waitFor(() => screen.getByLabelText('Supprimer philosophie'))
@@ -59,5 +67,31 @@ describe('KeywordsPage', () => {
     renderWithClient(<KeywordsPage />)
     await waitFor(() => screen.getByText('philosophie'))
     expect(screen.getByText(/3 mots-clés/)).toBeInTheDocument()
+  })
+
+  it('affiche un badge entrées pour un mot-clé utilisé et pas de corbeille', async () => {
+    renderWithClient(<KeywordsPage />)
+    await waitFor(() => screen.getByText('éthique'))
+    expect(screen.getByLabelText(/3 entrées utilisent éthique/)).toBeInTheDocument()
+    expect(screen.queryByLabelText('Supprimer éthique')).not.toBeInTheDocument()
+  })
+
+  it('ouvre le panneau usages au clic sur le badge', async () => {
+    renderWithClient(<KeywordsPage />)
+    await waitFor(() => screen.getByLabelText(/3 entrées utilisent éthique/))
+    await userEvent.click(screen.getByLabelText(/3 entrées utilisent éthique/))
+    await waitFor(() => expect(apiClient.getKeywordUsages).toHaveBeenCalledWith(2))
+    await waitFor(() => screen.getByText(/La morale kantienne/))
+  })
+
+  it('appelle updateKeyword après édition au clavier', async () => {
+    renderWithClient(<KeywordsPage />)
+    await waitFor(() => screen.getByLabelText('Modifier philosophie'))
+    await userEvent.click(screen.getByLabelText('Modifier philosophie'))
+    const input = screen.getByLabelText('Modifier philosophie en cours')
+    await userEvent.clear(input)
+    await userEvent.type(input, 'philo')
+    await userEvent.keyboard('{Enter}')
+    await waitFor(() => expect(apiClient.updateKeyword).toHaveBeenCalledWith(1, 'philo'))
   })
 })

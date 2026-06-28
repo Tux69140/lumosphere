@@ -16,6 +16,7 @@ export function buildCitationParams(
   if (f.dateFrom) params.date_from = f.dateFrom
   if (f.dateTo) params.date_to = f.dateTo
   if (q && f.sort === 'score') params.sort = 'score'
+  if (f.favoritesOnly) params.favorites_only = '1'
   if (cursor) params.cursor = cursor
   return params
 }

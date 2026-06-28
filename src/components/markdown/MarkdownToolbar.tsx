@@ -9,6 +9,10 @@ export type MarkdownToolbarProps = {
   onInsert: (text: string) => void
   /** Vide l'éditeur. */
   onReset: () => void
+  /** Change le bloc courant : 0 = paragraphe, 1–3 = titre h1–h3. */
+  onSetHeading?: (level: 0 | 1 | 2 | 3) => void
+  /** Type du bloc sous le curseur ('paragraph', 'h1', 'h2', 'h3'…). */
+  currentBlockType?: string
 }
 
 /**
@@ -17,7 +21,12 @@ export type MarkdownToolbarProps = {
  * référence, note de bas de page, reset). Le formatage courant
  * (gras/titres/listes/tableaux…) est fourni par chaque moteur.
  */
-export function MarkdownToolbar({ onInsert, onReset }: MarkdownToolbarProps) {
+export function MarkdownToolbar({
+  onInsert,
+  onReset,
+  onSetHeading,
+  currentBlockType,
+}: MarkdownToolbarProps) {
   const [emojiOpen, setEmojiOpen] = useState(false)
 
   function insertImage() {
@@ -35,6 +44,24 @@ export function MarkdownToolbar({ onInsert, onReset }: MarkdownToolbarProps) {
 
   return (
     <div className="flex flex-nowrap items-center gap-1 overflow-x-auto border-b border-(--color-border) p-2">
+      {onSetHeading && (
+        <select
+          value={currentBlockType ?? 'paragraph'}
+          onChange={(e) => {
+            const val = e.target.value
+            onSetHeading(
+              val === 'paragraph' ? 0 : (parseInt(val.replace('h', ''), 10) as 0 | 1 | 2 | 3),
+            )
+          }}
+          className="rounded-md border border-(--color-border) bg-(--color-bg-field) px-2 py-1 text-sm text-(--color-text-primary) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--color-action)"
+          aria-label="Type de bloc"
+        >
+          <option value="paragraph">Paragraphe</option>
+          <option value="h1">Titre 1</option>
+          <option value="h2">Titre 2</option>
+          <option value="h3">Titre 3</option>
+        </select>
+      )}
       <div className="relative">
         <button
           type="button"

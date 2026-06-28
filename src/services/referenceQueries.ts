@@ -12,6 +12,15 @@ export async function unwrap<T>(
   return r.data as T
 }
 
+export type CollectSource = { id: number; label: string; source_type: string }
+
+export function useCollectSources() {
+  return useQuery({
+    queryKey: queryKeys.collectSources,
+    queryFn: () => unwrap<CollectSource[]>(apiClient.findCollectSources()),
+  })
+}
+
 export function useOeuvres() {
   return useQuery({
     queryKey: queryKeys.oeuvres,
@@ -30,6 +39,15 @@ export function useThemes() {
   return useQuery({
     queryKey: queryKeys.themes,
     queryFn: () => unwrap(apiClient.findThemes()),
+  })
+}
+
+export function useKeywordUsages(id: number | null) {
+  return useQuery({
+    queryKey: queryKeys.keywordUsages(id ?? 0),
+    queryFn: () =>
+      unwrap<{ citation_id: number; titre: string }[]>(apiClient.getKeywordUsages(id!)),
+    enabled: id !== null,
   })
 }
 

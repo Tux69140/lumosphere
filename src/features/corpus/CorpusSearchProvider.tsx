@@ -1,11 +1,12 @@
 import { createContext, useCallback, useMemo, useState, type ReactNode } from 'react'
-import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query'
+import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@/services/api'
 import { useDebouncedValue } from '@/hooks/useDebouncedValue'
 import { buildThemeTree, toggleThemeNode } from './themeSelection'
 import { buildCitationParams } from './buildCitationParams'
 import { useOeuvres, useThemes, useKeywords, unwrap } from '@/services/referenceQueries'
 import { queryKeys } from '@/services/queryKeys'
+import { useUrlFilterState } from './useUrlFilterState'
 import type { Citation, Keyword, Oeuvre, Theme, ThemeNode } from './types'
 
 export type CorpusSearchContextValue = {
@@ -21,6 +22,8 @@ export type CorpusSearchContextValue = {
   dateFrom: string
   dateTo: string
   sort: 'date' | 'score'
+  favoritesOnly: boolean
+  setFavoritesOnly: (v: boolean) => void
   toggleOeuvre: (id: number) => void
   toggleTheme: (id: number) => void
   toggleKeyword: (id: number) => void
@@ -36,6 +39,7 @@ export type CorpusSearchContextValue = {
   loadingMore: boolean
   loadMore: () => void
   refresh: () => void
+  total: number | null
   hasActiveFilters: boolean
   filtersOpen: boolean
   toggleFilters: () => void
@@ -46,22 +50,34 @@ export const CorpusSearchContext = createContext<CorpusSearchContextValue | null
 export function CorpusSearchProvider({ children }: { children: ReactNode }) {
   const qc = useQueryClient()
 
-  const [query, setQuery] = useState('')
-  const [selectedOeuvreIds, setSelectedOeuvreIds] = useState<number[]>([])
-  const [selectedThemeIds, setSelectedThemeIds] = useState<number[]>([])
-  const [keywordIds, setKeywordIds] = useState<number[]>([])
-  const [keywordMode, setKeywordMode] = useState<'AND' | 'OR' | null>(null)
-  const [dateFrom, setDateFrom] = useState('')
-  const [dateTo, setDateTo] = useState('')
-  const [sort, setSort] = useState<'date' | 'score'>('date')
+  const {
+    query,
+    setQuery,
+    selectedOeuvreIds,
+    setSelectedOeuvreIds,
+    selectedThemeIds,
+    setSelectedThemeIds,
+    keywordIds,
+    setKeywordIds,
+    keywordMode,
+    setKeywordMode,
+    dateFrom,
+    setDateFrom,
+    dateTo,
+    setDateTo,
+    sort,
+    setSort,
+    favoritesOnly,
+    setFavoritesOnly,
+    resetAll,
+  } = useUrlFilterState()
+
   const [filtersOpen, setFiltersOpen] = useState(false)
 
-  // Référentiels via TanStack Query (cache partagé, toast centralisé sur erreur).
   const oeuvresQuery = useOeuvres()
   const themesQuery = useThemes()
   const keywordsQuery = useKeywords()
 
-  // useMemo pour stabiliser la référence tableau (évite deps instables dans la valeur mémoisée).
   const oeuvres = useMemo<Oeuvre[]>(
     () => (oeuvresQuery.data as Oeuvre[] | undefined) ?? [],
     [oeuvresQuery.data],
@@ -91,11 +107,11 @@ export function CorpusSearchProvider({ children }: { children: ReactNode }) {
     ' ' +
     dateTo +
     ' ' +
-    sort
+    sort +
+    ' ' +
+    (favoritesOnly ? '1' : '0')
   const debouncedKey = useDebouncedValue(filtersKey, 300)
 
-  // C1 — queryFn aligné sur debouncedKey : enabled=false pendant le debounce
-  // évite que fetchNextPage mélange des résultats de deux recherches différentes.
   const search = useInfiniteQuery({
     queryKey: queryKeys.citationsSearch(debouncedKey),
     queryFn: ({ pageParam }) =>
@@ -111,6 +127,7 @@ export function CorpusSearchProvider({ children }: { children: ReactNode }) {
               dateFrom,
               dateTo,
               sort,
+              favoritesOnly,
             },
             pageParam ?? undefined,
           ),
@@ -121,7 +138,6 @@ export function CorpusSearchProvider({ children }: { children: ReactNode }) {
     enabled: filtersKey === debouncedKey,
   })
 
-  // Destructure pour des deps exhaustive-deps propres dans useMemo.
   const {
     data: searchData,
     isLoading: searchIsLoading,
@@ -132,13 +148,29 @@ export function CorpusSearchProvider({ children }: { children: ReactNode }) {
     fetchNextPage,
   } = search
 
+  const countParams = buildCitationParams({
+    query,
+    oeuvreIds: selectedOeuvreIds,
+    themeIds: selectedThemeIds,
+    keywordIds,
+    keywordMode,
+    dateFrom,
+    dateTo,
+    sort,
+    favoritesOnly,
+  })
+  const countQuery = useQuery({
+    queryKey: ['citations', 'count', debouncedKey],
+    queryFn: () => unwrap(apiClient.countCitations(countParams)) as Promise<{ total: number }>,
+    enabled: filtersKey === debouncedKey,
+  })
+
   const toggleKeyword = useCallback(
     (id: number) =>
       setKeywordIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id])),
-    [],
+    [setKeywordIds],
   )
 
-  // I5 — value mémoisé pour éviter les re-renders en cascade sur les consommateurs.
   const value = useMemo<CorpusSearchContextValue>(
     () => ({
       query,
@@ -153,6 +185,8 @@ export function CorpusSearchProvider({ children }: { children: ReactNode }) {
       dateFrom,
       dateTo,
       sort,
+      favoritesOnly,
+      setFavoritesOnly,
       toggleOeuvre: (id) =>
         setSelectedOeuvreIds((prev) =>
           prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
@@ -163,16 +197,7 @@ export function CorpusSearchProvider({ children }: { children: ReactNode }) {
       setDateFrom,
       setDateTo,
       setSort,
-      reset: () => {
-        setQuery('')
-        setSelectedOeuvreIds([])
-        setSelectedThemeIds([])
-        setKeywordIds([])
-        setKeywordMode(null)
-        setDateFrom('')
-        setDateTo('')
-        setSort('date')
-      },
+      reset: resetAll,
       items: searchData?.pages.flatMap((p) => p.items) ?? [],
       loading: searchIsLoading,
       error: searchIsError ? (searchError as Error).message : null,
@@ -181,32 +206,43 @@ export function CorpusSearchProvider({ children }: { children: ReactNode }) {
       loadMore: () => {
         void fetchNextPage()
       },
-      // I3 — resetQueries repart de la page 1 (refetch rechargerait N pages en série).
       refresh: () => {
         void qc.resetQueries({ queryKey: queryKeys.citationsSearch(debouncedKey) })
       },
+      total: countQuery.data?.total ?? null,
       hasActiveFilters:
         query.trim() !== '' ||
         selectedOeuvreIds.length > 0 ||
         selectedThemeIds.length > 0 ||
         keywordIds.length > 0 ||
         dateFrom !== '' ||
-        dateTo !== '',
+        dateTo !== '' ||
+        favoritesOnly,
       filtersOpen,
       toggleFilters: () => setFiltersOpen((v) => !v),
     }),
     [
       query,
+      setQuery,
       oeuvres,
       themeTree,
       keywords,
       selectedOeuvreIds,
+      setSelectedOeuvreIds,
       selectedThemeIds,
+      setSelectedThemeIds,
       keywordIds,
       keywordMode,
       dateFrom,
       dateTo,
       sort,
+      favoritesOnly,
+      setFavoritesOnly,
+      setKeywordMode,
+      setDateFrom,
+      setDateTo,
+      setSort,
+      resetAll,
       toggleKeyword,
       searchData,
       searchIsLoading,
@@ -218,6 +254,7 @@ export function CorpusSearchProvider({ children }: { children: ReactNode }) {
       debouncedKey,
       qc,
       filtersOpen,
+      countQuery.data,
     ],
   )
 

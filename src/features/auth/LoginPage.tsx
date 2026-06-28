@@ -23,7 +23,12 @@ export function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
-  if (user) return <Navigate to="/" replace />
+  if (user) {
+    const from = (state as { from?: { pathname?: string; search?: string; hash?: string } } | null)
+      ?.from
+    const returnTo = from ? `${from.pathname ?? '/'}${from.search ?? ''}${from.hash ?? ''}` : '/'
+    return <Navigate to={returnTo} replace />
+  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -36,8 +41,12 @@ export function LoginPage() {
     setSubmitting(true)
     const res = await login(email, password, remember)
     setSubmitting(false)
-    if (res.ok) navigate((state as { from?: { pathname?: string } } | null)?.from?.pathname ?? '/')
-    else setError(res.error ?? 'Connexion impossible.')
+    if (res.ok) {
+      const from = (
+        state as { from?: { pathname?: string; search?: string; hash?: string } } | null
+      )?.from
+      navigate(from ? `${from.pathname ?? '/'}${from.search ?? ''}${from.hash ?? ''}` : '/')
+    } else setError(res.error ?? 'Connexion impossible.')
   }
 
   return (

@@ -2,7 +2,6 @@ import { NavLink } from 'react-router'
 import {
   Users,
   ShieldCheck,
-  PencilSimpleLine,
   UserList,
   Books,
   TreeStructure,
@@ -28,9 +27,6 @@ export function AdminNav() {
       </NavLink>
       <NavLink to="/admin/roles" className={linkClass}>
         <ShieldCheck size={18} aria-hidden="true" /> Rôles et droits
-      </NavLink>
-      <NavLink to="/admin/labo-editeur" className={linkClass}>
-        <PencilSimpleLine size={18} aria-hidden="true" /> Labo éditeur
       </NavLink>
       <NavLink to="/admin/auteurs" className={linkClass}>
         <UserList size={18} aria-hidden="true" /> Auteurs

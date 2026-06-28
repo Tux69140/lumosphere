@@ -9,6 +9,10 @@ export type MarkdownEditorHandle = {
   reset: () => void
   /** Renvoie le Markdown courant. */
   getMarkdown: () => string
+  /** Change le bloc courant : 0 = paragraphe, 1–3 = titre h1–h3. */
+  setHeading: (level: 0 | 1 | 2 | 3) => void
+  /** Renvoie le type du bloc sous le curseur ('paragraph', 'h1', 'h2', 'h3'…). */
+  getBlockType: () => string
 }
 
 export type MarkdownEditorProps = {

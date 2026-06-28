@@ -14,17 +14,25 @@ const OEUVRES = vi.hoisted(() => [
     url: null,
     ref_libraire: null,
     description: null,
+    source_id: 2,
+    source_label: 'Lulumineuse',
   },
 ])
 const AUTEURS = vi.hoisted(() => [{ id: 5, nom: 'Lulumineuse' }])
+const SOURCES = vi.hoisted(() => [
+  { id: 2, label: 'Lulumineuse', source_type: 'telegram' },
+  { id: 3, label: 'Stéphane', source_type: 'telegram' },
+])
 
 vi.mock('@/services/api', () => ({
   apiClient: {
     findOeuvres: vi.fn().mockResolvedValue({ status: 'ok', data: OEUVRES, errors: [] }),
     findAuteurs: vi.fn().mockResolvedValue({ status: 'ok', data: AUTEURS, errors: [] }),
+    findCollectSources: vi.fn().mockResolvedValue({ status: 'ok', data: SOURCES, errors: [] }),
     createOeuvre: vi.fn().mockResolvedValue({ status: 'ok', data: { id: 2 }, errors: [] }),
     updateOeuvre: vi.fn().mockResolvedValue({ status: 'ok', data: { id: 1 }, errors: [] }),
     deleteOeuvre: vi.fn().mockResolvedValue({ status: 'ok', data: null, errors: [] }),
+    linkOeuvreSource: vi.fn().mockResolvedValue({ status: 'ok', data: null, errors: [] }),
   },
 }))
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
@@ -59,5 +67,25 @@ describe('OeuvresPage', () => {
     await userEvent.click(screen.getByTestId('oeuvre-item-1'))
     await userEvent.click(screen.getByRole('button', { name: /supprimer/i }))
     await waitFor(() => expect(apiClient.deleteOeuvre).toHaveBeenCalledWith(1))
+  })
+
+  it('affiche la source liée et appelle linkOeuvreSource au changement', async () => {
+    renderWithClient(<OeuvresPage />)
+    await waitFor(() => screen.getByTestId('oeuvre-item-1'))
+    await userEvent.click(screen.getByTestId('oeuvre-item-1'))
+    await waitFor(() => screen.getByLabelText('Source de collecte'))
+    const select = screen.getByLabelText('Source de collecte')
+    expect(select).toHaveValue('2')
+    await userEvent.selectOptions(select, '3')
+    await waitFor(() => expect(apiClient.linkOeuvreSource).toHaveBeenCalledWith(1, 3))
+  })
+
+  it('appelle linkOeuvreSource avec null pour délier', async () => {
+    renderWithClient(<OeuvresPage />)
+    await waitFor(() => screen.getByTestId('oeuvre-item-1'))
+    await userEvent.click(screen.getByTestId('oeuvre-item-1'))
+    await waitFor(() => screen.getByLabelText('Source de collecte'))
+    await userEvent.selectOptions(screen.getByLabelText('Source de collecte'), '')
+    await waitFor(() => expect(apiClient.linkOeuvreSource).toHaveBeenCalledWith(1, null))
   })
 })

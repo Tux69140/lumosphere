@@ -11,21 +11,24 @@ export function Sidebar() {
 
   if (isAdmin) {
     return (
-      <aside className="w-full shrink-0 border-b border-(--color-border) bg-(--color-bg-sidebar) p-4 lg:w-80 lg:border-b-0 lg:border-r">
-        <AdminNav />
+      <aside className="w-full shrink-0 border-b border-(--color-border) bg-(--color-bg-sidebar) lg:w-80 lg:border-b-0 lg:border-r">
+        <div className="p-4 lg:sticky lg:top-16 lg:max-h-[calc(100vh-4rem)] lg:overflow-y-auto">
+          <AdminNav />
+        </div>
       </aside>
     )
   }
 
-  // Toujours visible sur desktop ; sur mobile, ouvert/fermé via le bouton « Filtres » du header.
   return (
     <aside
       id="corpus-filters"
-      className={`w-full shrink-0 border-b border-(--color-border) bg-(--color-bg-sidebar) p-4 lg:block lg:w-80 lg:border-b-0 lg:border-r ${
+      className={`w-full shrink-0 border-b border-(--color-border) bg-(--color-bg-sidebar) lg:block lg:w-80 lg:border-b-0 lg:border-r ${
         filtersOpen ? 'block' : 'hidden'
       }`}
     >
-      <CorpusFilters />
+      <div className="p-4 lg:sticky lg:top-16 lg:max-h-[calc(100vh-4rem)] lg:overflow-y-auto">
+        <CorpusFilters />
+      </div>
     </aside>
   )
 }

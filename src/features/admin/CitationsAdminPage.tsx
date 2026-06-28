@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   createColumnHelper,
   flexRender,
@@ -128,15 +128,29 @@ export function CitationsAdminPage() {
 
   const filtersKey = useMemo(() => JSON.stringify(params), [params])
 
-  // Liste des citations via useQuery
-  const { data: citations = [], isLoading: loading } = useQuery({
+  // Liste des citations via useInfiniteQuery (keyset, même API que le corpus)
+  const {
+    data: searchData,
+    isLoading: loading,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = useInfiniteQuery({
     queryKey: queryKeys.citationsAdmin(filtersKey),
-    queryFn: async () => {
-      const res = await apiClient.findCitations(params)
+    queryFn: async ({ pageParam }) => {
+      const p = pageParam ? { ...params, cursor: pageParam } : params
+      const res = await apiClient.findCitations(p)
       if (res.status !== 'ok') throw new Error(res.errors?.[0] ?? 'Chargement impossible.')
-      return (res.data?.items ?? []) as AdminCitation[]
+      return res.data as { items: AdminCitation[]; next_cursor: string | null }
     },
+    initialPageParam: null as string | null,
+    getNextPageParam: (lastPage) => lastPage?.next_cursor ?? null,
   })
+
+  const citations = useMemo(
+    () => searchData?.pages.flatMap((p) => p?.items ?? []) ?? [],
+    [searchData],
+  )
 
   // Mutations — invalidation préfixe ['citations'] couvre search ET admin
   const inlineUpdateMutation = useMutation({
@@ -523,6 +537,20 @@ export function CitationsAdminPage() {
           </table>
         </div>
       </div>
+
+      {(hasNextPage || isFetchingNextPage) && (
+        <div className="mt-3 flex justify-center">
+          <button
+            onClick={() => void fetchNextPage()}
+            disabled={isFetchingNextPage}
+            className="rounded-md border border-(--color-border) bg-(--color-bg-card) px-5 py-2 text-sm font-medium text-(--color-text-secondary) hover:bg-(--color-bg-button) disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {isFetchingNextPage
+              ? 'Chargement…'
+              : `Charger 50 de plus (${citations.length} affichées)`}
+          </button>
+        </div>
+      )}
 
       {editorCitationId !== null && (
         <CitationEditor

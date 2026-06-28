@@ -153,6 +153,8 @@ export const apiClient = {
   // Citations
   findCitations: (params?: Record<string, string>) =>
     get<{ items: unknown[]; next_cursor: string | null }>(`citations${buildQuery(params)}`),
+  countCitations: (params?: Record<string, string>) =>
+    get<{ total: number }>(`citations/count${buildQuery(params)}`),
   getCitation: (id: number) => get<unknown>(`citations/${id}`),
   createCitation: (data: unknown) => post<{ id: number }>('citations', data),
   updateCitation: (id: number, data: unknown) => put<{ id: number }>(`citations/${id}`, data),
@@ -170,6 +172,12 @@ export const apiClient = {
   createAuteur: (data: unknown) => post<{ id: number }>('auteurs', data),
   updateAuteur: (id: number, data: unknown) => put<{ id: number }>(`auteurs/${id}`, data),
   deleteAuteur: (id: number) => del<void>(`auteurs/${id}`),
+
+  // Sources de collecte
+  findCollectSources: () =>
+    get<{ id: number; label: string; source_type: string }[]>('collect_sources'),
+  linkOeuvreSource: (oeuvreId: number, sourceId: number | null) =>
+    post<void>(`oeuvres/${oeuvreId}/source`, { source_id: sourceId }),
 
   // Oeuvres
   findOeuvres: (params?: Record<string, string>) => get<unknown[]>(`oeuvres${buildQuery(params)}`),
@@ -192,6 +200,9 @@ export const apiClient = {
   findOrCreateKeyword: (mot: string) =>
     post<{ id: number; mot: string }>('keywords/find-or-create', { mot }),
   deleteKeyword: (id: number) => del<void>(`keywords/${id}`),
+  updateKeyword: (id: number, mot: string) => put<{ id: number }>(`keywords/${id}`, { mot }),
+  getKeywordUsages: (id: number) =>
+    get<{ citation_id: number; titre: string }[]>(`keywords/${id}/usages`),
 
   // Etats
   findEtats: () => get<unknown[]>('etats'),
@@ -233,7 +244,7 @@ export const apiClient = {
   // Favorites
   findFavorites: (params?: Record<string, string>) =>
     get<{ items: unknown[]; next_cursor: string | null }>(`favorites${buildQuery(params)}`),
-  addFavorite: (citationId: number) => post<void>('favorites', { citation_id: citationId }),
+  addFavorite: (citationId: number) => post<void>(`favorites/${citationId}`, {}),
   removeFavorite: (citationId: number) => del<void>(`favorites/${citationId}`),
 
   // AI
@@ -241,5 +252,48 @@ export const apiClient = {
     post<{ keywords: string[] }>('ai/suggest-keywords', { citation_id: citationId, contenu }),
   aiSuggestTheme: (citationId: number, contenu: string) =>
     post<{ theme_id: number }>('ai/suggest-theme', { citation_id: citationId, contenu }),
-  aiTestConnection: () => post<{ ok: boolean; model: string }>('ai/test-connection', {}),
+  aiTestConnection: () =>
+    post<{ ok: boolean; provider: string; model: string }>('ai/test-connection', {}),
+  aiGetSettings: () =>
+    get<{
+      provider: string
+      model: string
+      timeout_seconds: number
+      max_retries: number
+      catalog: Array<{
+        key: string
+        label: string
+        base_url: string
+        models: string[]
+        default: string
+        configured: boolean
+        note?: string
+      }>
+    }>('ai/settings'),
+  aiSaveSettings: (data: {
+    provider: string
+    model: string
+    timeout_seconds: number
+    max_retries: number
+  }) => post<{ provider: string; model: string }>('ai/settings', data),
+  aiGetPrompts: () =>
+    get<Array<{ prompt_key: string; content: string; updated_at: string }>>('ai/prompts'),
+  aiUpdatePrompt: (key: string, content: string) => put<void>('ai/prompts', { key, content }),
+  aiGetLogs: (params?: Record<string, string>) =>
+    get<{
+      items: Array<{
+        id: number
+        provider: string
+        model: string
+        action: string
+        prompt_tokens: number
+        completion_tokens: number
+        latency_ms: number
+        status: 'ok' | 'error'
+        error_message: string | null
+        user_id: number | null
+        created_at: string
+      }>
+      next_cursor: string | null
+    }>(`ai/logs${buildQuery(params)}`),
 }

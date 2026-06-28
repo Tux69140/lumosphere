@@ -15,7 +15,7 @@ export function AccueilPage() {
   const { user } = useAuth()
   const canEdit = user ? ADMIN_ROLES.includes(user.role_id) : false
   const {
-    items,
+    items: rawItems,
     loading,
     error,
     hasMore,
@@ -24,8 +24,11 @@ export function AccueilPage() {
     refresh,
     reset,
     hasActiveFilters,
+    favoritesOnly,
   } = useCorpusSearch()
   const { favoriteIds, toggle: toggleFavorite } = useFavorites()
+  const isClientFiltered = favoritesOnly && !user
+  const items = isClientFiltered ? rawItems.filter((c) => favoriteIds.has(c.id)) : rawItems
   const sentinelRef = useRef<HTMLDivElement | null>(null)
   const parentRef = useRef<HTMLDivElement>(null)
   const [editingId, setEditingId] = useState<number | null>(null)
@@ -154,7 +157,7 @@ export function AccueilPage() {
         </>
       )}
 
-      {hasMore && (
+      {hasMore && !isClientFiltered && (
         <div ref={sentinelRef} className="mt-4">
           {loadingMore && <CitationCardSkeleton />}
         </div>

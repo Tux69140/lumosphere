@@ -37,11 +37,11 @@ But : **s'assurer que les bons composants sont présents** et **figer/valider le
 - [x] **Livrable** : note « composants présents / à installer » validée (`docs/note_composants-I2.md`).
 
 ### I.3 — Étude et validation du schéma corpus + auth (ex-T0.4) ⚠️ à valider
-- [ ] **Étudier et valider** les tables **corpus** : `citations`, `auteurs`, `oeuvres`, `themes` (≤ 2 niveaux, chemin calculé PHP), `keywords`, `citation_keywords`, `etats` (C/R/P), `mediatheque`, `bibliotheque`, `notifications`, `config`, `emojis`, `telegram_channels`, `import_sources` (sans `import_runs`), `export_jobs`, `schema_version`, `user_favorites`, `local_favorites`.
-- [ ] **Étudier et valider** les tables **auth** : `users` (bcrypt), `roles` (Administrateur protégé, Éditeur, Visiteur, Abo3, Abo4), `permissions`, `role_permissions`, `role_oeuvre_access`, `active_sessions`.
+- [x] **Étudier et valider** les tables **corpus** : `citations`, `auteurs`, `oeuvres`, `themes` (≤ 2 niveaux, chemin calculé PHP), `keywords`, `citation_keywords`, `etats` (C/R/P), `mediatheque`, `bibliotheque`, `notifications`, `config`, `emojis`, `telegram_channels`, `import_sources` (sans `import_runs`), `export_jobs`, `schema_version`, `user_favorites`, `local_favorites`.
+- [x] **Étudier et valider** les tables **auth** : `users` (bcrypt), `roles` (Administrateur protégé, Éditeur, Visiteur, Abo3, Abo4), `permissions`, `role_permissions`, `role_oeuvre_access`, `active_sessions`.
 - [ ] **Adaptation SQLite→MySQL** (source : schémas Index `docs/_reference/index-corpus-schema/`, Annexe C du devbook de migration) : AUTO_INCREMENT, types, `TINYINT(1)`, `ON UPDATE CURRENT_TIMESTAMP`, ENUM/CHECK, `FULLTEXT` (remplace FTS5), collation **accent-insensible**.
-- [ ] **Soumettre les choix structurants au chef de projet** ; puis **migration initiale + seed** (rôles, états, administrateur initial à changer, thèmes/sous-thèmes).
-- [ ] **Livrable** : schéma corpus+auth validé + script de migration + seed.
+- [x] **Soumettre les choix structurants au chef de projet** ; puis **migration initiale + seed** (rôles, états, administrateur initial à changer, thèmes/sous-thèmes).
+- [x] **Livrable** : schéma corpus+auth validé + script de migration + seed.
 
 #### Complément I.3 — Matrice RBAC (droits par rôle × état × action)
 
@@ -74,8 +74,8 @@ But : **s'assurer que les bons composants sont présents** et **figer/valider le
 - [x] Appel via **contrats stables** (services applicatifs), pas depuis les composants — prépare les adaptateurs (Web aujourd'hui ; Tauri plus tard). *(`src/services/api.ts` — point unique de communication, remplaçable pour bureau/mobile.)*
 
 ### I.5 — Spécifier l'éditeur Markdown riche (ex-T0.6)
-- [ ] Trancher l'**architecture de l'éditeur** avant de l'implémenter : Markdown enrichi comme source, rendu visuel confortable, toolbar non technique, tableaux/images/liens/notes/emojis, bascule source optionnelle.
-- [ ] **Livrable** : note technique de choix de bibliothèque + **prototype court**.
+- [x] Trancher l'**architecture de l'éditeur** avant de l'implémenter : Markdown enrichi comme source, rendu visuel confortable, toolbar non technique, tableaux/images/liens/notes/emojis, bascule source optionnelle.
+- [x] **Livrable** : note technique de choix de bibliothèque + **prototype court**.
 
 #### Complément I.5 — Critères de sélection éditeur Markdown
 
@@ -103,8 +103,8 @@ But : **s'assurer que les bons composants sont présents** et **figer/valider le
 - [ ] **RAG/embeddings** : feuille de route **non bloquante** pour la v1 (couche séparée, plus tard).
 
 ### I.7 — Données de test + squelette React
-- [ ] **Jeu de citations de test** dans le corpus (convertir les données de test déjà en base atelier, ou seed dédié) → matière à **afficher** dès la Phase II.
-- [ ] Squelette React : layout, routage, **thème clair/sombre**, charte + Phosphor ; services (`EpurielServices`, adaptateur Web `fetch`/`credentials:'include'`).
+- [x] **Jeu de citations de test** dans le corpus (convertir les données de test déjà en base atelier, ou seed dédié) → matière à **afficher** dès la Phase II.
+- [x] Squelette React : layout, routage, **thème clair/sombre**, charte + Phosphor ; services (`EpurielServices`, adaptateur Web `fetch`/`credentials:'include'`).
 - [ ] **Nettoyage post-migration** (une fois les données de test reversées au corpus et le bout-en-bout validé) : supprimer l'**ancienne base `mist2786_epuriel`** (filet de sécurité conservé pendant la bascule Phase 2, cf. migration §2.6 / §9.5) et purger les **anciens lots** de l'atelier (dossiers `lots/` devenus inutiles ; les lots sont jetables, cf. migration Phase 3bis). ⚠️ Action **destructive et irréversible** : seulement après validation explicite du chef de projet.
 
 #### Complément I.7 — Build React & déploiement o2switch
@@ -145,11 +145,11 @@ RewriteRule . /index.html [L]
 
 But : **voir les résultats** le plus tôt possible et valider schéma + droits + rendu de bout en bout.
 
-- [ ] **Connexion** (login/logout, session, redirection) — auth serveur (migration 6.2).
-- [ ] **Vue bibliothèque en lecture** : liste/**cartes d'entrées** depuis le corpus de test (thème/sous-thème, œuvre, auteur, **contenu rendu depuis Markdown**, notes, mots-clés).
-- [ ] **Recherche/filtres minimaux** : plein texte + thème/œuvre/auteur (pour éprouver `FULLTEXT` + droits).
-- [ ] **Droits par rôle/œuvre** appliqués dès cette vue.
-- [ ] **Critère de sortie** : un éditeur se connecte, voit/filtre les entrées de test, l'autrice **commente le rendu réel**.
+- [x] **Connexion** (login/logout, session, redirection) — auth serveur (migration 6.2).
+- [x] **Vue bibliothèque en lecture** : liste/**cartes d'entrées** depuis le corpus de test (thème/sous-thème, œuvre, auteur, **contenu rendu depuis Markdown**, notes, mots-clés).
+- [x] **Recherche/filtres minimaux** : plein texte + thème/œuvre/auteur (pour éprouver `FULLTEXT` + droits).
+- [x] **Droits par rôle/œuvre** appliqués dès cette vue.
+- [x] **Critère de sortie** : un éditeur se connecte, voit/filtre les entrées de test, l'autrice **commente le rendu réel**.
 
 ---
 
@@ -161,9 +161,9 @@ But : **voir les résultats** le plus tôt possible et valider schéma + droits 
 - [ ] Socle : `QueryClientProvider` monté à la racine de l'app ; **pas de cache hors-ligne** (cohérent « online-only v1 »). N'altère ni la couche de services ni l'API PHP : Query se pose **par-dessus**.
 
 ### III.1 — Rôles et droits
-- [ ] Rôles Visiteur / Abo3 / Abo4 / Éditeur / Administrateur ; **Administrateur protégé**.
-- [ ] Gestion des rôles ; **accès aux œuvres par rôle** (`role_oeuvre_access`) appliqué **dans la DAL** sur toutes les lectures.
-- [ ] **Écran admin de gestion des utilisateurs** :
+- [x] Rôles Visiteur / Abo3 / Abo4 / Éditeur / Administrateur ; **Administrateur protégé**.
+- [x] Gestion des rôles ; **accès aux œuvres par rôle** (`role_oeuvre_access`) appliqué **dans la DAL** sur toutes les lectures.
+- [x] **Écran admin de gestion des utilisateurs** :
   - Bouton « + Ajouter un utilisateur ».
   - Tableau : nom d'utilisateur, email, rôle, actions éditer / supprimer (suppression avec confirmation).
   - Modale de création / édition : nom, email, rôle (dropdown), mot de passe, confirmation mot de passe.
@@ -171,19 +171,19 @@ But : **voir les résultats** le plus tôt possible et valider schéma + droits 
 - [ ] Fonction de changement de passe / mot de passe oublié.
 
 ### III.2 — Référentiels éditoriaux (CRUD admin)
-- [ ] Auteurs · œuvres (abréviation, auteur, URL, réf libraire, accès Abo3/Abo4) · **thèmes ≤ 2 niveaux** · mots-clés (normalisés, saisie qui propose l'existant) · états · emojis.
+- [x] Auteurs · œuvres (abréviation, auteur, URL, réf libraire, accès Abo3/Abo4) · **thèmes ≤ 2 niveaux** · mots-clés (normalisés, saisie qui propose l'existant) · états · emojis.
 
 ### III.3 — Consultation publique complète
-- [ ] Bandeau supérieur collant (logo/titre, favoris, bibliothèque, contact, aide **contextuelle** (modale dont le contenu varie par page/section — clé par route), thème clair/sombre, configuration des rôles autorisés, connexion).
+- [x] Bandeau supérieur collant (logo/titre, favoris, bibliothèque, contact, aide **contextuelle** (modale dont le contenu varie par page/section — clé par route), thème clair/sombre, configuration des rôles autorisés, connexion).
 - [ ] **Panneau de filtres** (œuvres, auteurs, thèmes/sous-thèmes, mots-clés OU/ET + filtre alphabétique, dates, plein texte, réinitialisation), repliable sur mobile.
-- [ ] **Zone de résultats** : compteur, critères actifs en **badges supprimables**, cartes, `Fin des résultats.`
+- [x] **Zone de résultats** : compteur, critères actifs en **badges supprimables**, cartes, `Fin des résultats.`
 - [ ] **Favoris** web (local navigateur) + favoris reliés.
 - [ ] Fonction "Retour à la page d'où l'on venait » après connexion, reliquat de T09.
 
 ### III.4 — Moteur de recherche : étude puis codage (ex-T1.6)
-- [ ] **Étude** : conception de la recherche combinée et de ses index ; comportement OU/ET sur mots-clés ; tri/pertinence ; stratégie accent-insensible.
-- [ ] **Codage** : **FULLTEXT** (insensible casse/accents) + auteur + œuvre + thème + mots-clés (OU/ET) + dates + état (admin) + droits par rôle.
-- [ ] **Performances** : **pagination keyset**, **debounce 300 ms**, **virtualisation > 200**, index dédiés ; validés sur **1 000 / 10 000 / 50 000** entrées.
+- [x] **Étude** : conception de la recherche combinée et de ses index ; comportement OU/ET sur mots-clés ; tri/pertinence ; stratégie accent-insensible.
+- [x] **Codage** : **FULLTEXT** (insensible casse/accents) + auteur + œuvre + thème + mots-clés (OU/ET) + dates + état (admin) + droits par rôle.
+- [x] **Performances** : **pagination keyset**, **debounce 300 ms**, **virtualisation > 200**, index dédiés ; validés sur **1 000 / 10 000 / 50 000** entrées.
 
 #### Complément III.4 — Configuration FULLTEXT MySQL
 
@@ -208,20 +208,20 @@ But : **voir les résultats** le plus tôt possible et valider schéma + droits 
 **Stemming** : non disponible nativement en français sur MariaDB. Accepter la recherche par forme exacte. Alternative future : table de synonymes/lemmes alimentée par LiteLLM.
 
 ### III.5 — Éditeur Markdown riche (implémentation de I.5)
-- [ ] Éditeur visuel (type Typora) : Markdown source, bascule source possible.
-- [ ] Toolbar : gras/italique, titres H1–H4, listes, citation, liens, **images (médiathèque)**, **tableaux éditables sans Markdown**, notes, emojis, annuler/rétablir, reset.
-- [ ] Sauvegarde fiable (POST serveur sous session, **verrou d'édition**) ; régénération `FULLTEXT` à l'écriture.
+- [x] Éditeur visuel (type Typora) : Markdown source, bascule source possible.
+- [x] Toolbar : gras/italique, titres H1–H4, listes, citation, liens, **images (médiathèque)**, **tableaux éditables sans Markdown**, notes, emojis, annuler/rétablir, reset.
+- [x] Sauvegarde fiable (POST serveur sous session, **verrou d'édition**) ; régénération `FULLTEXT` à l'écriture.
 
 ### III.6 — Gestion des entrées (admin/éditeur)
-- [ ] Tableau : recherche, filtres mémorisés, tri, **sélection multiple**, aperçu, auteur/œuvre/thème/état.
-- [ ] **Actions groupées** : changer œuvre/état/thème/mots-clés (Ajouter/Remplacer/Supprimer) ; suppression (double confirmation, **suppression douce**) ; **édition rapide**.
+- [x] Tableau : recherche, filtres mémorisés, tri, **sélection multiple**, aperçu, auteur/œuvre/thème/état.
+- [x] **Actions groupées** : changer œuvre/état/thème/mots-clés (Ajouter/Remplacer/Supprimer) ; suppression (double confirmation, **suppression douce**) ; **édition rapide**.
 
 ### III.7 — IA LiteLLM (assistance éditoriale)
 - [ ] Configuration providers (allowlist, modèle défaut, prompts modifiables, test de connexion, journalisation coût/latence).
-- [ ] Suggestions **mots-clés** et **thème/sous-thème** ; **validation humaine obligatoire avant application**.
+- [x] Suggestions **mots-clés** et **thème/sous-thème** ; **validation humaine obligatoire avant application**.
 
 ### III.8 — Tests Phase III
-- [ ] Typecheck + lint ; tests unitaires DAL ; **tests droits Abo3/Abo4** ; perfs recherche/filtres (1k/10k/50k) ; **non-publication sans validation humaine** ; accessibilité (clavier, contrastes, labels).
+- [x] Typecheck + lint ; tests unitaires DAL ; **tests droits Abo3/Abo4** ; perfs recherche/filtres (1k/10k/50k) ; **non-publication sans validation humaine** ; accessibilité (clavier, contrastes, labels).
 
 ---
 

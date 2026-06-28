@@ -1,6 +1,8 @@
-import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react'
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react'
 import { Crepe } from '@milkdown/crepe'
-import { insert, replaceAll } from '@milkdown/kit/utils'
+import { callCommand, insert, replaceAll } from '@milkdown/kit/utils'
+import { wrapInHeadingCommand, turnIntoTextCommand } from '@milkdown/kit/preset/commonmark'
+import { editorViewCtx } from '@milkdown/kit/core'
 import { Code, Eye } from '@phosphor-icons/react'
 import '@milkdown/crepe/theme/common/style.css'
 import '@milkdown/crepe/theme/nord.css'
@@ -22,6 +24,23 @@ export const MilkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
 
     const [mode, setMode] = useState<'wysiwyg' | 'source'>('wysiwyg')
     const [sourceText, setSourceText] = useState(value)
+    const [blockType, setBlockType] = useState<string>('paragraph')
+
+    /** Lit le type du bloc sous le curseur via ProseMirror. */
+    const readBlockType = useCallback((): string => {
+      if (!crepeRef.current) return 'paragraph'
+      try {
+        return crepeRef.current.editor.action((ctx) => {
+          const view = ctx.get(editorViewCtx)
+          const { $from } = view.state.selection
+          const parent = $from.parent
+          if (parent.type.name === 'heading') return `h${parent.attrs['level'] as number}`
+          return parent.type.name
+        })
+      } catch {
+        return 'paragraph'
+      }
+    }, [])
 
     // Montage unique : Crepe est non contrôlé (defaultValue figé au montage).
     useEffect(() => {
@@ -39,6 +58,11 @@ export const MilkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
         crepe.on((listener) => {
           listener.markdownUpdated((_ctx, markdown) => onChangeRef.current(markdown))
         })
+        // Met à jour le type de bloc à chaque changement de sélection ou de contenu.
+        crepe.on((listener) => {
+          listener.selectionUpdated(() => setBlockType(readBlockType()))
+          listener.updated(() => setBlockType(readBlockType()))
+        })
       })
       return () => {
         crepe.destroy()
@@ -55,6 +79,16 @@ export const MilkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       insertText: (text: string) => crepeRef.current?.editor.action(insert(text)),
       reset: () => crepeRef.current?.editor.action(replaceAll('')),
       getMarkdown: () => crepeRef.current?.getMarkdown() ?? '',
+      setHeading: (level: 0 | 1 | 2 | 3) => {
+        if (!crepeRef.current) return
+        if (level === 0) {
+          crepeRef.current.editor.action(callCommand(turnIntoTextCommand.key))
+        } else {
+          crepeRef.current.editor.action(callCommand(wrapInHeadingCommand.key, level))
+        }
+        setBlockType(readBlockType())
+      },
+      getBlockType: readBlockType,
     }))
 
     function toggleMode() {
@@ -75,6 +109,16 @@ export const MilkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
             <MarkdownToolbar
               onInsert={(text) => crepeRef.current?.editor.action(insert(text))}
               onReset={() => crepeRef.current?.editor.action(replaceAll(''))}
+              onSetHeading={(level) => {
+                if (!crepeRef.current) return
+                if (level === 0) {
+                  crepeRef.current.editor.action(callCommand(turnIntoTextCommand.key))
+                } else {
+                  crepeRef.current.editor.action(callCommand(wrapInHeadingCommand.key, level))
+                }
+                setBlockType(readBlockType())
+              }}
+              currentBlockType={blockType}
             />
           ) : (
             <span className="px-1 text-sm text-(--color-text-secondary)">Source Markdown</span>

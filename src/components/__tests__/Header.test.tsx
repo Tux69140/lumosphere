@@ -1,20 +1,16 @@
-import { render, screen } from '@testing-library/react'
+import { screen } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { MemoryRouter } from 'react-router'
 import { Header } from '../Header'
 import { useAuth } from '@/hooks/useAuth'
 import type { AuthUser } from '@/hooks/useAuth'
+import { renderWithClient } from '@/test/renderWithClient'
 
 vi.mock('@/hooks/useAuth', () => ({ useAuth: vi.fn() }))
 vi.mock('../ThemeToggle', () => ({ ThemeToggle: () => null }))
 
 function renderHeader(user: AuthUser | null) {
   vi.mocked(useAuth).mockReturnValue({ user, loading: false, login: vi.fn(), logout: vi.fn() })
-  render(
-    <MemoryRouter>
-      <Header />
-    </MemoryRouter>,
-  )
+  renderWithClient(<Header />)
 }
 
 const editeur: AuthUser = {

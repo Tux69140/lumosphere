@@ -22,7 +22,7 @@ const { mockUseAuth } = vi.hoisted(() => ({ mockUseAuth: vi.fn() }))
 vi.mock('@/hooks/useAuth', () => ({ useAuth: mockUseAuth }))
 vi.mock('sonner', () => ({ toast: { error: vi.fn() } }))
 
-import { useFavorites } from '@/hooks/useFavorites'
+import { useFavorites, _resetLocalFavoritesCache } from '@/hooks/useFavorites'
 import type { AuthUser } from '@/hooks/useAuth'
 
 const LS_KEY = 'lum_favorites'
@@ -51,6 +51,7 @@ function makeWrapper() {
 beforeEach(() => {
   vi.clearAllMocks()
   localStorage.clear()
+  _resetLocalFavoritesCache()
 })
 
 describe('useFavorites — utilisateur serveur (admin)', () => {
