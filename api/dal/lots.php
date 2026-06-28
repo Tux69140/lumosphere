@@ -113,6 +113,7 @@ function dal_get_lot(PDO $pdo, array $ctx, int $id): array
         "SELECT d.id, d.titre, d.type_document, d.status, d.source_item_id,
                 d.contenu_brut, d.contenu_revise, d.hash_contenu, d.selected,
                 d.theme_id, d.oeuvre_id, d.date_publication, d.citation_id,
+                d.created_at, d.updated_at,
                 t.nom AS theme_nom, o.nom AS oeuvre_nom
          FROM documents d
          LEFT JOIN themes t ON d.theme_id = t.id

@@ -334,7 +334,7 @@ function DocumentCard({
 
             <input
               type="date"
-              value={toDateInput(doc.date_publication || doc.created_at)}
+              value={toDateInput(doc.date_publication || doc.created_at || lot.date_source_debut)}
               onChange={(e) => handleDateChange(e.target.value)}
               className="rounded-md border border-(--color-border) bg-(--color-bg-card) px-2 py-1 text-xs text-(--color-text) focus:border-(--color-accent) focus:outline-none"
             />

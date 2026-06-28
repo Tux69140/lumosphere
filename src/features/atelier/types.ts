@@ -54,6 +54,8 @@ export type Lot = {
   description: string | null
   error_message: string | null
   integrated_at: string | null
+  date_source_debut: string | null
+  date_source_fin: string | null
   created_at: string
   updated_at: string
   document_count: number
