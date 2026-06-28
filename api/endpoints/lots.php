@@ -53,7 +53,7 @@ function endpoint_lots(PDO $pdo, array $ctx, string $method, ?int $id, ?array $b
 
         // POST /api/lots/{id}/conformity — vérification conformité
         $method === 'POST' && $id !== null && $action === 'conformity' =>
-            dal_check_lot_conformity($pdo, $id),
+            dal_check_lot_conformity($pdo, $ctx, $id),
 
         // PUT /api/lots/documents/{id} — modifier un document du lot
         $method === 'PUT' && $id !== null && $action === 'document' =>

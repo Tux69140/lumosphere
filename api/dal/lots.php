@@ -319,18 +319,26 @@ function dal_delete_lot_document(PDO $pdo, array $ctx, int $doc_id): array
         return dal_error('Document introuvable.');
     }
 
-    $pdo->prepare('DELETE FROM lot_document_keywords WHERE document_id = :did')
-        ->execute(['did' => $doc_id]);
-    $pdo->prepare('DELETE FROM documents WHERE id = :id')
-        ->execute(['id' => $doc_id]);
+    $pdo->beginTransaction();
+    try {
+        $pdo->prepare('DELETE FROM lot_document_keywords WHERE document_id = :did')
+            ->execute(['did' => $doc_id]);
+        $pdo->prepare('DELETE FROM documents WHERE id = :id')
+            ->execute(['id' => $doc_id]);
+        $pdo->commit();
+    } catch (\Throwable $e) {
+        $pdo->rollBack();
+        throw $e;
+    }
 
     return dal_ok(['id' => $doc_id]);
 }
 
 // ── Conformité ───────────────────────────────────────────────────
 
-function dal_check_lot_conformity(PDO $pdo, int $lot_id): array
+function dal_check_lot_conformity(PDO $pdo, array $ctx, int $lot_id): array
 {
+    dal_require_permission($ctx, 'atelier.lots');
     $stmt = $pdo->prepare(
         "SELECT l.lot_id FROM lots l WHERE l.id = :id"
     );
@@ -392,7 +400,7 @@ function dal_integrate_lot(PDO $pdo, array $ctx, int $lot_id): array
 {
     dal_require_permission($ctx, 'atelier.validate');
 
-    $conformity = dal_check_lot_conformity($pdo, $lot_id);
+    $conformity = dal_check_lot_conformity($pdo, $ctx, $lot_id);
     if ($conformity['status'] !== 'ok') {
         return $conformity;
     }
@@ -577,7 +585,7 @@ function _dal_attach_lot_document_keywords(PDO $pdo, array $docs): array
     $by_doc = [];
     foreach ($stmt->fetchAll() as $kw) {
         $by_doc[(int) $kw['document_id']][] = [
-            'id' => (int) $kw['id'],
+            'keyword_id' => (int) $kw['id'],
             'mot' => $kw['mot'],
             'source' => $kw['source'],
         ];
