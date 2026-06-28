@@ -119,10 +119,12 @@
 | T37 | Dev §V.1 | Médiathèque : upload JPG/PNG/GIF/WebP/SVG, 2Mo, thumbnails, alt text | T19 (éditeur = insère images) |
 | T38 | Dev §V.2 | Bibliothèque documents : PDF/EPUB téléchargeables, visibilité par rôle | T14 |
 | T39 | Dev §V.3 | Notifications visiteur : formulaire contact (honeypot + CSRF), table admin | T07 |
-| T40 | Dev §V.4 | Import Telegram manuel : config chiffrée, canaux→œuvres, import transactionnel, dedup | T28 |
+| T40 | Dev §V.4 | Collecte manuelle (picto live) + moteur d'import historique générique (export fichier → réserve → réappro auto), Telegram en 1ʳᵉ source | T28 |
 | T41 | Dev §V.5 | Sauvegardes/restauration : dump base + média + bibliothèque, restore contrôlé | T37, T38 |
 | T42 | Mig §6.6 | PWA : manifest.json, service worker (installabilité, pas de cache offline), responsive | T17 |
 | T43 | Dev §V.6 | Packaging stores : PWABuilder MSIX (Microsoft Store), TWA + assetlinks (Google Play) | T42 |
+
+> **Design T40** (2026-06-28) : brainstorming validé → `docs/superpowers/specs/2026-06-28-collecte-manuelle-design.md`. Piste Telethon/config chiffrée **abandonnée** au profit d'un **moteur d'import générique** (réserve marquée `live`/`historique` → découpage en petits lots → réapprovisionnement auto), avec picto « ⟳ » dans l'atelier (live) et script SSH d'import d'export JSON (historique). Fondation réutilisable pour YouTube/PDF/articles.
 
 **✓ VALIDATION** : app installable en PWA. Médiathèque et documents fonctionnels. Formulaire contact opérationnel.
 
