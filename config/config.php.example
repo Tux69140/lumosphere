@@ -21,3 +21,9 @@ $config['anthropic_api_key'] = '';
 $config['openai_api_key']    = '';
 $config['gemini_api_key']    = '';
 $config['deepseek_api_key']  = '';
+
+// Telegram bot (cron collection)
+$config['telegram_bot_token'] = '';
+
+// Workers (Python venv)
+$config['python_bin'] = '/home2/mist2786/lumosphere/venvs/py311/bin/python3';

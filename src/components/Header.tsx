@@ -1,12 +1,22 @@
 // src/components/Header.tsx
 import { useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router'
-import { SunHorizon, List, X, SignIn, SignOut, GearSix, Funnel, Heart } from '@phosphor-icons/react'
+import {
+  SunHorizon,
+  List,
+  X,
+  SignIn,
+  SignOut,
+  GearSix,
+  Funnel,
+  Heart,
+  Factory,
+} from '@phosphor-icons/react'
 import { ThemeToggle } from './ThemeToggle'
 import { useAuth } from '@/hooks/useAuth'
 import { useFavorites } from '@/hooks/useFavorites'
 import { useCorpusSearchOptional } from '@/features/corpus/useCorpusSearch'
-import { ROLE_ADMIN } from '@/constants/roles'
+import { ROLE_ADMIN, ROLE_EDITEUR } from '@/constants/roles'
 
 export function Header() {
   const [menuOpen, setMenuOpen] = useState(false)
@@ -17,6 +27,8 @@ export function Header() {
   const location = useLocation()
   const { pathname } = location
   const isAdmin = user !== null && user.role_id === ROLE_ADMIN
+  const hasAtelierAccess =
+    user !== null && (user.role_id === ROLE_ADMIN || user.role_id === ROLE_EDITEUR)
 
   // Bouton « Filtres » mobile : seulement sur la vue corpus (contexte présent, hors admin).
   const corpus = useCorpusSearchOptional()
@@ -53,6 +65,16 @@ export function Header() {
           <Heart size={18} weight={hasFavorites ? 'fill' : 'regular'} aria-hidden="true" />
           <span className={labelClass}>Favoris</span>
         </Link>
+        {hasAtelierAccess && (
+          <Link
+            to="/atelier"
+            onClick={() => setMenuOpen(false)}
+            className="flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium text-(--color-link-header) hover:bg-(--color-bg-button) transition-colors"
+          >
+            <Factory size={18} aria-hidden="true" />
+            <span className={labelClass}>Atelier</span>
+          </Link>
+        )}
         {isAdmin && (
           <Link
             to="/admin"

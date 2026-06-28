@@ -7,6 +7,7 @@ export const queryKeys = {
   emojis: ['emojis'] as const,
   favorites: ['favorites'] as const,
   collectSources: ['collectSources'] as const,
+  telegramChannels: ['collectSources', 'telegram'] as const,
   keywordUsages: (id: number) => ['keywords', 'usages', id] as const,
   // Invalidation large spectrum (search + admin) — préfixe commun ['citations'].
   citationsAll: ['citations'] as const,
@@ -17,4 +18,9 @@ export const queryKeys = {
   aiSettings: ['ai', 'settings'] as const,
   aiPrompts: ['ai', 'prompts'] as const,
   aiLogs: ['ai', 'logs'] as const,
+  lotsAll: ['lots'] as const,
+  lotsList: (filtersKey: string) => ['lots', 'list', filtersKey] as const,
+  lotsCounts: ['lots', 'counts'] as const,
+  lotDetail: (id: number) => ['lots', 'detail', id] as const,
+  lotJournal: (id: number) => ['lots', 'journal', id] as const,
 }

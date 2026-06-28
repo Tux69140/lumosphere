@@ -5,10 +5,14 @@ import { AccueilPage } from '@/features/accueil/AccueilPage'
 import { LoginPage } from '@/features/auth/LoginPage'
 import { NotFoundPage } from '@/features/NotFoundPage'
 import { RequireAdmin } from '@/components/RequireAdmin'
+import { RequireAtelier } from '@/components/RequireAtelier'
+import { AtelierPage } from '@/features/atelier/AtelierPage'
+import { LotDetailPage } from '@/features/atelier/LotDetailPage'
 import { UsersPage } from '@/features/admin/UsersPage'
 import { RolesAccessPage } from '@/features/admin/RolesAccessPage'
 import { AuteursPage } from '@/features/admin/AuteursPage'
 import { OeuvresPage } from '@/features/admin/OeuvresPage'
+import { SourcesPage } from '@/features/admin/SourcesPage'
 import { ThemesPage } from '@/features/admin/ThemesPage'
 import { KeywordsPage } from '@/features/admin/KeywordsPage'
 import { EtatsPage } from '@/features/admin/EtatsPage'
@@ -21,12 +25,17 @@ export default function App() {
     <Routes>
       <Route element={<MainLayout />}>
         <Route index element={<AccueilPage />} />
+        <Route path="atelier" element={<RequireAtelier />}>
+          <Route index element={<AtelierPage />} />
+          <Route path="lot/:id" element={<LotDetailPage />} />
+        </Route>
         <Route path="admin" element={<RequireAdmin />}>
           <Route index element={<Navigate to="/admin/utilisateurs" replace />} />
           <Route path="utilisateurs" element={<UsersPage />} />
           <Route path="roles" element={<RolesAccessPage />} />
           <Route path="auteurs" element={<AuteursPage />} />
           <Route path="oeuvres" element={<OeuvresPage />} />
+          <Route path="sources" element={<SourcesPage />} />
           <Route path="themes" element={<ThemesPage />} />
           <Route path="mots-cles" element={<KeywordsPage />} />
           <Route path="etats" element={<EtatsPage />} />

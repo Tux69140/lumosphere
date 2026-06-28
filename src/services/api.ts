@@ -178,6 +178,26 @@ export const apiClient = {
     get<{ id: number; label: string; source_type: string }[]>('collect_sources'),
   linkOeuvreSource: (oeuvreId: number, sourceId: number | null) =>
     post<void>(`oeuvres/${oeuvreId}/source`, { source_id: sourceId }),
+  // Canaux Telegram (vue admin « Sources »)
+  findTelegramChannels: () =>
+    get<
+      {
+        id: number
+        label: string
+        source_type: string
+        chat_id: number | null
+        enabled: boolean
+        run_every_hours: number
+        oeuvre_id: number | null
+        last_run_at: string | null
+        last_error: string | null
+      }[]
+    >('collect_sources?type=telegram'),
+  getCollectSource: (id: number) => get<unknown>(`collect_sources/${id}`),
+  createCollectSource: (data: unknown) => post<{ id: number }>('collect_sources', data),
+  updateCollectSource: (id: number, data: unknown) =>
+    put<{ id: number }>(`collect_sources/${id}`, data),
+  deleteCollectSource: (id: number) => del<void>(`collect_sources/${id}`),
 
   // Oeuvres
   findOeuvres: (params?: Record<string, string>) => get<unknown[]>(`oeuvres${buildQuery(params)}`),
@@ -246,6 +266,34 @@ export const apiClient = {
     get<{ items: unknown[]; next_cursor: string | null }>(`favorites${buildQuery(params)}`),
   addFavorite: (citationId: number) => post<void>(`favorites/${citationId}`, {}),
   removeFavorite: (citationId: number) => del<void>(`favorites/${citationId}`),
+
+  // Lots (atelier)
+  findLots: (params?: Record<string, string>) =>
+    get<{ items: unknown[]; next_cursor: string | null }>(`lots${buildQuery(params)}`),
+  getLotCounts: () => get<Record<string, number>>('lots/counts'),
+  getLot: (id: number) => get<unknown>(`lots/${id}`),
+  getLotJournal: (id: number) => get<unknown[]>(`lots/${id}/journal`),
+  updateLotStatus: (id: number, status: string, message?: string) =>
+    put<void>(`lots/${id}/status`, { status, message }),
+  assignLot: (id: number, userId: number | null) =>
+    put<void>(`lots/${id}/assign`, { user_id: userId }),
+  integrateLot: (id: number) =>
+    post<{ integrated: number; duplicates: number }>(`lots/${id}/integrate`, {}),
+  checkLotConformity: (id: number) =>
+    post<{ conforme: boolean; missing: string[]; documents_ok: number; documents_total: number }>(
+      `lots/${id}/conformity`,
+      {},
+    ),
+  updateLotDocument: (lotId: number, data: Record<string, unknown>) =>
+    put<void>(`lots/${lotId}/document`, data),
+  setLotDocumentKeywords: (lotId: number, docId: number, keywordIds: number[], source?: string) =>
+    put<void>(`lots/${lotId}/document-keywords`, {
+      document_id: docId,
+      keyword_ids: keywordIds,
+      source,
+    }),
+  deleteLotDocument: (lotId: number, docId: number) =>
+    delWithBody<void>(`lots/${lotId}/document`, { document_id: docId }),
 
   // AI
   aiSuggestKeywords: (citationId: number, contenu: string) =>
