@@ -49,6 +49,11 @@ class TelegramPipelineTest extends TestCase
         $this->assertSame('avant #foi après', $out[1]['text']);
     }
 
+    public function testLockNameIsScopedBySource(): void
+    {
+        $this->assertSame('tg_source_42', tg_source_lock_name(42));
+    }
+
     public function testAggregateLiveCreatesOneLotAndMarksBuffer(): void
     {
         $pdo = \Tests\Dal\TestHelper::getTestPdo();
