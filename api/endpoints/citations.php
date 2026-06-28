@@ -34,7 +34,8 @@ function _citations_filters(): array
         'keyword_mode' => $_GET['keyword_mode'] ?? null,
         'date_from'    => $_GET['date_from'] ?? null,
         'date_to'      => $_GET['date_to'] ?? null,
-        'sort'         => $_GET['sort'] ?? null,
+        'sort'           => $_GET['sort'] ?? null,
+        'favorites_only' => $_GET['favorites_only'] ?? null,
     ]);
 }
 

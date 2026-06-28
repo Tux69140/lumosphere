@@ -1,7 +1,7 @@
 // src/components/Header.tsx
 import { useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router'
-import { SunHorizon, List, X, SignIn, SignOut, GearSix, Funnel } from '@phosphor-icons/react'
+import { SunHorizon, List, X, SignIn, SignOut, GearSix, Funnel, Heart } from '@phosphor-icons/react'
 import { ThemeToggle } from './ThemeToggle'
 import { useAuth } from '@/hooks/useAuth'
 import { useCorpusSearchOptional } from '@/features/corpus/useCorpusSearch'
@@ -38,6 +38,15 @@ export function Header() {
       <>
         <ThemeToggle />
         {withDivider && <div className="h-6 w-px bg-(--color-border-header)" />}
+        <Link
+          to="/?favoris=1"
+          onClick={() => setMenuOpen(false)}
+          className="flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium text-(--color-link-header) hover:bg-(--color-bg-button) transition-colors"
+          aria-label="Mes favoris"
+        >
+          <Heart size={18} aria-hidden="true" />
+          <span className={labelClass}>Favoris</span>
+        </Link>
         {isAdmin && (
           <Link
             to="/admin"

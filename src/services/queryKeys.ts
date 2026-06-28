@@ -14,4 +14,7 @@ export const queryKeys = {
   citationsSearch: (filtersKey: string) => ['citations', 'search', filtersKey] as const,
   // Liste admin des citations.
   citationsAdmin: (filtersKey: string) => ['citations', 'admin', filtersKey] as const,
+  aiSettings: ['ai', 'settings'] as const,
+  aiPrompts: ['ai', 'prompts'] as const,
+  aiLogs: ['ai', 'logs'] as const,
 }

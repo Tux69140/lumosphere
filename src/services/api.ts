@@ -244,7 +244,7 @@ export const apiClient = {
   // Favorites
   findFavorites: (params?: Record<string, string>) =>
     get<{ items: unknown[]; next_cursor: string | null }>(`favorites${buildQuery(params)}`),
-  addFavorite: (citationId: number) => post<void>('favorites', { citation_id: citationId }),
+  addFavorite: (citationId: number) => post<void>(`favorites/${citationId}`, {}),
   removeFavorite: (citationId: number) => del<void>(`favorites/${citationId}`),
 
   // AI
@@ -252,5 +252,48 @@ export const apiClient = {
     post<{ keywords: string[] }>('ai/suggest-keywords', { citation_id: citationId, contenu }),
   aiSuggestTheme: (citationId: number, contenu: string) =>
     post<{ theme_id: number }>('ai/suggest-theme', { citation_id: citationId, contenu }),
-  aiTestConnection: () => post<{ ok: boolean; model: string }>('ai/test-connection', {}),
+  aiTestConnection: () =>
+    post<{ ok: boolean; provider: string; model: string }>('ai/test-connection', {}),
+  aiGetSettings: () =>
+    get<{
+      provider: string
+      model: string
+      timeout_seconds: number
+      max_retries: number
+      catalog: Array<{
+        key: string
+        label: string
+        base_url: string
+        models: string[]
+        default: string
+        configured: boolean
+        note?: string
+      }>
+    }>('ai/settings'),
+  aiSaveSettings: (data: {
+    provider: string
+    model: string
+    timeout_seconds: number
+    max_retries: number
+  }) => post<{ provider: string; model: string }>('ai/settings', data),
+  aiGetPrompts: () =>
+    get<Array<{ prompt_key: string; content: string; updated_at: string }>>('ai/prompts'),
+  aiUpdatePrompt: (key: string, content: string) => put<void>('ai/prompts', { key, content }),
+  aiGetLogs: (params?: Record<string, string>) =>
+    get<{
+      items: Array<{
+        id: number
+        provider: string
+        model: string
+        action: string
+        prompt_tokens: number
+        completion_tokens: number
+        latency_ms: number
+        status: 'ok' | 'error'
+        error_message: string | null
+        user_id: number | null
+        created_at: string
+      }>
+      next_cursor: string | null
+    }>(`ai/logs${buildQuery(params)}`),
 }

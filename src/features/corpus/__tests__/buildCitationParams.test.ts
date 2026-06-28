@@ -11,6 +11,7 @@ const base: CorpusFilters = {
   dateFrom: '',
   dateTo: '',
   sort: 'date',
+  favoritesOnly: false,
 }
 
 describe('buildCitationParams', () => {

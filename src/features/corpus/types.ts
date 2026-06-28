@@ -17,6 +17,7 @@ export type CorpusFilters = {
   dateFrom: string
   dateTo: string
   sort: 'date' | 'score'
+  favoritesOnly: boolean
 }
 
 export type Citation = {

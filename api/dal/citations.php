@@ -45,7 +45,7 @@ function dal_find_citations(PDO $pdo, array $ctx, array $filters = [], ?string $
 
     $where .= dal_soft_delete_clause('c', $ctx);
     $where .= dal_oeuvre_access_clause('c.oeuvre_id', $ctx, $params);
-    $where .= _dal_build_citation_where($filters, $params);
+    $where .= _dal_build_citation_where($filters, $params, $ctx);
 
     $decoded_cursor = dal_decode_cursor($cursor);
     $where .= dal_keyset_clause('c.date_entree', 'c.id', $decoded_cursor, 'DESC', $params);
@@ -124,7 +124,7 @@ function dal_count_citations(PDO $pdo, array $ctx, array $filters = []): array
     $where = '1=1';
     $where .= dal_soft_delete_clause('c', $ctx);
     $where .= dal_oeuvre_access_clause('c.oeuvre_id', $ctx, $params);
-    $where .= _dal_build_citation_where($filters, $params);
+    $where .= _dal_build_citation_where($filters, $params, $ctx);
 
     // Jointure oeuvres requise par le filtre auteur (o.auteur_id).
     $sql = "SELECT COUNT(*) AS total
@@ -154,7 +154,7 @@ function dal_search_citations(PDO $pdo, array $ctx, string $query, array $filter
     $where = 'MATCH(c.contenu, c.notes, c.auteur_nom) AGAINST(:ft_query IN BOOLEAN MODE)';
     $where .= dal_soft_delete_clause('c', $ctx);
     $where .= dal_oeuvre_access_clause('c.oeuvre_id', $ctx, $params);
-    $where .= _dal_build_citation_where($filters, $params);
+    $where .= _dal_build_citation_where($filters, $params, $ctx);
 
     $decoded_cursor = dal_decode_cursor($cursor);
     $where .= dal_keyset_clause('c.date_entree', 'c.id', $decoded_cursor, 'DESC', $params);
@@ -359,7 +359,7 @@ function dal_set_citation_keywords(PDO $pdo, array $ctx, int $citation_id, array
  * pour garantir des résultats et un compteur cohérents.
  * Ne couvre ni le soft-delete, ni l'access clause, ni le keyset (gérés à part).
  */
-function _dal_build_citation_where(array $filters, array &$params): string
+function _dal_build_citation_where(array $filters, array &$params, array $ctx = []): string
 {
     $where = '';
     if (!empty($filters['oeuvre_id'])) {
@@ -406,6 +406,11 @@ function _dal_build_citation_where(array $filters, array &$params): string
             $where .= " AND c.id IN (SELECT citation_id FROM citation_keywords WHERE keyword_id IN ({$in_list}) GROUP BY citation_id HAVING COUNT(DISTINCT keyword_id) = :kw_count)";
             $params[':kw_count'] = count($kw_ids);
         }
+    }
+
+    if (!empty($filters['favorites_only']) && !empty($ctx['user_id'])) {
+        $where .= ' AND c.id IN (SELECT citation_id FROM user_favorites WHERE user_id = :fav_uid)';
+        $params[':fav_uid'] = (int) $ctx['user_id'];
     }
 
     return $where;
