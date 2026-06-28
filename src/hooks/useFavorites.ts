@@ -120,7 +120,8 @@ export function useFavorites(): UseFavoritesResult {
         const wasSet = current?.items.some((item) => (item.citation_id ?? item.id) === id) ?? false
         toggleMutation({ id, action: wasSet ? 'remove' : 'add' })
       } else {
-        const next = new Set(localFavoriteIds)
+        const current = readLocalFavorites()
+        const next = new Set(current)
         if (next.has(id)) next.delete(id)
         else next.add(id)
         writeLocalFavorites(next)
