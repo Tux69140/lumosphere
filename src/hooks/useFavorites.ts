@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useSyncExternalStore } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { apiClient } from '@/services/api'
@@ -9,20 +9,44 @@ import { unwrap } from '@/services/referenceQueries'
 
 const LS_KEY = 'lum_favorites'
 
-function loadLocalFavorites(): Set<number> {
+let localCache: Set<number> | null = null
+const listeners = new Set<() => void>()
+
+function readLocalFavorites(): Set<number> {
+  if (localCache) return localCache
   try {
     const raw = localStorage.getItem(LS_KEY)
-    if (!raw) return new Set()
-    const parsed = JSON.parse(raw)
-    if (Array.isArray(parsed)) return new Set(parsed.map(Number))
+    if (raw) {
+      const parsed = JSON.parse(raw)
+      if (Array.isArray(parsed)) {
+        localCache = new Set(parsed.map(Number))
+        return localCache
+      }
+    }
   } catch {
-    // corrupted storage
+    // corrupted
   }
-  return new Set()
+  localCache = new Set()
+  return localCache
 }
 
-function saveLocalFavorites(ids: Set<number>): void {
+function writeLocalFavorites(ids: Set<number>): void {
+  localCache = ids
   localStorage.setItem(LS_KEY, JSON.stringify([...ids]))
+  listeners.forEach((fn) => fn())
+}
+
+function subscribeLocal(cb: () => void): () => void {
+  listeners.add(cb)
+  return () => listeners.delete(cb)
+}
+
+export function _resetLocalFavoritesCache(): void {
+  localCache = null
+}
+
+function useLocalFavorites(): Set<number> {
+  return useSyncExternalStore(subscribeLocal, readLocalFavorites, () => new Set())
 }
 
 type FavoriteItem = { citation_id?: number; id?: number }
@@ -39,8 +63,7 @@ export function useFavorites(): UseFavoritesResult {
   const isServerUser = user !== null && [ROLE_ADMIN, ROLE_EDITEUR].includes(user.role_id)
   const queryClient = useQueryClient()
 
-  // Invité : état local (localStorage) — toujours initialisé, utilisé uniquement si !isServerUser
-  const [localFavoriteIds, setLocalFavoriteIds] = useState<Set<number>>(loadLocalFavorites)
+  const localFavoriteIds = useLocalFavorites()
 
   // Utilisateur serveur : chargement via React Query
   const query = useQuery({
@@ -97,13 +120,10 @@ export function useFavorites(): UseFavoritesResult {
         const wasSet = current?.items.some((item) => (item.citation_id ?? item.id) === id) ?? false
         toggleMutation({ id, action: wasSet ? 'remove' : 'add' })
       } else {
-        setLocalFavoriteIds((prev) => {
-          const next = new Set(prev)
-          if (next.has(id)) next.delete(id)
-          else next.add(id)
-          saveLocalFavorites(next)
-          return next
-        })
+        const next = new Set(localFavoriteIds)
+        if (next.has(id)) next.delete(id)
+        else next.add(id)
+        writeLocalFavorites(next)
       }
     },
     [isServerUser, toggleMutation, queryClient],
