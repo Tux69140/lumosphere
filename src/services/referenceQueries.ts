@@ -21,6 +21,25 @@ export function useCollectSources() {
   })
 }
 
+export type TelegramChannel = {
+  id: number
+  label: string
+  source_type: string
+  chat_id: number | null
+  enabled: boolean
+  run_every_hours: number
+  oeuvre_id: number | null
+  last_run_at: string | null
+  last_error: string | null
+}
+
+export function useTelegramChannels() {
+  return useQuery({
+    queryKey: queryKeys.telegramChannels,
+    queryFn: () => unwrap<TelegramChannel[]>(apiClient.findTelegramChannels()),
+  })
+}
+
 export function useOeuvres() {
   return useQuery({
     queryKey: queryKeys.oeuvres,

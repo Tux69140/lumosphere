@@ -10,6 +10,7 @@ import {
   Smiley,
   ListBullets,
   Robot,
+  Broadcast,
 } from '@phosphor-icons/react'
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
@@ -48,6 +49,9 @@ export function AdminNav() {
       </NavLink>
       <NavLink to="/admin/citations" className={linkClass}>
         <ListBullets size={18} aria-hidden="true" /> Entrées
+      </NavLink>
+      <NavLink to="/admin/sources" className={linkClass}>
+        <Broadcast size={18} aria-hidden="true" /> Sources
       </NavLink>
       <NavLink to="/admin/ia" className={linkClass}>
         <Robot size={18} aria-hidden="true" /> IA

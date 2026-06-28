@@ -24,7 +24,7 @@ const schema = z.object({
   run_every_hours: z
     .number({ message: 'Indiquez un nombre d’heures.' })
     .int()
-    .min(1, 'Au minimum 1 heure.')
+    .min(0, 'Le délai ne peut pas être négatif.')
     .max(255, 'Au maximum 255 heures.'),
 })
 
@@ -117,9 +117,9 @@ export function SourcesPage() {
     setSelectedId(channel.id)
     setForm({
       label: channel.label,
-      chat_id: channel.chat_id !== null ? String(channel.chat_id) : '',
-      oeuvre_id: channel.oeuvre_id !== null ? String(channel.oeuvre_id) : '',
-      run_every_hours: String(channel.run_every_hours),
+      chat_id: channel.chat_id != null ? String(channel.chat_id) : '',
+      oeuvre_id: channel.oeuvre_id != null ? String(channel.oeuvre_id) : '',
+      run_every_hours: channel.run_every_hours != null ? String(channel.run_every_hours) : '',
       enabled: channel.enabled,
     })
     setErrors({})
@@ -332,18 +332,22 @@ export function SourcesPage() {
                     className="mb-1 block text-sm font-medium text-(--color-text-primary)"
                     htmlFor="canal-frequence"
                   >
-                    Fréquence de relève (heures)
+                    Délai minimum entre deux collectes (heures)
                   </label>
                   <input
                     id="canal-frequence"
                     type="number"
-                    min={1}
+                    min={0}
                     max={255}
                     value={form.run_every_hours}
                     onChange={(e) => setForm((f) => ({ ...f, run_every_hours: e.target.value }))}
-                    aria-label="Fréquence de relève en heures"
+                    aria-label="Délai minimum entre deux collectes en heures"
                     className={inputClass}
                   />
+                  <p className="mt-1 text-xs text-(--color-text-placeholder)">
+                    Le canal n’est re-collecté qu’une fois ce délai écoulé, lors du passage du
+                    collecteur (planifié côté serveur).
+                  </p>
                   {errors.run_every_hours && (
                     <p className="mt-1 text-xs text-(--color-danger-text)">
                       {errors.run_every_hours}
@@ -359,7 +363,7 @@ export function SourcesPage() {
                       onChange={(e) => setForm((f) => ({ ...f, enabled: e.target.checked }))}
                       className="h-4 w-4 rounded border-(--color-border)"
                     />
-                    Canal actif (relevé par le collecteur)
+                    Canal actif (collecté automatiquement)
                   </label>
                 </div>
 
