@@ -1,5 +1,5 @@
 import { useEffect, useRef, type InputHTMLAttributes } from 'react'
-import { Heart, MagnifyingGlass, X } from '@phosphor-icons/react'
+import { MagnifyingGlass, X } from '@phosphor-icons/react'
 import { useCorpusSearch } from '@/features/corpus/useCorpusSearch'
 import { getThemeCheckState } from '@/features/corpus/themeSelection'
 import type { CheckState } from '@/features/corpus/types'
@@ -40,8 +40,6 @@ export function CorpusFilters() {
     setSort,
     reset,
     hasActiveFilters,
-    favoritesOnly,
-    setFavoritesOnly,
   } = useCorpusSearch()
 
   return (
@@ -72,21 +70,6 @@ export function CorpusFilters() {
             </button>
           )}
         </div>
-      </div>
-
-      <div className="mb-3">
-        <button
-          type="button"
-          onClick={() => setFavoritesOnly(!favoritesOnly)}
-          className={`flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-            favoritesOnly
-              ? 'bg-(--color-action) text-(--color-action-text)'
-              : 'bg-(--color-bg-sidebar) text-(--color-text-secondary) hover:bg-(--color-bg-button)'
-          }`}
-        >
-          <Heart size={16} weight={favoritesOnly ? 'fill' : 'regular'} aria-hidden="true" />
-          Mes favoris
-        </button>
       </div>
 
       {query.trim() && (

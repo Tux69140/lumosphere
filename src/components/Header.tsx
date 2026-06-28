@@ -4,12 +4,15 @@ import { Link, useNavigate, useLocation } from 'react-router'
 import { SunHorizon, List, X, SignIn, SignOut, GearSix, Funnel, Heart } from '@phosphor-icons/react'
 import { ThemeToggle } from './ThemeToggle'
 import { useAuth } from '@/hooks/useAuth'
+import { useFavorites } from '@/hooks/useFavorites'
 import { useCorpusSearchOptional } from '@/features/corpus/useCorpusSearch'
 import { ROLE_ADMIN } from '@/constants/roles'
 
 export function Header() {
   const [menuOpen, setMenuOpen] = useState(false)
   const { user, logout } = useAuth()
+  const { favoriteIds } = useFavorites()
+  const hasFavorites = favoriteIds.size > 0
   const navigate = useNavigate()
   const { pathname } = useLocation()
   const isAdmin = user !== null && user.role_id === ROLE_ADMIN
@@ -41,10 +44,12 @@ export function Header() {
         <Link
           to="/?favoris=1"
           onClick={() => setMenuOpen(false)}
-          className="flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium text-(--color-link-header) hover:bg-(--color-bg-button) transition-colors"
+          className={`flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-(--color-bg-button) ${
+            hasFavorites ? 'text-(--color-accent)' : 'text-(--color-link-header)'
+          }`}
           aria-label="Mes favoris"
         >
-          <Heart size={18} aria-hidden="true" />
+          <Heart size={18} weight={hasFavorites ? 'fill' : 'regular'} aria-hidden="true" />
           <span className={labelClass}>Favoris</span>
         </Link>
         {isAdmin && (

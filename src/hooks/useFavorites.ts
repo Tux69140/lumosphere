@@ -57,10 +57,11 @@ export function useFavorites(): UseFavoritesResult {
 
   // Mutation optimiste pour les utilisateurs serveur
   const { mutate: toggleMutation } = useMutation({
-    mutationFn: ({ id, action }: { id: number; action: 'add' | 'remove' }) =>
-      action === 'remove'
-        ? unwrap(apiClient.removeFavorite(id))
-        : unwrap(apiClient.addFavorite(id)),
+    mutationFn: async ({ id, action }: { id: number; action: 'add' | 'remove' }) => {
+      const res =
+        action === 'remove' ? await apiClient.removeFavorite(id) : await apiClient.addFavorite(id)
+      if (res.status !== 'ok') throw new Error(res.errors?.[0] ?? 'Erreur favoris.')
+    },
     onMutate: async ({ id, action }) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.favorites })
       const snapshot = queryClient.getQueryData<FavoritesCache>(queryKeys.favorites)
