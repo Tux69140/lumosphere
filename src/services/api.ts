@@ -247,6 +247,30 @@ export const apiClient = {
   addFavorite: (citationId: number) => post<void>(`favorites/${citationId}`, {}),
   removeFavorite: (citationId: number) => del<void>(`favorites/${citationId}`),
 
+  // Lots (atelier)
+  findLots: (params?: Record<string, string>) =>
+    get<{ items: unknown[]; next_cursor: string | null }>(`lots${buildQuery(params)}`),
+  getLotCounts: () => get<Record<string, number>>('lots/counts'),
+  getLot: (id: number) => get<unknown>(`lots/${id}`),
+  getLotJournal: (id: number) => get<unknown[]>(`lots/${id}/journal`),
+  updateLotStatus: (id: number, status: string, message?: string) =>
+    put<void>(`lots/${id}/status`, { status, message }),
+  assignLot: (id: number, userId: number | null) =>
+    put<void>(`lots/${id}/assign`, { user_id: userId }),
+  integrateLot: (id: number) =>
+    post<{ integrated: number; duplicates: number }>(`lots/${id}/integrate`, {}),
+  checkLotConformity: (id: number) =>
+    post<{ conforme: boolean; missing: string[]; documents_ok: number; documents_total: number }>(
+      `lots/${id}/conformity`,
+      {},
+    ),
+  updateLotDocument: (lotId: number, data: Record<string, unknown>) =>
+    put<void>(`lots/${lotId}/document`, data),
+  setLotDocumentKeywords: (lotId: number, keywordIds: number[], source?: string) =>
+    put<void>(`lots/${lotId}/document-keywords`, { keyword_ids: keywordIds, source }),
+  deleteLotDocument: (lotId: number, docId: number) =>
+    delWithBody<void>(`lots/${lotId}/document`, { document_id: docId }),
+
   // AI
   aiSuggestKeywords: (citationId: number, contenu: string) =>
     post<{ keywords: string[] }>('ai/suggest-keywords', { citation_id: citationId, contenu }),
