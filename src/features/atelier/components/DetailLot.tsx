@@ -20,6 +20,7 @@ import {
   useIntegrateLot,
   useUpdateLotDocument,
   useDeleteLotDocument,
+  useSetDocumentKeywords,
 } from '../useLots'
 import { useThemes, useOeuvres } from '@/services/referenceQueries'
 import { apiClient } from '@/services/api'
@@ -54,6 +55,7 @@ function MetadataPanel({
   oeuvres,
   onUpdate,
   onKeywordsAccepted,
+  onSetKeywords,
 }: {
   doc: LotDocument
   lot: LotDetail
@@ -61,6 +63,7 @@ function MetadataPanel({
   oeuvres: Array<{ id: number; nom: string }>
   onUpdate: (data: Record<string, unknown>) => void
   onKeywordsAccepted: (keywordIds: number[]) => void
+  onSetKeywords: (vars: { lotId: number; keywordIds: number[]; source?: string }) => void
 }) {
   const [aiKwLoading, setAiKwLoading] = useState(false)
   const [aiThemeLoading, setAiThemeLoading] = useState(false)
@@ -119,7 +122,7 @@ function MetadataPanel({
 
   function handleRemoveKeyword(kwId: number) {
     const remaining = doc.keywords.filter((k) => k.keyword_id !== kwId).map((k) => k.keyword_id)
-    apiClient.setLotDocumentKeywords(lot.id, remaining, 'manual')
+    onSetKeywords({ lotId: lot.id, keywordIds: remaining, source: 'manual' })
   }
 
   return (
@@ -252,6 +255,7 @@ function DocumentCard({
   oeuvres,
   onUpdate,
   onKeywordsAccepted,
+  onSetKeywords,
   onMergeUp,
   saving,
 }: {
@@ -262,7 +266,8 @@ function DocumentCard({
   oeuvres: Array<{ id: number; nom: string }>
   onUpdate: (data: Record<string, unknown>) => void
   onKeywordsAccepted: (keywordIds: number[]) => void
-  onMergeUp: () => void
+  onSetKeywords: (vars: { lotId: number; keywordIds: number[]; source?: string }) => void
+  onMergeUp: (currentEditText: string) => void
   saving: boolean
 }) {
   const initialText = doc.contenu_revise || doc.contenu_brut || ''
@@ -323,7 +328,7 @@ function DocumentCard({
             {index > 0 && (
               <button
                 type="button"
-                onClick={onMergeUp}
+                onClick={() => onMergeUp(editText)}
                 className="flex items-center gap-1 rounded-md border border-(--color-border) px-2 py-1 text-xs font-medium text-(--color-text) transition-colors hover:bg-(--color-bg-hover)"
                 title="Fusionner avec le message précédent"
               >
@@ -365,6 +370,7 @@ function DocumentCard({
             oeuvres={oeuvres}
             onUpdate={onUpdate}
             onKeywordsAccepted={onKeywordsAccepted}
+            onSetKeywords={onSetKeywords}
           />
         </div>
       </div>
@@ -380,6 +386,7 @@ export function DetailLot({ lot, onKeywordsAccepted }: Props) {
   const integrateLot = useIntegrateLot()
   const updateDocument = useUpdateLotDocument()
   const deleteDocument = useDeleteLotDocument()
+  const setKeywords = useSetDocumentKeywords()
   const [conformity, setConformity] = useState<ConformityResult | null>(null)
   const [lotOeuvreId, setLotOeuvreId] = useState<number | null>(null)
   const { data: themes } = useThemes()
@@ -407,10 +414,13 @@ export function DetailLot({ lot, onKeywordsAccepted }: Props) {
     }
   }
 
-  async function handleMergeUp(currentDoc: LotDocument, prevDoc: LotDocument) {
-    const currentText = currentDoc.contenu_revise || currentDoc.contenu_brut || ''
+  async function handleMergeUp(
+    currentDoc: LotDocument,
+    prevDoc: LotDocument,
+    currentEditText: string,
+  ) {
     const prevText = prevDoc.contenu_revise || prevDoc.contenu_brut || ''
-    const merged = prevText + '\n\n' + currentText
+    const merged = prevText + '\n\n' + currentEditText
 
     await updateDocument.mutateAsync({
       lotId: lot.id,
@@ -421,7 +431,7 @@ export function DetailLot({ lot, onKeywordsAccepted }: Props) {
     const currentKwIds = currentDoc.keywords.map((k) => k.keyword_id)
     const unionIds = [...new Set([...prevKwIds, ...currentKwIds])]
     if (unionIds.length > prevKwIds.length) {
-      await apiClient.setLotDocumentKeywords(lot.id, unionIds, 'manual')
+      setKeywords.mutate({ lotId: lot.id, keywordIds: unionIds, source: 'manual' })
     }
 
     deleteDocument.mutate({ lotId: lot.id, docId: currentDoc.id })
@@ -555,7 +565,7 @@ export function DetailLot({ lot, onKeywordsAccepted }: Props) {
         )}
         {lot.documents.map((doc, i) => (
           <DocumentCard
-            key={doc.id}
+            key={`${doc.id}-${doc.contenu_revise?.length ?? 0}-${doc.updated_at}`}
             doc={doc}
             lot={lot}
             index={i}
@@ -563,7 +573,10 @@ export function DetailLot({ lot, onKeywordsAccepted }: Props) {
             oeuvres={(oeuvres as Array<{ id: number; nom: string }>) ?? []}
             onUpdate={handleUpdate}
             onKeywordsAccepted={(kwIds) => onKeywordsAccepted(doc.id, kwIds)}
-            onMergeUp={() => handleMergeUp(doc, lot.documents[i - 1]!)}
+            onSetKeywords={setKeywords.mutate}
+            onMergeUp={(currentEditText) =>
+              handleMergeUp(doc, lot.documents[i - 1]!, currentEditText)
+            }
             saving={updateDocument.isPending}
           />
         ))}
