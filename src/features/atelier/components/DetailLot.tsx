@@ -324,13 +324,17 @@ function DocumentCard({
               {doc.selected ? 'Inclus' : 'Exclu'}
             </button>
 
-            <span className="text-sm font-medium text-(--color-text)">
-              {doc.source_item_id ? `#${doc.source_item_id}` : `Doc ${doc.id}`}
+            <span className="text-sm font-medium text-(--color-text)" title={doc.titre}>
+              {doc.source_item_id
+                ? `#${doc.source_item_id}`
+                : doc.titre
+                  ? doc.titre.slice(0, 50)
+                  : `Message ${index + 1}`}
             </span>
 
             <input
               type="date"
-              value={toDateInput(doc.date_publication)}
+              value={toDateInput(doc.date_publication || doc.created_at)}
               onChange={(e) => handleDateChange(e.target.value)}
               className="rounded-md border border-(--color-border) bg-(--color-bg-card) px-2 py-1 text-xs text-(--color-text) focus:border-(--color-accent) focus:outline-none"
             />
@@ -398,7 +402,8 @@ export function DetailLot({ lot, onKeywordsAccepted }: Props) {
   const deleteDocument = useDeleteLotDocument()
   const setKeywords = useSetDocumentKeywords()
   const [conformity, setConformity] = useState<ConformityResult | null>(null)
-  const [lotOeuvreId, setLotOeuvreId] = useState<number | null>(null)
+  const firstDocOeuvre = lot.documents.find((d) => d.oeuvre_id !== null)?.oeuvre_id ?? null
+  const [lotOeuvreId, setLotOeuvreId] = useState<number | null>(firstDocOeuvre)
   const { data: themes } = useThemes()
   const { data: oeuvres } = useOeuvres()
 

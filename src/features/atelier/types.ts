@@ -15,7 +15,7 @@ export type KeywordSource = 'manual' | 'ai_suggested' | 'ai_accepted'
 export type LotDocument = {
   id: number
   lot_id: number
-  filename: string
+  titre: string
   type_document: DocumentType
   status: LotStatus
   source_item_id: string | null

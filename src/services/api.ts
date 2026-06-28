@@ -178,6 +178,26 @@ export const apiClient = {
     get<{ id: number; label: string; source_type: string }[]>('collect_sources'),
   linkOeuvreSource: (oeuvreId: number, sourceId: number | null) =>
     post<void>(`oeuvres/${oeuvreId}/source`, { source_id: sourceId }),
+  // Canaux Telegram (vue admin « Sources »)
+  findTelegramChannels: () =>
+    get<
+      {
+        id: number
+        label: string
+        source_type: string
+        chat_id: number | null
+        enabled: boolean
+        run_every_hours: number
+        oeuvre_id: number | null
+        last_run_at: string | null
+        last_error: string | null
+      }[]
+    >('collect_sources?type=telegram'),
+  getCollectSource: (id: number) => get<unknown>(`collect_sources/${id}`),
+  createCollectSource: (data: unknown) => post<{ id: number }>('collect_sources', data),
+  updateCollectSource: (id: number, data: unknown) =>
+    put<{ id: number }>(`collect_sources/${id}`, data),
+  deleteCollectSource: (id: number) => del<void>(`collect_sources/${id}`),
 
   // Oeuvres
   findOeuvres: (params?: Record<string, string>) => get<unknown[]>(`oeuvres${buildQuery(params)}`),
