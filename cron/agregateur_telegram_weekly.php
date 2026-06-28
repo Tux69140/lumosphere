@@ -9,6 +9,7 @@ declare(strict_types=1);
  */
 
 require_once __DIR__ . '/bootstrap_cron.php';
+require_once __DIR__ . '/lib/telegram_pipeline.php';
 
 $forceWeekly = getenv('FORCE_WEEKLY') === '1';
 
@@ -49,157 +50,20 @@ function epuriel_previous_week_dates(DateTimeInterface $now): array
 }
 
 /**
- * @return list<int>
+ * @return list<string>
  */
 function generate_weekly_telegram_lots(PDO $pdo, string $dateDebut, string $dateFin): array
 {
-    $stmt = $pdo->prepare(
+    $sources = $pdo->query(
         "SELECT * FROM collect_sources
-         WHERE source_type IN ('telegram', 'Telegram') AND enabled = 1
-         ORDER BY id ASC"
-    );
-    $stmt->execute();
-    $sources = $stmt->fetchAll();
-
-    $createdLots = [];
+         WHERE source_type IN ('telegram','Telegram') AND enabled = 1 ORDER BY id ASC"
+    )->fetchAll();
+    $created = [];
     foreach ($sources as $source) {
-        $lotId = generate_lot_for_source($pdo, $source, $dateDebut, $dateFin);
-        if ($lotId !== null) {
-            $createdLots[] = $lotId;
+        $res = tg_aggregate_source($pdo, $source, 'live', $dateDebut, $dateFin);
+        if ($res['lot_id'] !== null) {
+            $created[] = $res['lot_id'];
         }
     }
-
-    return $createdLots;
-}
-
-/**
- * Crée un lot + 1 document par message depuis le tampon.
- * @return int|null ID du lot créé, ou null si aucun message.
- */
-function generate_lot_for_source(PDO $pdo, array $source, string $dateDebut, string $dateFin): ?int
-{
-    $stmt = $pdo->prepare(
-        "SELECT * FROM telegram_updates_buffer
-         WHERE collect_source_id = ?
-           AND buffer_status = 'buffered'
-           AND DATE(message_date) BETWEEN ? AND ?
-         ORDER BY message_date ASC, message_id ASC"
-    );
-    $stmt->execute([(int) $source['id'], $dateDebut, $dateFin]);
-    $bufferedRows = $stmt->fetchAll();
-    if (count($bufferedRows) === 0) {
-        return null;
-    }
-
-    $messages = [];
-    $bufferIds = [];
-    foreach ($bufferedRows as $row) {
-        $payload = json_decode((string) $row['payload_json'], true);
-        if (is_array($payload) && !empty(trim((string) ($payload['text'] ?? '')))) {
-            $messages[] = $payload;
-        }
-        $bufferIds[] = (int) $row['id'];
-    }
-
-    if (count($messages) === 0) {
-        return null;
-    }
-
-    $configJson = json_decode((string) ($source['config_json'] ?? '{}'), true);
-    $canal = trim((string) ($configJson['canal'] ?? $messages[0]['chat_username'] ?? ''));
-    $oeuvreId = isset($configJson['oeuvre_id']) ? (int) $configJson['oeuvre_id'] : null;
-    $lotId = generate_lot_id($pdo, $dateDebut);
-    $title = 'Telegram Lulumineuse ' . $dateDebut . ' - ' . $dateFin;
-
-    $pdo->beginTransaction();
-    try {
-        $stmt = $pdo->prepare(
-            'INSERT INTO lots (lot_id, source_type, titre_lot, status, date_source_debut, date_source_fin)
-             VALUES (?, ?, ?, ?, ?, ?)'
-        );
-        $stmt->execute([$lotId, 'telegram', $title, 'en_attente', $dateDebut, $dateFin]);
-        $lotPk = (int) $pdo->lastInsertId();
-
-        $docStmt = $pdo->prepare(
-            'INSERT INTO documents (lot_id, titre, type_document, status, source_item_id, contenu_brut, hash_contenu, selected, date_publication, oeuvre_id)
-             VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?)'
-        );
-
-        $docCount = 0;
-        foreach ($messages as $msg) {
-            $text = trim((string) ($msg['text'] ?? ''));
-            if ($text === '') {
-                continue;
-            }
-            $msgId = (string) ($msg['message_id'] ?? '');
-            $msgDate = isset($msg['date']) ? substr((string) $msg['date'], 0, 10) : null;
-            $hash = hash('sha256', $text);
-            $docTitle = mb_substr($text, 0, 80, 'UTF-8');
-
-            $docStmt->execute([
-                $lotId,
-                $docTitle,
-                'telegram',
-                'en_attente',
-                $msgId,
-                $text,
-                $hash,
-                $msgDate,
-                $oeuvreId,
-            ]);
-            $docCount++;
-        }
-
-        // Marquer les lignes du tampon
-        if (!empty($bufferIds)) {
-            $placeholders = implode(',', array_fill(0, count($bufferIds), '?'));
-            $stmt = $pdo->prepare(
-                "UPDATE telegram_updates_buffer SET buffer_status = 'lot_created', lot_id = ? WHERE id IN ({$placeholders})"
-            );
-            $stmt->execute([$lotId, ...$bufferIds]);
-        }
-
-        // Journal
-        $pdo->prepare(
-            "INSERT INTO journal_events (lot_id, action, old_status, new_status, actor, message)
-             VALUES (?, 'creation_lot_telegram', NULL, 'en_attente', 'system', ?)"
-        )->execute([$lotId, "Lot Telegram $docCount message(s) cree depuis le tampon bot"]);
-
-        // Job pour le traitement (nettoyage texte)
-        $jobId = 'job_' . uniqid('', true);
-        $pdo->prepare(
-            "INSERT INTO server_jobs (job_id, lot_id, job_type, status, priority, payload_json)
-             VALUES (?, ?, 'process_telegram_v2', 'queued', 6, ?)"
-        )->execute([
-            $jobId,
-            $lotId,
-            json_encode([
-                'canal' => $canal,
-                'date_debut' => $dateDebut,
-                'date_fin' => $dateFin,
-            ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
-        ]);
-
-        $pdo->commit();
-        echo "Lot $lotId cree: $docCount document(s), canal=$canal\n";
-        return $lotPk;
-    } catch (Throwable $e) {
-        $pdo->rollBack();
-        throw $e;
-    }
-}
-
-function generate_lot_id(PDO $pdo, string $date): string
-{
-    $prefix = 'telegram_' . str_replace('-', '', $date);
-    $stmt = $pdo->prepare("SELECT lot_id FROM lots WHERE lot_id LIKE ? ORDER BY lot_id DESC LIMIT 1");
-    $stmt->execute([$prefix . '%']);
-    $last = $stmt->fetchColumn();
-    if ($last) {
-        $parts = explode('_', $last);
-        $seq = (int) end($parts) + 1;
-    } else {
-        $seq = 1;
-    }
-    return $prefix . '_' . str_pad((string) $seq, 3, '0', STR_PAD_LEFT);
+    return $created;
 }
