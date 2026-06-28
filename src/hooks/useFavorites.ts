@@ -82,7 +82,8 @@ export function useFavorites(): UseFavoritesResult {
       toast.error('Impossible de mettre à jour le favori.')
     },
     onSettled: () => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.favorites })
+      void queryClient.resetQueries({ queryKey: queryKeys.favorites })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.citationsAll })
     },
   })
 

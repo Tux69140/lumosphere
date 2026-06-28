@@ -27,7 +27,8 @@ export function AccueilPage() {
     favoritesOnly,
   } = useCorpusSearch()
   const { favoriteIds, toggle: toggleFavorite } = useFavorites()
-  const items = favoritesOnly && !user ? rawItems.filter((c) => favoriteIds.has(c.id)) : rawItems
+  const isClientFiltered = favoritesOnly && !user
+  const items = isClientFiltered ? rawItems.filter((c) => favoriteIds.has(c.id)) : rawItems
   const sentinelRef = useRef<HTMLDivElement | null>(null)
   const parentRef = useRef<HTMLDivElement>(null)
   const [editingId, setEditingId] = useState<number | null>(null)
@@ -156,7 +157,7 @@ export function AccueilPage() {
         </>
       )}
 
-      {hasMore && (
+      {hasMore && !isClientFiltered && (
         <div ref={sentinelRef} className="mt-4">
           {loadingMore && <CitationCardSkeleton />}
         </div>
