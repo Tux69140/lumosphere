@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { apiClient } from '@/services/api'
@@ -47,13 +47,16 @@ export function useFavorites(): UseFavoritesResult {
     queryKey: queryKeys.favorites,
     queryFn: () => unwrap(apiClient.findFavorites()),
     enabled: isServerUser,
+    structuralSharing: false,
   })
 
-  const serverFavoriteIds = useMemo(() => {
-    if (!query.data) return new Set<number>()
-    const items = query.data.items as FavoriteItem[]
-    return new Set(items.map((item) => item.citation_id ?? item.id ?? 0).filter((id) => id > 0))
-  }, [query.data])
+  const serverFavoriteIds = query.data
+    ? new Set(
+        (query.data.items as FavoriteItem[])
+          .map((item) => item.citation_id ?? item.id ?? 0)
+          .filter((id) => id > 0),
+      )
+    : new Set<number>()
 
   // Mutation optimiste pour les utilisateurs serveur
   const { mutate: toggleMutation } = useMutation({
