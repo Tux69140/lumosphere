@@ -23,7 +23,12 @@ export function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
-  if (user) return <Navigate to="/" replace />
+  if (user) {
+    const from = (state as { from?: { pathname?: string; search?: string; hash?: string } } | null)
+      ?.from
+    const returnTo = from ? `${from.pathname ?? '/'}${from.search ?? ''}${from.hash ?? ''}` : '/'
+    return <Navigate to={returnTo} replace />
+  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
