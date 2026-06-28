@@ -2,6 +2,7 @@ import { renderHook, act, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { MemoryRouter } from 'react-router'
 import type { ReactNode } from 'react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AuthProvider } from '@/components/AuthProvider'
 import { useAuth } from '@/hooks/useAuth'
 
@@ -12,11 +13,16 @@ vi.mock('sonner', () => ({ toast: { error: vi.fn() } }))
 
 import { apiClient } from '@/services/api'
 
-const wrapper = ({ children }: { children: ReactNode }) => (
-  <MemoryRouter>
-    <AuthProvider>{children}</AuthProvider>
-  </MemoryRouter>
-)
+const wrapper = ({ children }: { children: ReactNode }) => {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  return (
+    <QueryClientProvider client={qc}>
+      <MemoryRouter>
+        <AuthProvider>{children}</AuthProvider>
+      </MemoryRouter>
+    </QueryClientProvider>
+  )
+}
 
 const ADMIN = {
   id: 1,

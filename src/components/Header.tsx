@@ -14,7 +14,8 @@ export function Header() {
   const { favoriteIds } = useFavorites()
   const hasFavorites = favoriteIds.size > 0
   const navigate = useNavigate()
-  const { pathname } = useLocation()
+  const location = useLocation()
+  const { pathname } = location
   const isAdmin = user !== null && user.role_id === ROLE_ADMIN
 
   // Bouton « Filtres » mobile : seulement sur la vue corpus (contexte présent, hors admin).
@@ -73,6 +74,7 @@ export function Header() {
         ) : (
           <Link
             to="/login"
+            state={{ from: { pathname, search: location.search, hash: location.hash } }}
             onClick={() => setMenuOpen(false)}
             className="flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium text-(--color-link-header) hover:bg-(--color-bg-button) transition-colors"
           >

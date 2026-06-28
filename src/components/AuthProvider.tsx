@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router'
+import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { apiClient } from '@/services/api'
 import { AuthContext, type AuthUser } from '@/hooks/useAuth'
@@ -8,6 +9,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null)
   const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
 
   useEffect(() => {
     apiClient
@@ -27,24 +29,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })
   }, [navigate])
 
-  const login = useCallback(async (email: string, password: string, remember: boolean) => {
-    try {
-      const res = await apiClient.login(email, password, remember)
-      if (res.status !== 'ok') {
-        return { ok: false, error: res.errors?.[0] ?? 'Connexion impossible.' }
+  const login = useCallback(
+    async (email: string, password: string, remember: boolean) => {
+      try {
+        const res = await apiClient.login(email, password, remember)
+        if (res.status !== 'ok') {
+          return { ok: false, error: res.errors?.[0] ?? 'Connexion impossible.' }
+        }
+        const me = await apiClient.getMe()
+        if (me.status === 'ok' && me.data) {
+          setUser(me.data as AuthUser)
+          void queryClient.invalidateQueries()
+        }
+        return { ok: true }
+      } catch {
+        return { ok: false, error: 'Impossible de contacter le serveur.' }
       }
-      const me = await apiClient.getMe()
-      if (me.status === 'ok' && me.data) setUser(me.data as AuthUser)
-      return { ok: true }
-    } catch {
-      return { ok: false, error: 'Impossible de contacter le serveur.' }
-    }
-  }, [])
+    },
+    [queryClient],
+  )
 
   const logout = useCallback(async () => {
     await apiClient.logout().catch(() => {})
     setUser(null)
-  }, [])
+    queryClient.clear()
+  }, [queryClient])
 
   return (
     <AuthContext.Provider value={{ user, loading, login, logout }}>{children}</AuthContext.Provider>
