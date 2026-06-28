@@ -226,6 +226,62 @@ function tg_aggregate_source(PDO $pdo, array $source, string $origin, ?string $d
     }
 }
 
+/**
+ * Réapprovisionne les lots historiques d'une source jusqu'à $target lots "en_attente".
+ * @return array{created:int,pending_weeks:int}
+ */
+function tg_topup_historical(PDO $pdo, array $source, int $target = 8): array
+{
+    if ((int) ($source['history_import_enabled'] ?? 0) !== 1) {
+        return ['created' => 0, 'pending_weeks' => 0];
+    }
+    $sid = (int) $source['id'];
+    $created = 0;
+
+    $countPending = static function () use ($pdo): int {
+        return (int) $pdo->query(
+            "SELECT COUNT(*) FROM lots WHERE lot_id LIKE 'telegram_hist_%' AND status = 'en_attente'"
+        )->fetchColumn();
+    };
+
+    while ($countPending() < $target) {
+        // semaine la plus ancienne encore bufferisée
+        $stmt = $pdo->prepare(
+            "SELECT payload_json FROM telegram_updates_buffer
+             WHERE collect_source_id = ? AND origin = 'historique' AND buffer_status = 'buffered'
+             ORDER BY message_date ASC, message_id ASC"
+        );
+        $stmt->execute([$sid]);
+        $rows = $stmt->fetchAll();
+        if (count($rows) === 0) {
+            break; // stock épuisé
+        }
+        $messages = [];
+        foreach ($rows as $r) {
+            $p = json_decode((string) $r['payload_json'], true);
+            if (is_array($p)) {
+                $messages[] = $p;
+            }
+        }
+        $weeks = tg_slice_messages_by_week($messages);
+        if (count($weeks) === 0) {
+            break;
+        }
+        $oldest = $weeks[0];
+        $res = tg_aggregate_source($pdo, $source, 'historique', $oldest['date_debut'], $oldest['date_fin']);
+        if ($res['lot_id'] === null) {
+            break; // sécurité anti-boucle
+        }
+        $created++;
+    }
+
+    $remainingCount = (int) $pdo->query(
+        "SELECT COUNT(*) FROM telegram_updates_buffer WHERE collect_source_id = $sid AND origin = 'historique' AND buffer_status = 'buffered'"
+    )->fetchColumn();
+
+    return ['created' => $created, 'pending_weeks' => $remainingCount > 0 ? 1 : 0];
+}
+
 // ---------------------------------------------------------------------------
 // Collecte live : helpers déplacés depuis collect_telegram_bot.php (Task 5)
 // ---------------------------------------------------------------------------

@@ -54,6 +54,35 @@ class TelegramPipelineTest extends TestCase
         $this->assertSame('tg_source_42', tg_source_lock_name(42));
     }
 
+    public function testTopupCreatesUpToTargetFromHistorique(): void
+    {
+        $pdo = \Tests\Dal\TestHelper::getTestPdo();
+        $pdo->beginTransaction();
+        try {
+            $pdo->prepare("INSERT INTO collect_sources (source_type,nom,enabled,history_import_enabled)
+                           VALUES ('telegram','H',1,1)")->execute();
+            $sid = (int) $pdo->lastInsertId();
+            $source = $pdo->query("SELECT * FROM collect_sources WHERE id=$sid")->fetch();
+
+            // 3 semaines distinctes de messages historiques
+            $ins = $pdo->prepare("INSERT INTO telegram_updates_buffer
+                (collect_source_id,origin,update_id,message_id,chat_id,message_date,buffer_status,payload_json)
+                VALUES (?,?,?,?,?,?, 'buffered', ?)");
+            $dates = ['2026-01-05','2026-01-12','2026-01-19']; // 3 lundis = 3 semaines
+            foreach ($dates as $i => $d) {
+                $ins->execute([$sid,'historique',$i+1,200+$i,-100,"$d 10:00:00",
+                    json_encode(['message_id'=>200+$i,'date'=>"{$d}T10:00:00",'text'=>"m$i"])]);
+            }
+
+            $res = tg_topup_historical($pdo, $source, 2); // cible 2
+            $this->assertSame(2, $res['created']); // 2 lots créés, pas 3
+            $pending = $pdo->query("SELECT COUNT(*) FROM lots WHERE lot_id LIKE 'telegram_hist_%' AND status='en_attente'")->fetchColumn();
+            $this->assertSame(2, (int) $pending);
+        } finally {
+            $pdo->rollBack();
+        }
+    }
+
     public function testAggregateLiveCreatesOneLotAndMarksBuffer(): void
     {
         $pdo = \Tests\Dal\TestHelper::getTestPdo();
