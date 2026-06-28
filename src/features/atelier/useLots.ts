@@ -89,7 +89,7 @@ export function useCheckConformity() {
   return useMutation({
     mutationFn: async (id: number) => {
       const res = await apiClient.checkLotConformity(id)
-      if (res.status === 'error') throw new Error(res.errors[0])
+      if (res.status === 'error') throw new Error(res.errors?.[0] ?? 'Erreur de conformité')
       return res.data as ConformityResult
     },
   })
@@ -111,13 +111,15 @@ export function useSetDocumentKeywords() {
   return useMutation({
     mutationFn: ({
       lotId,
+      docId,
       keywordIds,
       source,
     }: {
       lotId: number
+      docId: number
       keywordIds: number[]
       source?: string
-    }) => apiClient.setLotDocumentKeywords(lotId, keywordIds, source),
+    }) => apiClient.setLotDocumentKeywords(lotId, docId, keywordIds, source),
     onSuccess: (_data, vars) => {
       qc.invalidateQueries({ queryKey: queryKeys.lotDetail(vars.lotId) })
     },

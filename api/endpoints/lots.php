@@ -57,17 +57,17 @@ function endpoint_lots(PDO $pdo, array $ctx, string $method, ?int $id, ?array $b
 
         // PUT /api/lots/documents/{id} — modifier un document du lot
         $method === 'PUT' && $id !== null && $action === 'document' =>
-            dal_update_lot_document($pdo, $ctx, $id, $body ?? []),
+            dal_update_lot_document($pdo, $ctx, (int) ($body['document_id'] ?? 0), $body ?? []),
 
         // PUT /api/lots/documents/{id}/keywords — mots-clés d'un document
         $method === 'PUT' && $id !== null && $action === 'document-keywords' =>
             dal_set_lot_document_keywords(
-                $pdo, $ctx, $id, $body['keyword_ids'] ?? [], $body['source'] ?? 'manual'
+                $pdo, $ctx, (int) ($body['document_id'] ?? 0), $body['keyword_ids'] ?? [], $body['source'] ?? 'manual'
             ),
 
         // DELETE /api/lots/{id}/document — supprimer un document du lot
         $method === 'DELETE' && $id !== null && $action === 'document' =>
-            dal_delete_lot_document($pdo, $ctx, (int) ($body['document_id'] ?? 0)),
+            dal_delete_lot_document($pdo, $ctx, $id, (int) ($body['document_id'] ?? 0)),
 
         default => dal_error('Méthode non supportée.'),
     };

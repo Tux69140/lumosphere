@@ -63,7 +63,12 @@ function MetadataPanel({
   oeuvres: Array<{ id: number; nom: string }>
   onUpdate: (data: Record<string, unknown>) => void
   onKeywordsAccepted: (keywordIds: number[]) => void
-  onSetKeywords: (vars: { lotId: number; keywordIds: number[]; source?: string }) => void
+  onSetKeywords: (vars: {
+    lotId: number
+    docId: number
+    keywordIds: number[]
+    source?: string
+  }) => void
 }) {
   const [aiKwLoading, setAiKwLoading] = useState(false)
   const [aiThemeLoading, setAiThemeLoading] = useState(false)
@@ -122,7 +127,7 @@ function MetadataPanel({
 
   function handleRemoveKeyword(kwId: number) {
     const remaining = doc.keywords.filter((k) => k.keyword_id !== kwId).map((k) => k.keyword_id)
-    onSetKeywords({ lotId: lot.id, keywordIds: remaining, source: 'manual' })
+    onSetKeywords({ lotId: lot.id, docId: doc.id, keywordIds: remaining, source: 'manual' })
   }
 
   return (
@@ -266,7 +271,12 @@ function DocumentCard({
   oeuvres: Array<{ id: number; nom: string }>
   onUpdate: (data: Record<string, unknown>) => void
   onKeywordsAccepted: (keywordIds: number[]) => void
-  onSetKeywords: (vars: { lotId: number; keywordIds: number[]; source?: string }) => void
+  onSetKeywords: (vars: {
+    lotId: number
+    docId: number
+    keywordIds: number[]
+    source?: string
+  }) => void
   onMergeUp: (currentEditText: string) => void
   saving: boolean
 }) {
@@ -431,7 +441,12 @@ export function DetailLot({ lot, onKeywordsAccepted }: Props) {
     const currentKwIds = currentDoc.keywords.map((k) => k.keyword_id)
     const unionIds = [...new Set([...prevKwIds, ...currentKwIds])]
     if (unionIds.length > prevKwIds.length) {
-      setKeywords.mutate({ lotId: lot.id, keywordIds: unionIds, source: 'manual' })
+      setKeywords.mutate({
+        lotId: lot.id,
+        docId: prevDoc.id,
+        keywordIds: unionIds,
+        source: 'manual',
+      })
     }
 
     deleteDocument.mutate({ lotId: lot.id, docId: currentDoc.id })

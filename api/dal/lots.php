@@ -59,13 +59,13 @@ function dal_find_lots(PDO $pdo, array $ctx, array $filters = [], ?string $curso
     $where .= dal_keyset_clause('l.created_at', 'l.id', $decoded_cursor, 'DESC', $params);
 
     $limit = $page_size + 1;
-    $sql = "SELECT l.id, l.lot_id, l.source_type, l.status, l.titre_lot,
+    $sql = "SELECT l.id, l.lot_id, l.source_type, l.status, l.titre_lot AS nom,
                    l.assigned_to, l.created_by, l.description, l.error_message,
                    l.date_source_debut, l.date_source_fin,
                    l.created_at, l.updated_at, l.integrated_at,
                    u_assign.email AS assigned_email,
                    u_create.email AS created_email,
-                   (SELECT COUNT(*) FROM documents d WHERE d.lot_id = l.lot_id) AS doc_count
+                   (SELECT COUNT(*) FROM documents d WHERE d.lot_id = l.lot_id) AS document_count
             FROM lots l
             LEFT JOIN users u_assign ON l.assigned_to = u_assign.id
             LEFT JOIN users u_create ON l.created_by = u_create.id
@@ -97,7 +97,7 @@ function dal_get_lot(PDO $pdo, array $ctx, int $id): array
     dal_require_permission($ctx, 'atelier.access');
 
     $stmt = $pdo->prepare(
-        "SELECT l.*, u_assign.email AS assigned_email, u_create.email AS created_email
+        "SELECT l.*, l.titre_lot AS nom, u_assign.email AS assigned_email, u_create.email AS created_email
          FROM lots l
          LEFT JOIN users u_assign ON l.assigned_to = u_assign.id
          LEFT JOIN users u_create ON l.created_by = u_create.id
@@ -308,15 +308,17 @@ function dal_set_lot_document_keywords(PDO $pdo, array $ctx, int $doc_id, array 
     return dal_ok();
 }
 
-function dal_delete_lot_document(PDO $pdo, array $ctx, int $doc_id): array
+function dal_delete_lot_document(PDO $pdo, array $ctx, int $lot_id, int $doc_id): array
 {
     dal_require_permission($ctx, 'atelier.lots');
 
-    $stmt = $pdo->prepare('SELECT id, lot_id FROM documents WHERE id = :id');
-    $stmt->execute(['id' => $doc_id]);
+    $stmt = $pdo->prepare(
+        'SELECT d.id FROM documents d JOIN lots l ON d.lot_id = l.lot_id WHERE d.id = :id AND l.id = :lot_id'
+    );
+    $stmt->execute(['id' => $doc_id, 'lot_id' => $lot_id]);
     $doc = $stmt->fetch();
     if (!$doc) {
-        return dal_error('Document introuvable.');
+        return dal_error('Document introuvable ou n\'appartient pas à ce lot.');
     }
 
     $pdo->beginTransaction();
@@ -389,9 +391,23 @@ function dal_check_lot_conformity(PDO $pdo, array $ctx, int $lot_id): array
     }
 
     if (!empty($errors)) {
-        return ['status' => 'error', 'data' => null, 'errors' => $errors];
+        $missing = [];
+        foreach ($errors as $e) {
+            $missing[] = $e['titre'] . ' : ' . implode(', ', $e['errors']);
+        }
+        return dal_ok([
+            'conforme' => false,
+            'missing' => $missing,
+            'documents_ok' => count($docs) - count($errors),
+            'documents_total' => count($docs),
+        ]);
     }
-    return dal_ok(['document_count' => count($docs)]);
+    return dal_ok([
+        'conforme' => true,
+        'missing' => [],
+        'documents_ok' => count($docs),
+        'documents_total' => count($docs),
+    ]);
 }
 
 // ── Intégration corpus ───────────────────────────────────────────
@@ -494,8 +510,8 @@ function dal_integrate_lot(PDO $pdo, array $ctx, int $lot_id): array
         _dal_maybe_delete_lot_folder($pdo, $lot);
 
         return dal_ok([
-            'created' => $created,
-            'skipped_duplicates' => $skipped_dupes,
+            'integrated' => $created,
+            'duplicates' => $skipped_dupes,
             'lot_status' => 'integre',
         ]);
     } catch (\Throwable $e) {

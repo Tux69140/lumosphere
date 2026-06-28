@@ -266,8 +266,12 @@ export const apiClient = {
     ),
   updateLotDocument: (lotId: number, data: Record<string, unknown>) =>
     put<void>(`lots/${lotId}/document`, data),
-  setLotDocumentKeywords: (lotId: number, keywordIds: number[], source?: string) =>
-    put<void>(`lots/${lotId}/document-keywords`, { keyword_ids: keywordIds, source }),
+  setLotDocumentKeywords: (lotId: number, docId: number, keywordIds: number[], source?: string) =>
+    put<void>(`lots/${lotId}/document-keywords`, {
+      document_id: docId,
+      keyword_ids: keywordIds,
+      source,
+    }),
   deleteLotDocument: (lotId: number, docId: number) =>
     delWithBody<void>(`lots/${lotId}/document`, { document_id: docId }),
 
