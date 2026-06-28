@@ -30,4 +30,21 @@ class TelegramPipelineTest extends TestCase
         $this->assertSame('2026-W27', $weeks[1]['week_key']);
         $this->assertCount(1, $weeks[1]['messages']);
     }
+
+    public function testParseExportFlattensTextAndSkipsEmpty(): void
+    {
+        $json = ['messages' => [
+            ['id' => 10, 'type' => 'message', 'date' => '2026-06-22T10:00:00', 'text' => 'simple'],
+            ['id' => 11, 'type' => 'message', 'date' => '2026-06-22T11:00:00',
+             'text' => ['avant ', ['type' => 'hashtag', 'text' => '#foi'], ' après']],
+            ['id' => 12, 'type' => 'message', 'date' => '2026-06-22T12:00:00', 'text' => ''], // vide → ignoré
+            ['id' => 13, 'type' => 'service', 'date' => '2026-06-22T13:00:00', 'action' => 'pin'], // service → ignoré
+        ]];
+        $out = tg_parse_telegram_export($json);
+
+        $this->assertCount(2, $out);
+        $this->assertSame(10, $out[0]['message_id']);
+        $this->assertSame('simple', $out[0]['text']);
+        $this->assertSame('avant #foi après', $out[1]['text']);
+    }
 }
