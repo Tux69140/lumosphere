@@ -13,6 +13,7 @@ import {
   Factory,
 } from '@phosphor-icons/react'
 import { ThemeToggle } from './ThemeToggle'
+import { HelpButton } from './HelpButton'
 import { useAuth } from '@/hooks/useAuth'
 import { useFavorites } from '@/hooks/useFavorites'
 import { useCorpusSearchOptional } from '@/features/corpus/useCorpusSearch'
@@ -53,6 +54,7 @@ export function Header() {
     return (
       <>
         <ThemeToggle />
+        <HelpButton showLabel={showLabels} />
         {withDivider && <div className="h-6 w-px bg-(--color-border-header)" />}
         <Link
           to="/?favoris=1"

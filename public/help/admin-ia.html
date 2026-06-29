@@ -1,0 +1,21 @@
+<h2>Filtre « Masquer les inadaptés »</h2>
+<p>Un modèle est masqué si <strong>l'une</strong> de ces deux conditions est vraie :</p>
+<ol>
+  <li><strong>Il est déprécié</strong> — le fournisseur a officiellement retiré ou remplacé ce modèle. Date de dépréciation passée selon le catalogue communautaire LiteLLM.</li>
+  <li><strong>Il ne supporte pas JSON</strong> — le modèle ne sait pas garantir une réponse structurée en JSON. Les workers ont absolument besoin de JSON pour extraire thèmes, mots-clés, etc. Un modèle sans cette capacité est techniquement incompatible.</li>
+</ol>
+<p><em>Ce que le filtre n'utilise pas : le fait qu'un modèle soit activé ou non dans la colonne "Activé". C'est un choix éditorial, pas un critère d'incompatibilité technique.</em></p>
+
+<hr>
+
+<h2>Dépense estimée</h2>
+<p>Source des données : la table <code>ai_logs</code>, qui enregistre chaque appel IA réel effectué par l'application (suggestions de mots-clés, thèmes, etc.). Seuls les appels réussis sont comptés.</p>
+<p>Formule pour chaque modèle utilisé :</p>
+<pre>dépense = (tokens envoyés ÷ 1 000 000) × prix entrée
+        + (tokens reçus  ÷ 1 000 000) × prix sortie</pre>
+<p>Les prix (en $/million de tokens) viennent du registre des modèles (<code>ia_model_registry</code>), alimenté par le catalogue communautaire LiteLLM ou par vos retouches manuelles.</p>
+<p><strong>Deux limites à connaître :</strong></p>
+<ul>
+  <li>Si un modèle n'a pas de prix renseigné dans le registre, sa dépense n'est pas calculée (affiché —).</li>
+  <li>C'est une <em>estimation</em> basée sur les tokens journalisés côté Lumosphère, pas une facture fournisseur. Les frais réels peuvent légèrement différer selon les arrondis et conditions tarifaires de chaque fournisseur.</li>
+</ul>

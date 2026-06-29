@@ -174,7 +174,7 @@ But : **voir les résultats** le plus tôt possible et valider schéma + droits 
 - [x] Auteurs · œuvres (abréviation, auteur, URL, réf libraire, accès Abo3/Abo4) · **thèmes ≤ 2 niveaux** · mots-clés (normalisés, saisie qui propose l'existant) · états · emojis.
 
 ### III.3 — Consultation publique complète
-- [x] Bandeau supérieur collant (logo/titre, favoris, bibliothèque, contact, aide **contextuelle** (modale dont le contenu varie par page/section — clé par route), thème clair/sombre, configuration des rôles autorisés, connexion).
+- [x] Bandeau supérieur collant (logo/titre, favoris, bibliothèque, contact, /re **contextuelle** (modale dont le contenu varie par page/section — clé par route), thème clair/sombre, configuration des rôles autorisés, connexion).
 - [ ] **Panneau de filtres** (œuvres, auteurs, thèmes/sous-thèmes, mots-clés OU/ET + filtre alphabétique, dates, plein texte, réinitialisation), repliable sur mobile.
 - [x] **Zone de résultats** : compteur, critères actifs en **badges supprimables**, cartes, `Fin des résultats.`
 - [ ] **Favoris** web (local navigateur) + favoris reliés.
