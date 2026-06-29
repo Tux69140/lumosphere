@@ -1,16 +1,10 @@
-export type LotStatus =
-  | 'en_attente'
-  | 'en_cours'
-  | 'en_traitement'
-  | 'en_revision'
-  | 'a_reprendre'
-  | 'pret'
-  | 'integre'
-  | 'erreur'
+export type LotStatus = 'en_attente' | 'en_traitement' | 'integre' | 'erreur'
 
 export type DocumentType = 'pdf' | 'telegram' | 'youtube' | 'html'
 
-export type KeywordSource = 'manual' | 'ai_suggested' | 'ai_accepted'
+// 2 états seulement : 'ai_suggested' = proposé par l'IA (en attente),
+// 'manual' = validé/humain (saisi à la main OU suggestion acceptée).
+export type KeywordSource = 'manual' | 'ai_suggested'
 
 export type LotDocument = {
   id: number
@@ -25,6 +19,9 @@ export type LotDocument = {
   selected: boolean
   theme_id: number | null
   theme_nom: string | null
+  // Thème proposé par l'IA à l'import, en attente de validation humaine.
+  theme_suggested_id: number | null
+  theme_suggested_nom: string | null
   oeuvre_id: number | null
   oeuvre_nom: string | null
   citation_id: number | null
@@ -89,33 +86,21 @@ export type ConformityResult = {
 
 export const LOT_STATUS_LABELS: Record<LotStatus, string> = {
   en_attente: 'En attente',
-  en_cours: 'En cours',
   en_traitement: 'En traitement',
-  en_revision: 'En révision',
-  a_reprendre: 'À reprendre',
-  pret: 'Prêt',
   integre: 'Intégré',
   erreur: 'Erreur',
 }
 
 export const LOT_STATUS_COLORS: Record<LotStatus, string> = {
   en_attente: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
-  en_cours: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
   en_traitement: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300',
-  en_revision: 'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300',
-  a_reprendre: 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300',
-  pret: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
   integre: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300',
   erreur: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300',
 }
 
 export const LOT_VALID_TRANSITIONS: Record<LotStatus, LotStatus[]> = {
-  en_attente: ['en_cours'],
-  en_cours: ['en_traitement'],
-  en_traitement: ['en_revision', 'erreur'],
-  en_revision: ['pret', 'a_reprendre'],
-  a_reprendre: ['en_cours'],
-  pret: ['integre', 'en_revision'],
-  erreur: ['en_traitement'],
+  en_attente: ['en_traitement'],
+  en_traitement: [],
   integre: [],
+  erreur: ['en_traitement'],
 }

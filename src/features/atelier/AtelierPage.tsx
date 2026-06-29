@@ -6,16 +6,7 @@ import { ListeLots } from './components/ListeLots'
 import { LOT_STATUS_LABELS, LOT_STATUS_COLORS } from './types'
 import type { LotStatus } from './types'
 
-const ALL_STATUSES: LotStatus[] = [
-  'en_attente',
-  'en_cours',
-  'en_traitement',
-  'en_revision',
-  'a_reprendre',
-  'pret',
-  'integre',
-  'erreur',
-]
+const ALL_STATUSES: LotStatus[] = ['en_attente', 'en_traitement', 'integre', 'erreur']
 
 export function AtelierPage() {
   const [statusFilter, setStatusFilter] = useState<string>('')

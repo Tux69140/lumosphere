@@ -8,14 +8,10 @@ require_once __DIR__ . '/config.php';
 // ── Machine d'états ──────────────────────────────────────────────
 
 const LOT_VALID_TRANSITIONS = [
-    'en_attente'      => ['en_cours'],
-    'en_cours'        => ['en_traitement'],
-    'en_traitement'   => ['en_revision', 'erreur'],
-    'en_revision'     => ['pret', 'a_reprendre'],
-    'a_reprendre'     => ['en_cours'],
-    'pret'            => ['integre', 'en_revision'],
-    'erreur'          => ['en_traitement'],
-    'integre'         => [],
+    'en_attente'    => ['en_traitement'],
+    'en_traitement' => ['integre', 'erreur'],
+    'erreur'        => ['en_traitement'],
+    'integre'       => [],
 ];
 
 function dal_is_valid_lot_transition(string $from, string $to): bool
@@ -118,11 +114,12 @@ function dal_get_lot(PDO $pdo, array $ctx, int $id): array
     $doc_stmt = $pdo->prepare(
         "SELECT d.id, d.titre, d.type_document, d.status, d.source_item_id,
                 d.contenu_brut, d.contenu_revise, d.hash_contenu, d.selected,
-                d.theme_id, d.oeuvre_id, d.date_publication, d.citation_id,
+                d.theme_id, d.theme_suggested_id, d.oeuvre_id, d.date_publication, d.citation_id,
                 d.created_at, d.updated_at,
-                t.nom AS theme_nom, o.nom AS oeuvre_nom
+                t.nom AS theme_nom, ts.nom AS theme_suggested_nom, o.nom AS oeuvre_nom
          FROM documents d
          LEFT JOIN themes t ON d.theme_id = t.id
+         LEFT JOIN themes ts ON d.theme_suggested_id = ts.id
          LEFT JOIN oeuvres o ON d.oeuvre_id = o.id
          WHERE d.lot_id = :lot_id
          ORDER BY d.id"
@@ -254,7 +251,7 @@ function dal_assign_lot(PDO $pdo, array $ctx, int $id, ?int $user_id = null): ar
         }
 
         $old_status = $lot['status'];
-        $new_status = $old_status === 'en_attente' ? 'en_cours' : $old_status;
+        $new_status = $old_status === 'en_attente' ? 'en_traitement' : $old_status;
 
         $pdo->prepare('UPDATE lots SET assigned_to = :uid, status = :st WHERE id = :id')
             ->execute(['uid' => $assign_to, 'st' => $new_status, 'id' => $id]);
@@ -282,7 +279,7 @@ function dal_update_lot_document(PDO $pdo, array $ctx, int $doc_id, array $data)
     $params = ['id' => $doc_id];
     $fields = _dal_build_update_fields(
         $data,
-        ['contenu_revise', 'selected', 'theme_id', 'oeuvre_id', 'date_publication'],
+        ['contenu_revise', 'selected', 'theme_id', 'theme_suggested_id', 'oeuvre_id', 'date_publication'],
         $params
     );
     if (empty($fields)) {
@@ -323,7 +320,12 @@ function dal_set_lot_document_keywords(
         $params["kid_{$i}"] = (int) $kid;
         $params["src_{$i}"] = $source;
     }
-    $sql = 'INSERT INTO lot_document_keywords (document_id, keyword_id, source) VALUES ' . implode(', ', $placeholders);
+    // Upsert : si le couple (document_id, keyword_id) existe déjà sous une autre
+    // source (ex. 'ai_suggested' issu de l'import), on le PROMEUT vers $source au
+    // lieu d'échouer sur la clé primaire (document_id, keyword_id).
+    $sql = 'INSERT INTO lot_document_keywords (document_id, keyword_id, source) VALUES '
+        . implode(', ', $placeholders)
+        . ' ON DUPLICATE KEY UPDATE source = VALUES(source)';
     $pdo->prepare($sql)->execute($params);
     return dal_ok();
 }
@@ -458,10 +460,9 @@ function dal_integrate_lot(PDO $pdo, array $ctx, int $lot_id): array
             $pdo->rollBack();
             return dal_error('Lot introuvable.');
         }
-        // Intégration en 1 clic depuis la révision : on accepte « en révision » ou « prêt ».
-        if (!in_array($lot['status'], ['en_revision', 'pret'], true)) {
+        if ($lot['status'] !== 'en_traitement') {
             $pdo->rollBack();
-            return dal_error('Le lot doit être en révision ou prêt pour être intégré.');
+            return dal_error('Le lot doit être en traitement pour être intégré.');
         }
 
         $docs_stmt = $pdo->prepare(
@@ -508,10 +509,12 @@ function dal_integrate_lot(PDO $pdo, array $ctx, int $lot_id): array
             ]);
             $citation_id = (int) $pdo->lastInsertId();
 
-            // Copier les mots-clés acceptés vers citation_keywords
+            // Copier les mots-clés validés (humains) vers citation_keywords.
+            // Une suggestion IA acceptée a déjà basculé en 'manual' ; les 'ai_suggested'
+            // non validés sont volontairement exclus.
             $kw_stmt = $pdo->prepare(
                 "SELECT keyword_id FROM lot_document_keywords
-                 WHERE document_id = :did AND source IN ('manual', 'ai_accepted')"
+                 WHERE document_id = :did AND source = 'manual'"
             );
             $kw_stmt->execute(['did' => (int) $doc['id']]);
             $kw_ids = array_column($kw_stmt->fetchAll(), 'keyword_id');
@@ -541,7 +544,7 @@ function dal_integrate_lot(PDO $pdo, array $ctx, int $lot_id): array
             $pdo,
             $lot['lot_id'],
             'integrated',
-            'pret',
+            'en_traitement',
             'integre',
             $ctx['user_id'] ?? null,
             "Intégré : {$created} citations créées, {$skipped_dupes} doublons ignorés."
@@ -624,7 +627,7 @@ function _dal_count_keywords_per_document(PDO $pdo, array $doc_ids): array
     $placeholders = implode(',', array_fill(0, count($doc_ids), '?'));
     $stmt = $pdo->prepare(
         "SELECT document_id, COUNT(*) AS cnt FROM lot_document_keywords
-         WHERE document_id IN ({$placeholders}) AND source IN ('manual', 'ai_accepted')
+         WHERE document_id IN ({$placeholders}) AND source = 'manual'
          GROUP BY document_id"
     );
     $stmt->execute(array_values($doc_ids));

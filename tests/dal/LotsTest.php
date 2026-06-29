@@ -10,11 +10,6 @@ require_once __DIR__ . '/../../api/dal/oeuvres.php';
 require_once __DIR__ . '/../../api/dal/themes.php';
 require_once __DIR__ . '/../../api/dal/lots.php';
 
-/**
- * Régression : dal_integrate_lot doit RÉELLEMENT bloquer un lot non conforme.
- * Avant le correctif, la conformité (status='ok', conforme=false) était ignorée
- * et l'intégration s'effectuait quand même.
- */
 final class LotsTest extends TestCase
 {
     private PDO $pdo;
@@ -65,9 +60,7 @@ final class LotsTest extends TestCase
         // on peut donc encapsuler dans une transaction et tout annuler ensuite.
         $this->pdo->beginTransaction();
         try {
-            // Statut « pret » volontaire : l'ancien code passait le garde de statut et
-            // intégrait malgré la non-conformité. Le correctif doit bloquer ici.
-            [$lotId, $lotKey] = $this->makeLot('pret');
+            [$lotId, $lotKey] = $this->makeLot('en_traitement');
             $this->makeDoc($lotKey, null); // thème manquant → non conforme
 
             $res = dal_integrate_lot($this->pdo, $this->ctx, $lotId);
@@ -78,7 +71,7 @@ final class LotsTest extends TestCase
 
             // Statut du lot inchangé : rien n'a été intégré.
             $status = $this->pdo->query("SELECT status FROM lots WHERE id = {$lotId}")->fetchColumn();
-            $this->assertSame('pret', $status);
+            $this->assertSame('en_traitement', $status);
 
             // Aucune citation écrite.
             $count = (int) $this->pdo->query('SELECT COUNT(*) FROM citations')->fetchColumn();
@@ -92,7 +85,7 @@ final class LotsTest extends TestCase
     {
         $this->pdo->beginTransaction();
         try {
-            [$lotId, $lotKey] = $this->makeLot('en_revision');
+            [$lotId, $lotKey] = $this->makeLot('en_traitement');
             $this->makeDoc($lotKey, null);
 
             $res = dal_check_lot_conformity($this->pdo, $this->ctx, $lotId);
@@ -100,6 +93,38 @@ final class LotsTest extends TestCase
             $this->assertFalse($res['data']['conforme']);
             $this->assertSame(0, $res['data']['documents_ok']);
             $this->assertSame(1, $res['data']['documents_total']);
+        } finally {
+            $this->pdo->rollBack();
+        }
+    }
+
+    /**
+     * Régression : accepter un mot-clé déjà présent en 'ai_suggested' (suggestion
+     * d'import) doit le PROMOUVOIR en 'manual', sans conflit de clé primaire
+     * (document_id, keyword_id). Avant l'upsert, l'INSERT échouait en doublon.
+     */
+    public function test_set_keywords_promotes_ai_suggested_to_manual(): void
+    {
+        $this->pdo->beginTransaction();
+        try {
+            [, $lotKey] = $this->makeLot('en_traitement');
+            $docId = $this->makeDoc($lotKey, $this->theme_id);
+
+            // Mot-clé suggéré par l'IA à l'import.
+            $this->pdo->prepare("INSERT INTO keywords (mot) VALUES ('foi')")->execute();
+            $kwId = (int) $this->pdo->lastInsertId();
+            $this->pdo->prepare("INSERT INTO lot_document_keywords (document_id, keyword_id, source)
+                                 VALUES (?, ?, 'ai_suggested')")->execute([$docId, $kwId]);
+
+            // L'éditeur accepte ce mot-clé (le passe en validé/manuel).
+            $res = dal_set_lot_document_keywords($this->pdo, $this->ctx, $docId, [$kwId], 'manual');
+            $this->assertSame('ok', $res['status']);
+
+            // Une seule ligne, désormais en 'manual'.
+            $rows = $this->pdo->query(
+                "SELECT source FROM lot_document_keywords WHERE document_id=$docId AND keyword_id=$kwId"
+            )->fetchAll(PDO::FETCH_COLUMN);
+            $this->assertSame(['manual'], $rows);
         } finally {
             $this->pdo->rollBack();
         }
