@@ -1,14 +1,16 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * Runner de jobs Lumosphère.
  * Traite les jobs en file d'attente (server_jobs).
  * Supporte : process_telegram_v2
  */
 
+declare(strict_types=1);
+
 require_once __DIR__ . '/bootstrap_cron.php';
+
+['pdo' => $pdo, 'config' => $config] = cron_bootstrap();
 
 $maxJobs = (int) (getenv('RUN_JOBS_MAX') ?: 1);
 

@@ -1,14 +1,16 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * Import d'un export Telegram Desktop (JSON) dans la réserve, origine 'historique'.
  * Usage : php cron/import_telegram_history.php <collect_source_id> <export.json> [export2.json ...]
  */
 
+declare(strict_types=1);
+
 require_once __DIR__ . '/bootstrap_cron.php';
 require_once __DIR__ . '/lib/telegram_pipeline.php';
+
+['pdo' => $pdo] = cron_bootstrap();
 
 $args = array_slice($argv, 1);
 if (count($args) < 2) {

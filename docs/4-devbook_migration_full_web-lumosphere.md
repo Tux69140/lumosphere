@@ -227,7 +227,7 @@ Décision du chef de projet : **ne conserver aucune trace des étapes**, sauf en
 - [ ] **Chemin codé en dur** `bootstrap.php:5` (`EPURIEL_CONFIG_PATH`) + env `EPURIEL_CONFIG` (`:66`).
 - [ ] **Entrée web publique** → racine de l'app unifiée sur `lumosphere.org` (même origine que le front → CORS simple + cookies d'auth). **Décision** : le **dossier atelier interne** `/home2/mist2786/epuriel/` (config, cron, workers, lots, reports, refs, venvs) **est migré** : copier les fichiers nécessaires depuis `epuriel/` vers `public_html/` (sous-dossier dédié si nécessaire) puis recréer le venv. L'ancien `epuriel/` est destiné à disparaître.
 - [ ] Chemins dérivés dans le code : `epuriel.php:1367,1424,1512,1823,2532,2876` (cron/workers, dont le segment littéral `/epuriel/` dans `dirname(__DIR__,3).'/epuriel/workers/process_telegram_v1.py'`).
-- [ ] Crons cPanel (`collect_telegram_bot.php`, `agregateur_telegram_weekly.php`, `run_jobs.php`) + `reports/` : chemins `lumosphere`. Binaire cron `/usr/local/bin/php`.
+- [ ] Crons cPanel (`collect_telegram_bot.php`, `agregateur_telegram.php`, `run_jobs.php`) + `reports/` : chemins `lumosphere`. Binaire cron `/usr/local/bin/php`.
 - [ ] `config.php` : `python_bin`, `venv_path`, `lots_root`, `bin_ghostscript`.
 
 ### 4.2 — Python et capacités (récupérer les procédures d'archive)
