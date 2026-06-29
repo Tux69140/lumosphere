@@ -409,10 +409,24 @@ export function DetailLot({ lot, onKeywordsAccepted }: Props) {
 
   const nextStates = LOT_VALID_TRANSITIONS[lot.status]
   const includedCount = lot.documents.filter((d) => d.selected).length
+  // Intégration en 1 clic depuis la révision : bouton « Intégrer au Corpus » dès « en révision ».
+  const canIntegrate = lot.status === 'en_revision' || lot.status === 'pret'
+  // « Prêt » devient redondant (intégration directe) et « Intégré » passe par le bouton dédié.
+  const transitionStates = nextStates.filter((s) => s !== 'pret' && s !== 'integre')
 
   async function handleCheckConformity() {
     const result = await checkConformity.mutateAsync(lot.id)
     setConformity(result)
+  }
+
+  // Vérifie la conformité puis intègre seulement si tout est conforme ;
+  // sinon le bloc d'alerte affiche les champs manquants par message.
+  async function handleIntegrate() {
+    const result = await checkConformity.mutateAsync(lot.id)
+    setConformity(result)
+    if (result.conforme) {
+      integrateLot.mutate(lot.id)
+    }
   }
 
   function handleUpdate(data: Record<string, unknown>) {
@@ -495,7 +509,7 @@ export function DetailLot({ lot, onKeywordsAccepted }: Props) {
             ))}
           </select>
 
-          {lot.status === 'pret' && (
+          {canIntegrate && (
             <>
               <button
                 type="button"
@@ -508,19 +522,23 @@ export function DetailLot({ lot, onKeywordsAccepted }: Props) {
               </button>
               <button
                 type="button"
-                onClick={() => integrateLot.mutate(lot.id)}
-                disabled={integrateLot.isPending || (conformity !== null && !conformity.conforme)}
+                onClick={handleIntegrate}
+                disabled={
+                  integrateLot.isPending ||
+                  checkConformity.isPending ||
+                  (conformity !== null && !conformity.conforme)
+                }
                 className="flex items-center gap-1.5 rounded-md bg-green-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-green-700 disabled:opacity-50"
               >
                 <CheckCircle size={16} weight="fill" />
-                {integrateLot.isPending ? 'Intégration...' : 'Intégrer au corpus'}
+                {integrateLot.isPending ? 'Intégration...' : 'Intégrer au Corpus'}
               </button>
             </>
           )}
 
-          {nextStates.length > 0 && lot.status !== 'pret' && (
+          {transitionStates.length > 0 && (
             <div className="flex gap-1">
-              {nextStates.map((next: LotStatus) => (
+              {transitionStates.map((next: LotStatus) => (
                 <button
                   key={next}
                   type="button"

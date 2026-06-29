@@ -233,6 +233,10 @@ Construit les chaînes **une à une**. Chaque chaîne finit par : validation d'u
 - [ ] Brancher la **validation du lot** sur l'écriture corpus en transaction (cf. migration 6.3) : conformité (jeu complet, doublons), mapping I.6, état `À Corriger`, suppression du lot après écriture vérifiée.
 - [ ] **Visualisation** : l'entrée intégrée **apparaît dans la bibliothèque** (boucle de feedback Phases II/III).
 
+> **Correctif banc d'essai e2e (2026-06-29)** — intégration au corpus en 1 clic + bug de conformité :
+> 1. **Conformité non appliquée (bug)** : `dal_integrate_lot` vérifiait la conformité mais ne la bloquait pas (`status='ok'` même si `conforme=false`) — des lots non conformes ont été intégrés (lots 41, 24, sans œuvre/thème). Corrigé : un lot non conforme renvoie désormais une erreur avec le détail des manques, **avant** toute écriture (`api/dal/lots.php`). Test : `tests/dal/LotsTest.php`.
+> 2. **Parcours en 1 clic (cahier §5)** : le bouton **« Intégrer au Corpus »** est maintenant visible dès « En révision » (`DetailLot.tsx`). Au clic il vérifie la conformité puis intègre si conforme, sinon affiche les champs manquants par message. L'intégration backend accepte `en_revision` ou `pret`. La transition manuelle « Prêt » est masquée (redondante).
+
 ### IV.2 — Chaîne Telegram complète (bot `@Actualis_bot`) — cahier Phase 1
 - [ ] Collecte par bot, agrégation par période, **fenêtre de révision** (sélectionner/grouper/prévisualiser), enrichissement IA **avant** révision, travail éditorial manuel, enrichissement IA **synonymes** après révision, **règle Telegram** (thèmes + mots-clés requis) → intégration corpus. Dédoublonnage `telegram_message_id` + marqueur de collecte.
 - [ ] **Tests** : collecte/agrégation sur lot de démonstration, révision, intégration, dédoublonnage.

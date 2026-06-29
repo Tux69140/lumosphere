@@ -440,6 +440,14 @@ function dal_integrate_lot(PDO $pdo, array $ctx, int $lot_id): array
     if ($conformity['status'] !== 'ok') {
         return $conformity;
     }
+    // Garde-fou : une non-conformité renvoie status='ok' avec conforme=false ;
+    // on bloque réellement l'intégration et on remonte les champs manquants.
+    if (empty($conformity['data']['conforme'])) {
+        return dal_error(array_merge(
+            ['Lot non conforme : complétez les champs manquants avant intégration.'],
+            $conformity['data']['missing'] ?? []
+        ));
+    }
 
     $pdo->beginTransaction();
     try {
@@ -450,9 +458,10 @@ function dal_integrate_lot(PDO $pdo, array $ctx, int $lot_id): array
             $pdo->rollBack();
             return dal_error('Lot introuvable.');
         }
-        if ($lot['status'] !== 'pret') {
+        // Intégration en 1 clic depuis la révision : on accepte « en révision » ou « prêt ».
+        if (!in_array($lot['status'], ['en_revision', 'pret'], true)) {
             $pdo->rollBack();
-            return dal_error('Le lot doit être en statut « prêt » pour être intégré.');
+            return dal_error('Le lot doit être en révision ou prêt pour être intégré.');
         }
 
         $docs_stmt = $pdo->prepare(
