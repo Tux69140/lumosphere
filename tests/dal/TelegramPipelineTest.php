@@ -116,4 +116,48 @@ class TelegramPipelineTest extends TestCase
             $pdo->rollBack();
         }
     }
+
+    /**
+     * Régression : l'œuvre cible configurée sur la source (collect_sources.oeuvre_id)
+     * doit être propagée aux documents du lot, pour pré-remplir l'atelier.
+     */
+    public function testAggregatePropagatesSourceOeuvreToDocuments(): void
+    {
+        $pdo = \Tests\Dal\TestHelper::getTestPdo();
+        $pdo->beginTransaction();
+        try {
+            // Auteur + œuvre cible
+            $pdo->prepare("INSERT INTO auteurs (nom) VALUES ('Lulumineuse')")->execute();
+            $auteurId = (int) $pdo->lastInsertId();
+            $pdo->prepare("INSERT INTO oeuvres (auteur_id, nom, abreviation) VALUES (?, 'Telegram', 'TgLulu')")
+                ->execute([$auteurId]);
+            $oeuvreId = (int) $pdo->lastInsertId();
+
+            // Source telegram liée à l'œuvre
+            $pdo->prepare("INSERT INTO collect_sources (source_type, nom, enabled, oeuvre_id)
+                           VALUES ('telegram','Canal Test',1,?)")->execute([$oeuvreId]);
+            $sourceId = (int) $pdo->lastInsertId();
+            $source = $pdo->query("SELECT * FROM collect_sources WHERE id=$sourceId")->fetch();
+
+            $ins = $pdo->prepare("INSERT INTO telegram_updates_buffer
+                (collect_source_id, origin, update_id, message_id, chat_id, message_date, buffer_status, payload_json)
+                VALUES (?,?,?,?,?,?, 'buffered', ?)");
+            $ins->execute([$sourceId,'live',1,101,-100,'2026-06-22 10:00:00','{"message_id":101,"date":"2026-06-22T10:00:00","text":"a"}']);
+            $ins->execute([$sourceId,'live',2,102,-100,'2026-06-23 10:00:00','{"message_id":102,"date":"2026-06-23T10:00:00","text":"b"}']);
+
+            $res = tg_aggregate_source($pdo, $source, 'live', null, null);
+
+            $this->assertSame(2, $res['documents']);
+            // Tous les documents du lot portent l'œuvre de la source.
+            $stmt = $pdo->prepare("SELECT oeuvre_id FROM documents WHERE lot_id = ?");
+            $stmt->execute([$res['lot_id']]);
+            $oeuvreIds = $stmt->fetchAll(\PDO::FETCH_COLUMN);
+            $this->assertCount(2, $oeuvreIds);
+            foreach ($oeuvreIds as $got) {
+                $this->assertSame($oeuvreId, (int) $got);
+            }
+        } finally {
+            $pdo->rollBack();
+        }
+    }
 }

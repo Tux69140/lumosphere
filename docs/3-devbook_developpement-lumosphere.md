@@ -237,6 +237,10 @@ Construit les chaînes **une à une**. Chaque chaîne finit par : validation d'u
 - [ ] Collecte par bot, agrégation par période, **fenêtre de révision** (sélectionner/grouper/prévisualiser), enrichissement IA **avant** révision, travail éditorial manuel, enrichissement IA **synonymes** après révision, **règle Telegram** (thèmes + mots-clés requis) → intégration corpus. Dédoublonnage `telegram_message_id` + marqueur de collecte.
 - [ ] **Tests** : collecte/agrégation sur lot de démonstration, révision, intégration, dédoublonnage.
 
+> **Correctifs banc d'essai e2e (2026-06-29)** — deux bugs détectés et corrigés en débogage :
+> 1. **Œuvre non pré-remplie dans l'atelier** : l'agrégation lisait `oeuvre_id` dans `config_json` au lieu de la colonne `collect_sources.oeuvre_id`. Corrigé (`cron/lib/telegram_pipeline.php`) → l'œuvre de la source se propage aux documents du lot. Test de non-régression ajouté (`tests/dal/TelegramPipelineTest.php`).
+> 2. **Œuvre « Telegram » affichée en double** dans Admin → Œuvres : la requête de liste faisait un `JOIN collect_sources` qui dupliquait la ligne œuvre **par source** (rappel : une œuvre peut avoir plusieurs canaux — ici Actualis + Epuriel de test). Corrigé (`api/dal/oeuvres.php`) → une œuvre = une ligne. Garde anti-doublon ajoutée (`dal_create_oeuvre`/`dal_update_oeuvre` + contrainte `UNIQUE (auteur_id, nom)` via `db/migrations/014_oeuvres_unique.sql`), tests `tests/dal/OeuvresTest.php`.
+
 ### IV.3 — Extraction des composants communs (Epuriel E.6)
 Après le **premier Telegram de bout en bout**, isoler les composants réutilisables (ne pas les laisser enfermés dans Telegram) :
 - [ ] `ListeLots` (liste, filtres simples, statut, source, responsable) · `DetailLot` (résumé, étape, fichiers, actions) · `JournalLot` (événements, dates, acteur, message).

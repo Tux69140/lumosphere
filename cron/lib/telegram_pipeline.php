@@ -143,7 +143,9 @@ function tg_aggregate_source(PDO $pdo, array $source, string $origin, ?string $d
     // config_json n'existe pas toujours dans collect_sources — fallback gracieux
     $configJson = json_decode((string) ($source['config_json'] ?? '{}'), true) ?: [];
     $canal = trim((string) ($configJson['canal'] ?? $messages[0]['chat_username'] ?? ''));
-    $oeuvreId = isset($configJson['oeuvre_id']) ? (int) $configJson['oeuvre_id'] : null;
+    // L'œuvre cible est une colonne directe de collect_sources (collect_sources.oeuvre_id),
+    // pas un champ de config_json : on la propage aux documents pour pré-remplir l'atelier.
+    $oeuvreId = isset($source['oeuvre_id']) ? (int) $source['oeuvre_id'] : null;
 
     $dates = [
         substr((string) ($messages[0]['date'] ?? ''), 0, 10),

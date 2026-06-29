@@ -17,12 +17,17 @@ function dal_find_oeuvres(PDO $pdo, array $ctx, ?int $auteur_id = null): array
 
     $where .= dal_oeuvre_visibility_clause('o.id', $ctx, $params);
 
+    // Une œuvre peut avoir PLUSIEURS sources (1-N) : on n'utilise donc pas de JOIN
+    // (qui dupliquerait la ligne œuvre par source). On remonte la première source liée
+    // via sous-requête, pour garder une ligne unique par œuvre.
     $sql = "SELECT o.id, o.auteur_id, o.nom, o.abreviation, o.url, o.ref_libraire, o.description,
                    o.created_at, o.updated_at, a.nom AS auteur_nom,
-                   cs.id AS source_id, cs.label AS source_label
+                   (SELECT cs.id FROM collect_sources cs
+                     WHERE cs.oeuvre_id = o.id ORDER BY cs.id LIMIT 1) AS source_id,
+                   (SELECT cs.label FROM collect_sources cs
+                     WHERE cs.oeuvre_id = o.id ORDER BY cs.id LIMIT 1) AS source_label
             FROM oeuvres o
             JOIN auteurs a ON o.auteur_id = a.id
-            LEFT JOIN collect_sources cs ON cs.oeuvre_id = o.id
             WHERE {$where}
             ORDER BY o.nom";
     $stmt = $pdo->prepare($sql);
@@ -41,10 +46,12 @@ function dal_get_oeuvre(PDO $pdo, array $ctx, int $id): array
 
     $sql = "SELECT o.id, o.auteur_id, o.nom, o.abreviation, o.url, o.ref_libraire, o.description,
                    o.created_at, o.updated_at, a.nom AS auteur_nom,
-                   cs.id AS source_id, cs.label AS source_label
+                   (SELECT cs.id FROM collect_sources cs
+                     WHERE cs.oeuvre_id = o.id ORDER BY cs.id LIMIT 1) AS source_id,
+                   (SELECT cs.label FROM collect_sources cs
+                     WHERE cs.oeuvre_id = o.id ORDER BY cs.id LIMIT 1) AS source_label
             FROM oeuvres o
             JOIN auteurs a ON o.auteur_id = a.id
-            LEFT JOIN collect_sources cs ON cs.oeuvre_id = o.id
             WHERE {$where}";
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
@@ -62,12 +69,19 @@ function dal_create_oeuvre(PDO $pdo, array $ctx, array $data): array
     if (empty($data['auteur_id'])) {
         return dal_error('L\'auteur est requis.');
     }
+    $auteur_id = (int) $data['auteur_id'];
+    // Garde anti-doublon : une œuvre est unique pour un couple (auteur, nom).
+    $dup = $pdo->prepare('SELECT id FROM oeuvres WHERE auteur_id = :auteur_id AND nom = :nom');
+    $dup->execute(['auteur_id' => $auteur_id, 'nom' => $nom]);
+    if ($dup->fetch()) {
+        return dal_error('Une œuvre porte déjà ce nom pour cet auteur.');
+    }
     $stmt = $pdo->prepare(
         'INSERT INTO oeuvres (auteur_id, nom, abreviation, url, ref_libraire, description)
          VALUES (:auteur_id, :nom, :abreviation, :url, :ref_libraire, :description)'
     );
     $stmt->execute([
-        'auteur_id'    => (int) $data['auteur_id'],
+        'auteur_id'    => $auteur_id,
         'nom'          => $nom,
         'abreviation'  => $data['abreviation'] ?? null,
         'url'          => $data['url'] ?? null,
@@ -80,10 +94,20 @@ function dal_create_oeuvre(PDO $pdo, array $ctx, array $data): array
 function dal_update_oeuvre(PDO $pdo, array $ctx, int $id, array $data): array
 {
     dal_require_permission($ctx, 'oeuvres.manage');
-    $stmt = $pdo->prepare('SELECT id FROM oeuvres WHERE id = :id');
+    $stmt = $pdo->prepare('SELECT id, auteur_id, nom FROM oeuvres WHERE id = :id');
     $stmt->execute(['id' => $id]);
-    if (!$stmt->fetch()) {
+    $current = $stmt->fetch();
+    if (!$current) {
         return dal_error('Œuvre introuvable.');
+    }
+    // Garde anti-doublon : si l'auteur ou le nom change, vérifier qu'aucune autre
+    // œuvre ne porte déjà ce couple (auteur, nom).
+    $target_auteur = isset($data['auteur_id']) ? (int) $data['auteur_id'] : (int) $current['auteur_id'];
+    $target_nom    = isset($data['nom']) ? trim((string) $data['nom']) : (string) $current['nom'];
+    $dup = $pdo->prepare('SELECT id FROM oeuvres WHERE auteur_id = :auteur_id AND nom = :nom AND id <> :id');
+    $dup->execute(['auteur_id' => $target_auteur, 'nom' => $target_nom, 'id' => $id]);
+    if ($dup->fetch()) {
+        return dal_error('Une œuvre porte déjà ce nom pour cet auteur.');
     }
     $params = ['id' => $id];
     $fields = _dal_build_update_fields(
