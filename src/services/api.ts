@@ -258,8 +258,9 @@ export const apiClient = {
   deleteUser: (id: number) => del<void>(`users/${id}`),
 
   // Config
-  getConfig: (key: string) => get<unknown>(`config/${key}`),
+  getConfig: (key: string) => get<string | null>(`config/${key}`),
   setConfig: (key: string, value: string) => put<void>(`config/${key}`, { value }),
+  listConfig: () => get<{ cle: string; valeur: string | null }[]>('config'),
 
   // Favorites
   findFavorites: (params?: Record<string, string>) =>

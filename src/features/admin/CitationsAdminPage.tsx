@@ -328,6 +328,9 @@ export function CitationsAdminPage() {
     [oeuvreOptions, etatOptions],
   )
 
+  // TanStack Table renvoie des fonctions non mémoïsables : le React Compiler
+  // saute volontairement ce composant, ce qui est sans effet ici.
+  // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
     data: citations,
     columns,

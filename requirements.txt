@@ -1,0 +1,8 @@
+# Dépendances des workers Python (venv py311 côté serveur, Python 3.13 en local).
+# Les workers actuels n'utilisent que la stdlib ; ces libs préparent les chaînes
+# PDF / IA / YouTube à venir (cf. .claude/rules/python-workers.md).
+PyMuPDF
+Pillow
+litellm
+yt-dlp
+youtube-transcript-api

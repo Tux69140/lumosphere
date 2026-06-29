@@ -11,6 +11,7 @@ import {
   ListBullets,
   Robot,
   Broadcast,
+  Gear,
 } from '@phosphor-icons/react'
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
@@ -55,6 +56,9 @@ export function AdminNav() {
       </NavLink>
       <NavLink to="/admin/ia" className={linkClass}>
         <Robot size={18} aria-hidden="true" /> IA
+      </NavLink>
+      <NavLink to="/admin/parametres" className={linkClass}>
+        <Gear size={18} aria-hidden="true" /> Réglages
       </NavLink>
     </nav>
   )

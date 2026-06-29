@@ -102,7 +102,12 @@ function dal_ai_get_settings(PDO $pdo, array $ctx): array
 
     $row = $pdo->query("SELECT * FROM ia_settings WHERE scope = 'server_default' LIMIT 1")->fetch();
     if (!$row) {
-        $row = ['provider' => 'mistral', 'model' => 'mistral-small-latest', 'timeout_seconds' => 45, 'max_retries' => 2];
+        $row = [
+            'provider'        => 'mistral',
+            'model'           => 'mistral-small-latest',
+            'timeout_seconds' => 45,
+            'max_retries'     => 2,
+        ];
     }
 
     return dal_ok([
@@ -114,8 +119,14 @@ function dal_ai_get_settings(PDO $pdo, array $ctx): array
     ]);
 }
 
-function dal_ai_save_settings(PDO $pdo, array $ctx, string $provider, string $model, int $timeout, int $max_retries): array
-{
+function dal_ai_save_settings(
+    PDO $pdo,
+    array $ctx,
+    string $provider,
+    string $model,
+    int $timeout,
+    int $max_retries
+): array {
     dal_require_permission($ctx, 'admin.settings');
 
     $config  = require dirname(__DIR__, 2) . '/config/config.php';
@@ -265,7 +276,9 @@ function _dal_ai_resolve_config(): array
         $pdo = dal_get_pdo();
         $check = $pdo->query("SHOW TABLES LIKE 'ia_settings'")->fetchAll();
         if (!empty($check)) {
-            $row = $pdo->query("SELECT provider, model, timeout_seconds FROM ia_settings WHERE scope = 'server_default' LIMIT 1")->fetch();
+            $row = $pdo->query(
+                "SELECT provider, model, timeout_seconds FROM ia_settings WHERE scope = 'server_default' LIMIT 1"
+            )->fetch();
             if ($row) {
                 $catalog = dal_ai_provider_catalog($config);
                 foreach ($catalog as $p) {
@@ -295,7 +308,8 @@ function _dal_ai_classify_error(int $http_code, string $raw_message, string $pro
     $raw = strtolower($raw_message);
     $name = $provider !== '' ? $provider : 'IA';
 
-    if ($http_code === 402
+    if (
+        $http_code === 402
         || str_contains($raw, 'insufficient_quota')
         || str_contains($raw, 'credit balance is too low')
         || str_contains($raw, 'insufficient balance')
@@ -303,7 +317,8 @@ function _dal_ai_classify_error(int $http_code, string $raw_message, string $pro
         return ['origin' => 'fournisseur', 'type' => 'insufficient_credit',
                 'message' => "Fournisseur IA ({$name}) : crédit épuisé, rechargez le compte."];
     }
-    if ($http_code === 401
+    if (
+        $http_code === 401
         || str_contains($raw, 'invalid_api_key')
         || str_contains($raw, 'invalid api key')
         || str_contains($raw, 'authentication')
@@ -381,10 +396,34 @@ function _dal_litellm_call(array $ctx, string $prompt, string $action = ''): arr
         curl_close($ch);
         $err_lower = strtolower($err);
         if (str_contains($err_lower, 'timeout') || str_contains($err_lower, 'timed out')) {
-            _dal_ai_log($ctx, $cfg['provider'], $cfg['model'], $action, 0, 0, $latency, 'error', $err, 'timeout', 'passerelle');
+            _dal_ai_log(
+                $ctx,
+                $cfg['provider'],
+                $cfg['model'],
+                $action,
+                0,
+                0,
+                $latency,
+                'error',
+                $err,
+                'timeout',
+                'passerelle'
+            );
             return dal_error('Passerelle IA : délai dépassé, pas de réponse à temps.');
         }
-        _dal_ai_log($ctx, $cfg['provider'], $cfg['model'], $action, 0, 0, $latency, 'error', $err, 'network', 'passerelle');
+        _dal_ai_log(
+            $ctx,
+            $cfg['provider'],
+            $cfg['model'],
+            $action,
+            0,
+            0,
+            $latency,
+            'error',
+            $err,
+            'network',
+            'passerelle'
+        );
         return dal_error('Passerelle IA : connexion au fournisseur impossible.');
     }
 
@@ -393,14 +432,38 @@ function _dal_litellm_call(array $ctx, string $prompt, string $action = ''): arr
 
     $decoded = json_decode($raw, true);
     if (!is_array($decoded)) {
-        _dal_ai_log($ctx, $cfg['provider'], $cfg['model'], $action, 0, 0, $latency, 'error', 'HTTP ' . $http_code, 'gateway_bad_response', 'passerelle');
+        _dal_ai_log(
+            $ctx,
+            $cfg['provider'],
+            $cfg['model'],
+            $action,
+            0,
+            0,
+            $latency,
+            'error',
+            'HTTP ' . $http_code,
+            'gateway_bad_response',
+            'passerelle'
+        );
         return dal_error('Passerelle IA : réponse illisible reçue.');
     }
 
     if ($http_code < 200 || $http_code >= 300) {
         $raw_msg    = $decoded['error']['message'] ?? ('HTTP ' . $http_code);
         $classified = _dal_ai_classify_error($http_code, $raw_msg, $cfg['provider']);
-        _dal_ai_log($ctx, $cfg['provider'], $cfg['model'], $action, 0, 0, $latency, 'error', $raw_msg, $classified['type'], $classified['origin']);
+        _dal_ai_log(
+            $ctx,
+            $cfg['provider'],
+            $cfg['model'],
+            $action,
+            0,
+            0,
+            $latency,
+            'error',
+            $raw_msg,
+            $classified['type'],
+            $classified['origin']
+        );
         return dal_error($classified['message']);
     }
 
@@ -409,7 +472,19 @@ function _dal_litellm_call(array $ctx, string $prompt, string $action = ''): arr
     $compl_tokens  = (int) ($decoded['usage']['completion_tokens'] ?? 0);
 
     if ($content === null) {
-        _dal_ai_log($ctx, $cfg['provider'], $cfg['model'], $action, $prompt_tokens, $compl_tokens, $latency, 'error', 'Empty response', 'bad_response', 'fournisseur');
+        _dal_ai_log(
+            $ctx,
+            $cfg['provider'],
+            $cfg['model'],
+            $action,
+            $prompt_tokens,
+            $compl_tokens,
+            $latency,
+            'error',
+            'Empty response',
+            'bad_response',
+            'fournisseur'
+        );
         return dal_error('Fournisseur IA (' . $cfg['provider'] . ') : réponse vide ou inattendue.');
     }
 
@@ -438,8 +513,10 @@ function _dal_ai_log(
             return;
         }
         $stmt = $pdo->prepare(
-            'INSERT INTO ai_logs (provider, model, action, prompt_tokens, completion_tokens, latency_ms, status, error_message, error_type, error_origin, user_id, created_at)
-             VALUES (:provider, :model, :action, :prompt_tokens, :completion_tokens, :latency_ms, :status, :error_message, :error_type, :error_origin, :user_id, NOW())'
+            'INSERT INTO ai_logs (provider, model, action, prompt_tokens, completion_tokens, latency_ms, status,'
+            . ' error_message, error_type, error_origin, user_id, created_at)'
+            . ' VALUES (:provider, :model, :action, :prompt_tokens, :completion_tokens, :latency_ms, :status,'
+            . ' :error_message, :error_type, :error_origin, :user_id, NOW())'
         );
         $stmt->execute([
             'provider'          => $provider,
@@ -632,14 +709,20 @@ function dal_ai_registry_list(PDO $pdo, array $ctx): array
             $last_refresh = $row['last_refreshed_at'];
         }
         $key = $row['provider'];
-        $row['usable']                          = (bool) ($row['enabled'] && !$row['deprecated'] && $row['supports_json']);
+        $row['usable']                          = (bool) (
+            $row['enabled'] && !$row['deprecated'] && $row['supports_json']
+        );
         $row['enabled']                         = (bool) $row['enabled'];
         $row['deprecated']                      = (bool) $row['deprecated'];
         $row['supports_json']                   = (bool) $row['supports_json'];
         $row['supports_vision']                 = (bool) $row['supports_vision'];
         $row['context_window']                  = (int) $row['context_window'];
-        $row['pricing_input_per_million_usd']   = $row['pricing_input_per_million_usd']  !== null ? (float) $row['pricing_input_per_million_usd']  : null;
-        $row['pricing_output_per_million_usd']  = $row['pricing_output_per_million_usd'] !== null ? (float) $row['pricing_output_per_million_usd'] : null;
+        $row['pricing_input_per_million_usd']   = $row['pricing_input_per_million_usd'] !== null
+            ? (float) $row['pricing_input_per_million_usd']
+            : null;
+        $row['pricing_output_per_million_usd']  = $row['pricing_output_per_million_usd'] !== null
+            ? (float) $row['pricing_output_per_million_usd']
+            : null;
         $by_provider[$key][] = $row;
     }
 
@@ -656,7 +739,9 @@ function dal_ai_registry_toggle(PDO $pdo, array $ctx, string $provider, string $
     }
 
     if ($enabled) {
-        $row = $pdo->prepare("SELECT deprecated, supports_json FROM ia_model_registry WHERE provider = :p AND model_id = :m");
+        $row = $pdo->prepare(
+            "SELECT deprecated, supports_json FROM ia_model_registry WHERE provider = :p AND model_id = :m"
+        );
         $row->execute(['p' => $provider, 'm' => $model_id]);
         $data = $row->fetch();
         if (!$data) {
@@ -831,8 +916,12 @@ function dal_ai_usage_summary(PDO $pdo, array $ctx): array
         )->fetchAll();
         foreach ($reg_rows as $r) {
             $pricing[$r['provider']][$r['model_id']] = [
-                'in'  => $r['pricing_input_per_million_usd']  !== null ? (float) $r['pricing_input_per_million_usd']  : null,
-                'out' => $r['pricing_output_per_million_usd'] !== null ? (float) $r['pricing_output_per_million_usd'] : null,
+                'in'  => $r['pricing_input_per_million_usd'] !== null
+                    ? (float) $r['pricing_input_per_million_usd']
+                    : null,
+                'out' => $r['pricing_output_per_million_usd'] !== null
+                    ? (float) $r['pricing_output_per_million_usd']
+                    : null,
             ];
         }
     }
@@ -1058,7 +1147,7 @@ function _dal_ai_multi_fetch_models(array $providers, array $config, int $timeou
         curl_multi_remove_handle($mh, $ch);
         curl_close($ch);
 
-        if ($raw === false || $curl_err !== '') {
+        if ($raw === null || $curl_err !== '') {
             $results[$key] = ['models' => [], 'error' => 'Erreur réseau : ' . $curl_err];
             continue;
         }
@@ -1170,7 +1259,9 @@ function _dal_ai_community_lookup(array $community, string $provider, string $mo
     $input_cost  = isset($data['input_cost_per_token'])  ? (float) $data['input_cost_per_token']  * 1e6 : null;
     $output_cost = isset($data['output_cost_per_token']) ? (float) $data['output_cost_per_token'] * 1e6 : null;
     $context     = (int) ($data['max_input_tokens'] ?? 0);
-    $supports_json   = (!empty($data['supports_function_calling']) || !empty($data['supports_response_schema'])) ? 1 : 0;
+    $supports_json   = (
+        !empty($data['supports_function_calling']) || !empty($data['supports_response_schema'])
+    ) ? 1 : 0;
     $supports_vision = !empty($data['supports_vision']) ? 1 : 0;
 
     $deprecated = 0;
@@ -1239,7 +1330,7 @@ function _dal_ai_upsert_registry(PDO $pdo, string $provider, array $model, array
         'label2'    => $model['label'],
         'source2'   => $source,
         'price_in2' => $input_price,
-        'price_out2'=> $output_price,
+        'price_out2' => $output_price,
         'context2'  => $context_window,
         'json2'     => $supports_json,
         'vision2'   => $supports_vision,

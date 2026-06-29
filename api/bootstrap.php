@@ -60,7 +60,11 @@ if ($first_segment === 'auth' && in_array($second_segment, ['csrf', 'setup', 'lo
     // These routes are always accessible
 } elseif (!dal_auth_has_any_user($pdo)) {
     http_response_code(503);
-    echo json_encode(['status' => 'error', 'data' => null, 'errors' => ['Application non configurée. Créez le premier administrateur.']]);
+    echo json_encode([
+        'status' => 'error',
+        'data' => null,
+        'errors' => ['Application non configurée. Créez le premier administrateur.'],
+    ]);
     exit;
 }
 
@@ -82,7 +86,11 @@ if (isset($_SESSION['user_id'], $_SESSION['last_activity'])) {
     if ($token_hash !== null && dal_auth_is_session_revoked($pdo, $token_hash)) {
         _clear_session();
         http_response_code(401);
-        echo json_encode(['status' => 'error', 'data' => null, 'errors' => ['Session révoquée par un administrateur.']]);
+        echo json_encode([
+            'status' => 'error',
+            'data' => null,
+            'errors' => ['Session révoquée par un administrateur.'],
+        ]);
         exit;
     }
 
@@ -119,6 +127,7 @@ if (in_array($_SERVER['REQUEST_METHOD'], ['POST', 'PUT', 'DELETE'], true)) {
 
 // Build user context
 // Pour les visiteurs non connectés, charger les permissions du rôle Visiteur depuis la DB.
+$visitor_permissions = [];
 if (!isset($_SESSION['permissions'])) {
     $vp_stmt = $pdo->prepare(
         'SELECT p.code FROM permissions p

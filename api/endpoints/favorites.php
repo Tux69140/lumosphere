@@ -8,7 +8,8 @@ function endpoint_favorites(PDO $pdo, array $ctx, string $method, ?int $id, ?arr
 {
     return match (true) {
         $method === 'GET' && $id === null => dal_get_user_favorites(
-            $pdo, $ctx,
+            $pdo,
+            $ctx,
             $_GET['cursor'] ?? null,
             (int) ($_GET['page_size'] ?? PAGE_SIZE_DEFAULT)
         ),

@@ -1,0 +1,8 @@
+# Configuration Ruff pour les workers Python.
+# target-version aligné sur le serveur (Python 3.11) même si le dev local est en 3.13.
+target-version = "py311"
+line-length = 100
+
+[lint]
+# E/W : pycodestyle, F : pyflakes, I : isort, UP : pyupgrade, B : bugbear.
+select = ["E", "W", "F", "I", "UP", "B"]

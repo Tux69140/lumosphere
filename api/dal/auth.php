@@ -162,7 +162,7 @@ function dal_auth_has_any_user(PDO $pdo): bool
 
 function dal_auth_verify_setup_secret(PDO $pdo, string $secret): bool
 {
-    $stored = dal_get_config($pdo, 'setup_secret');
+    $stored = dal_config_value($pdo, 'setup_secret');
     return $stored !== null && $stored !== '' && hash_equals($stored, $secret);
 }
 

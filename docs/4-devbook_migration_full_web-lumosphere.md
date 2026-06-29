@@ -225,14 +225,14 @@ Décision du chef de projet : **ne conserver aucune trace des étapes**, sauf en
 ### 4.1 — Arborescence et chemins
 
 - [ ] **Chemin codé en dur** `bootstrap.php:5` (`EPURIEL_CONFIG_PATH`) + env `EPURIEL_CONFIG` (`:66`).
-- [ ] **Entrée web publique** → racine de l'app unifiée sur `lumosphere.org` (même origine que le front → CORS simple + cookies d'auth). Sous **D4**, le **dossier atelier interne** `/home2/mist2786/epuriel/` (config, cron, workers, lots, reports, refs, venvs) **peut rester nommé `epuriel`** (nom interne de l'atelier) ou être migré vers `lumosphere/` — non bloquant.
+- [ ] **Entrée web publique** → racine de l'app unifiée sur `lumosphere.org` (même origine que le front → CORS simple + cookies d'auth). **Décision** : le **dossier atelier interne** `/home2/mist2786/epuriel/` (config, cron, workers, lots, reports, refs, venvs) **est migré** : copier les fichiers nécessaires depuis `epuriel/` vers `public_html/` (sous-dossier dédié si nécessaire) puis recréer le venv. L'ancien `epuriel/` est destiné à disparaître.
 - [ ] Chemins dérivés dans le code : `epuriel.php:1367,1424,1512,1823,2532,2876` (cron/workers, dont le segment littéral `/epuriel/` dans `dirname(__DIR__,3).'/epuriel/workers/process_telegram_v1.py'`).
 - [ ] Crons cPanel (`collect_telegram_bot.php`, `agregateur_telegram_weekly.php`, `run_jobs.php`) + `reports/` : chemins `lumosphere`. Binaire cron `/usr/local/bin/php`.
 - [ ] `config.php` : `python_bin`, `venv_path`, `lots_root`, `bin_ghostscript`.
 
 ### 4.2 — Python et capacités (récupérer les procédures d'archive)
 
-- [ ] **Python système o2switch = 3.6.8 → inutilisable.** Utiliser le venv **py311** (`/home2/mist2786/epuriel/venvs/py311`, 3.11.15) → à déplacer/recréer sous `lumosphere/`. Procédure : `procedure_configurer_outils_serveur.md`.
+- [ ] **Python système o2switch = 3.6.8 → inutilisable.** Recréer le venv **py311** (3.11.15) sous `public_html/.../venvs/py311` (cible `lumosphere/`, plus `epuriel/`) et pointer `python_bin` dessus. En local : venv `.venv` en Python 3.13 + `ruff` via `pipx` (cf. `.claude/rules/python-workers.md`). Procédure serveur : `procedure_configurer_outils_serveur.md`.
 - [ ] Capacités confirmées (`serveur.local.md`, `procedure_test_capacites_serveur.md`) : `exec()`/cron OK, PyMuPDF/Pillow/LiteLLM OK, **Ghostscript présent** (`/usr/bin/gs`), **Tesseract/OCRmyPDF/Poppler ABSENTS**, **Pandoc absent**. Conséquence : chaîne **PDF OCR contrainte** (à reporter / valider) ; **EPUB Pandoc** (phase 3) nécessite un binaire embarqué.
 - [ ] Conserver le **modèle file de jobs + cron** (`server_jobs` + `run_jobs.php`) pour tout traitement long — ne jamais lancer le lourd dans la requête web (scénario « Cas C » de la procédure capacités).
 - [ ] Réécrire le health-check schéma (ex-`verifier_bloc_b.php`, archive) pour le schéma complet et le nom `lumosphere`.

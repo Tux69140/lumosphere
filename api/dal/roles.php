@@ -170,4 +170,3 @@ function dal_set_role_oeuvre_access(PDO $pdo, array $ctx, int $role_id, array $o
         return dal_error('Erreur lors de la mise à jour des œuvres accessibles.');
     }
 }
-

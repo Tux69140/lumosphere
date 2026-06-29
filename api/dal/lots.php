@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/core.php';
+require_once __DIR__ . '/config.php';
 
 // ── Machine d'états ──────────────────────────────────────────────
 
@@ -24,8 +25,13 @@ function dal_is_valid_lot_transition(string $from, string $to): bool
 
 // ── Lecture ───────────────────────────────────────────────────────
 
-function dal_find_lots(PDO $pdo, array $ctx, array $filters = [], ?string $cursor = null, int $page_size = PAGE_SIZE_DEFAULT): array
-{
+function dal_find_lots(
+    PDO $pdo,
+    array $ctx,
+    array $filters = [],
+    ?string $cursor = null,
+    int $page_size = PAGE_SIZE_DEFAULT
+): array {
     dal_require_permission($ctx, 'atelier.access');
     $params = [];
     $where = '1=1';
@@ -205,7 +211,15 @@ function dal_update_lot_status(PDO $pdo, array $ctx, int $id, string $new_status
         $sql = 'UPDATE lots SET ' . implode(', ', $update_parts) . ' WHERE id = :id';
         $pdo->prepare($sql)->execute($update_params);
 
-        _dal_log_journal($pdo, $lot['lot_id'], 'status_change', $old_status, $new_status, $ctx['user_id'] ?? null, $message);
+        _dal_log_journal(
+            $pdo,
+            $lot['lot_id'],
+            'status_change',
+            $old_status,
+            $new_status,
+            $ctx['user_id'] ?? null,
+            $message
+        );
 
         $pdo->commit();
         return dal_ok(['id' => $id, 'status' => $new_status]);
@@ -285,8 +299,13 @@ function dal_update_lot_document(PDO $pdo, array $ctx, int $doc_id, array $data)
     return dal_ok(['id' => $doc_id]);
 }
 
-function dal_set_lot_document_keywords(PDO $pdo, array $ctx, int $doc_id, array $keyword_ids, string $source = 'manual'): array
-{
+function dal_set_lot_document_keywords(
+    PDO $pdo,
+    array $ctx,
+    int $doc_id,
+    array $keyword_ids,
+    string $source = 'manual'
+): array {
     dal_require_permission($ctx, 'atelier.lots');
 
     $pdo->prepare('DELETE FROM lot_document_keywords WHERE document_id = :did AND source = :src')
@@ -488,7 +507,14 @@ function dal_integrate_lot(PDO $pdo, array $ctx, int $lot_id): array
             $kw_stmt->execute(['did' => (int) $doc['id']]);
             $kw_ids = array_column($kw_stmt->fetchAll(), 'keyword_id');
             if (!empty($kw_ids)) {
-                _dal_replace_associations($pdo, 'citation_keywords', 'citation_id', $citation_id, 'keyword_id', array_map('intval', $kw_ids));
+                _dal_replace_associations(
+                    $pdo,
+                    'citation_keywords',
+                    'citation_id',
+                    $citation_id,
+                    'keyword_id',
+                    array_map('intval', $kw_ids)
+                );
             }
 
             // Lien retour document → citation
@@ -502,8 +528,15 @@ function dal_integrate_lot(PDO $pdo, array $ctx, int $lot_id): array
         $pdo->prepare('UPDATE lots SET status = :st, integrated_at = NOW() WHERE id = :id')
             ->execute(['st' => 'integre', 'id' => $lot_id]);
 
-        _dal_log_journal($pdo, $lot['lot_id'], 'integrated', 'pret', 'integre', $ctx['user_id'] ?? null,
-            "Intégré : {$created} citations créées, {$skipped_dupes} doublons ignorés.");
+        _dal_log_journal(
+            $pdo,
+            $lot['lot_id'],
+            'integrated',
+            'pret',
+            'integre',
+            $ctx['user_id'] ?? null,
+            "Intégré : {$created} citations créées, {$skipped_dupes} doublons ignorés."
+        );
 
         $pdo->commit();
 
@@ -523,8 +556,15 @@ function dal_integrate_lot(PDO $pdo, array $ctx, int $lot_id): array
 
 // ── Helpers privés ───────────────────────────────────────────────
 
-function _dal_log_journal(PDO $pdo, string $lot_id, string $action, ?string $old_status, ?string $new_status, ?int $actor_id, ?string $message = null): void
-{
+function _dal_log_journal(
+    PDO $pdo,
+    string $lot_id,
+    string $action,
+    ?string $old_status,
+    ?string $new_status,
+    ?int $actor_id,
+    ?string $message = null
+): void {
     $pdo->prepare(
         "INSERT INTO journal_events (lot_id, action, old_status, new_status, actor, actor_id, message)
          VALUES (:lot_id, :action, :old_status, :new_status, :actor, :actor_id, :message)"
@@ -542,7 +582,9 @@ function _dal_log_journal(PDO $pdo, string $lot_id, string $action, ?string $old
 function _dal_is_duplicate(PDO $pdo, ?string $source_item_id, string $contenu): bool
 {
     if ($source_item_id !== null && $source_item_id !== '') {
-        $stmt = $pdo->prepare('SELECT id FROM citations WHERE telegram_message_id = :tg AND deleted_at IS NULL LIMIT 1');
+        $stmt = $pdo->prepare(
+            'SELECT id FROM citations WHERE telegram_message_id = :tg AND deleted_at IS NULL LIMIT 1'
+        );
         $stmt->execute(['tg' => $source_item_id]);
         if ($stmt->fetch()) {
             return true;
@@ -616,10 +658,8 @@ function _dal_attach_lot_document_keywords(PDO $pdo, array $docs): array
 
 function _dal_maybe_delete_lot_folder(PDO $pdo, array $lot): void
 {
-    $stmt = $pdo->prepare("SELECT valeur FROM config WHERE cle = 'mode_debug_global'");
-    $stmt->execute();
-    $debug = $stmt->fetch();
-    if ($debug && $debug['valeur'] === '1') {
+    // Mode diagnostic actif → on conserve le dossier du lot pour investigation.
+    if (dal_is_debug_mode($pdo)) {
         return;
     }
 

@@ -2,3 +2,9 @@ parameters:
     level: 5
     paths:
         - api
+    scanDirectories:
+        - cron
+    # Les paramètres d'endpoint (?int $id, ?string $action) viennent du routeur :
+    # PHPStan les croit certains via PHPDoc et signale des comparaisons « toujours
+    # vraies » à tort. Recommandation officielle PHPStan pour ces faux positifs.
+    treatPhpDocTypesAsCertain: false

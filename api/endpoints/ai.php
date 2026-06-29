@@ -13,7 +13,8 @@ function endpoint_ai(PDO $pdo, array $ctx, string $method, ?int $id, ?array $bod
         $method === 'GET' && $action === 'settings' => dal_ai_get_settings($pdo, $ctx),
 
         $method === 'POST' && $action === 'settings' => dal_ai_save_settings(
-            $pdo, $ctx,
+            $pdo,
+            $ctx,
             trim((string) ($body['provider'] ?? '')),
             trim((string) ($body['model'] ?? '')),
             (int) ($body['timeout_seconds'] ?? 45),
@@ -24,14 +25,16 @@ function endpoint_ai(PDO $pdo, array $ctx, string $method, ?int $id, ?array $bod
         $method === 'GET' && $action === 'prompts' => dal_ai_get_prompts($pdo, $ctx),
 
         $method === 'PUT' && $action === 'prompts' => dal_ai_update_prompt(
-            $pdo, $ctx,
+            $pdo,
+            $ctx,
             (string) ($body['key'] ?? ''),
             (string) ($body['content'] ?? ''),
         ),
 
         // ── Logs ──
         $method === 'GET' && $action === 'logs' => dal_ai_get_logs(
-            $pdo, $ctx,
+            $pdo,
+            $ctx,
             $_GET['cursor'] ?? null,
             max(1, min(MAX_PAGE_SIZE, (int) ($_GET['page_size'] ?? PAGE_SIZE_DEFAULT))),
         ),
@@ -76,7 +79,8 @@ function endpoint_ai(PDO $pdo, array $ctx, string $method, ?int $id, ?array $bod
         $method === 'GET'  && $action === 'registry'          => dal_ai_registry_list($pdo, $ctx),
 
         $method === 'POST' && $action === 'registry-toggle'   => dal_ai_registry_toggle(
-            $pdo, $ctx,
+            $pdo,
+            $ctx,
             trim((string) ($body['provider'] ?? '')),
             trim((string) ($body['model_id'] ?? '')),
             (bool) ($body['enabled'] ?? false),

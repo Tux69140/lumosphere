@@ -5,7 +5,7 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import prettier from 'eslint-config-prettier'
 
 export default tseslint.config(
-  { ignores: ['dist', 'vendor', 'node_modules', '.claude', '.impeccable'] },
+  { ignores: ['dist', 'vendor', 'node_modules', '.claude', '.impeccable', '.venv'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
