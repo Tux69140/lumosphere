@@ -72,6 +72,22 @@ function endpoint_ai(PDO $pdo, array $ctx, string $method, ?int $id, ?array $bod
 
         $method === 'POST' && $action === 'test-connection' => dal_ai_test_connection($ctx),
 
+        // ── Model Registry ──
+        $method === 'GET'  && $action === 'registry'          => dal_ai_registry_list($pdo, $ctx),
+
+        $method === 'POST' && $action === 'registry-toggle'   => dal_ai_registry_toggle(
+            $pdo, $ctx,
+            trim((string) ($body['provider'] ?? '')),
+            trim((string) ($body['model_id'] ?? '')),
+            (bool) ($body['enabled'] ?? false),
+        ),
+
+        $method === 'PUT'  && $action === 'registry-override' => dal_ai_registry_override($pdo, $ctx, $body ?? []),
+
+        $method === 'GET'  && $action === 'usage-summary'     => dal_ai_usage_summary($pdo, $ctx),
+
+        $method === 'POST' && $action === 'models-refresh'    => dal_ai_models_refresh($pdo, $ctx),
+
         default => dal_error('Méthode non supportée.'),
     };
 }
