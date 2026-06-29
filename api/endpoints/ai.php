@@ -73,7 +73,11 @@ function endpoint_ai(PDO $pdo, array $ctx, string $method, ?int $id, ?array $bod
             return dal_ai_suggest_theme($pdo, $ctx, $contenu, $themes);
         })(),
 
-        $method === 'POST' && $action === 'test-connection' => dal_ai_test_connection($ctx),
+        $method === 'POST' && $action === 'test-connection' => dal_ai_test_connection(
+            $ctx,
+            trim((string) ($body['provider'] ?? '')),
+            trim((string) ($body['model'] ?? '')),
+        ),
 
         // ── Model Registry ──
         $method === 'GET'  && $action === 'registry'          => dal_ai_registry_list($pdo, $ctx),

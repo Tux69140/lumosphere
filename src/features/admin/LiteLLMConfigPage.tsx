@@ -230,7 +230,7 @@ function ConfigTab() {
   async function handleTest() {
     setTesting(true)
     setTestResult(null)
-    const res = await apiClient.aiTestConnection()
+    const res = await apiClient.aiTestConnection({ provider, model })
     setTesting(false)
     if (res.status === 'ok' && res.data) {
       setTestResult(res.data)
@@ -266,7 +266,7 @@ function ConfigTab() {
               onChange={(e) => {
                 setProvider(e.target.value)
                 const p = catalog.find((c) => c.key === e.target.value)
-                setModel(p?.default ?? '')
+                setModel(p?.models[0] ?? p?.default ?? '')
               }}
               className="rounded-md border border-(--color-border) bg-(--color-bg-field) px-3 py-2 text-sm text-(--color-text-primary)"
             >

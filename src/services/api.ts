@@ -305,8 +305,8 @@ export const apiClient = {
     post<{ keywords: string[] }>('ai/suggest-keywords', { citation_id: citationId, contenu }),
   aiSuggestTheme: (citationId: number, contenu: string) =>
     post<{ theme_id: number }>('ai/suggest-theme', { citation_id: citationId, contenu }),
-  aiTestConnection: () =>
-    post<{ ok: boolean; provider: string; model: string }>('ai/test-connection', {}),
+  aiTestConnection: (data?: { provider?: string; model?: string }) =>
+    post<{ ok: boolean; provider: string; model: string }>('ai/test-connection', data ?? {}),
   aiGetSettings: () =>
     get<{
       provider: string

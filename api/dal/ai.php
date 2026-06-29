@@ -42,10 +42,9 @@ function dal_ai_provider_catalog(array $config): array
         [
             'key'      => 'gemini',
             'label'    => 'Google Gemini',
-            'base_url' => '',
+            'base_url' => 'https://generativelanguage.googleapis.com/v1beta/openai',
             'models'   => ['gemini-2.5-flash', 'gemini-2.5-pro'],
             'default'  => 'gemini-2.5-flash',
-            'note'     => 'Format API incompatible en mode direct — nécessite proxy LiteLLM',
         ],
     ];
 
@@ -359,9 +358,9 @@ function _dal_ai_classify_error(int $http_code, string $raw_message, string $pro
             'message' => 'Passerelle IA : erreur inconnue, voir le Journal pour le détail.'];
 }
 
-function _dal_litellm_call(array $ctx, string $prompt, string $action = ''): array
+function _dal_litellm_call(array $ctx, string $prompt, string $action = '', ?array $cfg_override = null): array
 {
-    $cfg = _dal_ai_resolve_config();
+    $cfg = $cfg_override ?? _dal_ai_resolve_config();
 
     if ($cfg['base_url'] === '' || $cfg['api_key'] === '') {
         return dal_error('Passerelle IA : configuration incomplète (fournisseur ou clé manquants).');
@@ -668,12 +667,35 @@ PROMPT;
 
 // ──────────────────── Test Connection ────────────────────
 
-function dal_ai_test_connection(array $ctx): array
+function dal_ai_test_connection(array $ctx, string $provider_override = '', string $model_override = ''): array
 {
     dal_require_permission($ctx, 'admin.settings');
 
-    $cfg = _dal_ai_resolve_config();
-    $res = _dal_litellm_call($ctx, 'Réponds uniquement avec le mot "pong".', 'test_connection');
+    if ($provider_override !== '' && $model_override !== '') {
+        $config  = require dirname(__DIR__, 2) . '/config/config.php';
+        $catalog = dal_ai_provider_catalog($config);
+        $cfg     = null;
+        foreach ($catalog as $p) {
+            if ($p['key'] === $provider_override) {
+                $config_key = $p['key'] . '_api_key';
+                $cfg = [
+                    'base_url' => rtrim($p['base_url'], '/'),
+                    'api_key'  => $config[$config_key] ?? '',
+                    'model'    => $model_override,
+                    'provider' => $provider_override,
+                    'timeout'  => 10,
+                ];
+                break;
+            }
+        }
+        if ($cfg === null) {
+            return dal_error("Fournisseur inconnu : {$provider_override}.");
+        }
+    } else {
+        $cfg = _dal_ai_resolve_config();
+    }
+
+    $res = _dal_litellm_call($ctx, 'Réponds uniquement avec le mot "pong".', 'test_connection', $cfg);
     if ($res['status'] !== 'ok') {
         return $res;
     }
