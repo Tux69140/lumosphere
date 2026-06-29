@@ -48,6 +48,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 // JSON output
 header('Content-Type: application/json; charset=utf-8');
+header('X-Content-Type-Options: nosniff');
+header('Referrer-Policy: no-referrer');
 
 // Parse URI for setup-mode check and CSRF bypass
 $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
@@ -118,7 +120,7 @@ if (in_array($_SERVER['REQUEST_METHOD'], ['POST', 'PUT', 'DELETE'], true)) {
     $session_token = $_SESSION['csrf_token'] ?? '';
     // Skip CSRF for login and setup endpoints (no pre-existing session)
     $is_csrf_exempt = ($first_segment === 'auth' && in_array($second_segment, ['login', 'setup'], true));
-    if (!$is_csrf_exempt && ($token === '' || $token !== $session_token)) {
+    if (!$is_csrf_exempt && ($token === '' || !hash_equals((string) $session_token, (string) $token))) {
         http_response_code(403);
         echo json_encode(['status' => 'error', 'data' => null, 'errors' => ['Jeton CSRF invalide.']]);
         exit;

@@ -25,9 +25,9 @@ function dal_collecte_run(PDO $pdo, array $ctx, array $config): array
     foreach ($sources as $source) {
         $lot_id = tg_with_source_lock($pdo, (int) $source['id'], function () use ($pdo, $config, $source) {
             tg_collect_into_buffer($pdo, $config, 'live');
-            $fresh = $pdo->query(
-                'SELECT * FROM collect_sources WHERE id = ' . (int) $source['id']
-            )->fetch();
+            $fresh_stmt = $pdo->prepare('SELECT * FROM collect_sources WHERE id = :id');
+            $fresh_stmt->execute(['id' => (int) $source['id']]);
+            $fresh = $fresh_stmt->fetch();
             $res = tg_aggregate_source($pdo, $fresh, 'live', null, null);
             return $res['lot_id'] ?? null;
         });

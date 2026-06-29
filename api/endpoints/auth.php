@@ -75,14 +75,18 @@ function _auth_login(PDO $pdo, array $body): array
 {
     $email = trim($body['email'] ?? '');
     $password = $body['password'] ?? '';
+    $ip = $_SERVER['REMOTE_ADDR'] ?? '';
 
     if ($email === '' || $password === '') {
         return dal_error('Email et mot de passe requis.');
     }
 
+    // Anti-force-brute : blocage par e-mail OU par IP.
     $rate = dal_auth_check_rate_limit($pdo, $email);
-    if ($rate['locked']) {
-        $minutes = (int) ceil($rate['remaining_seconds'] / 60);
+    $rate_ip = dal_auth_check_rate_limit_ip($pdo, $ip);
+    if ($rate['locked'] || $rate_ip['locked']) {
+        $remaining = max($rate['remaining_seconds'], $rate_ip['remaining_seconds']);
+        $minutes = (int) ceil($remaining / 60);
         return dal_error("Trop de tentatives. Réessayez dans {$minutes} minutes.");
     }
 
@@ -91,10 +95,12 @@ function _auth_login(PDO $pdo, array $body): array
     $hash = $user ? $user['password_hash'] : $dummy_hash;
     if (!$user || !password_verify($password, $hash)) {
         dal_auth_record_failed_attempt($pdo, $email);
+        dal_auth_record_failed_attempt_ip($pdo, $ip);
         return dal_error('Identifiants incorrects.');
     }
 
     dal_auth_clear_attempts($pdo, $email);
+    dal_auth_clear_attempts_ip($pdo, $ip);
 
     $remember = !empty($body['remember']);
     _auth_init_session($pdo, (int) $user['id'], (int) $user['role_id'], $remember);

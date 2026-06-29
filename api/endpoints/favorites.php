@@ -11,7 +11,7 @@ function endpoint_favorites(PDO $pdo, array $ctx, string $method, ?int $id, ?arr
             $pdo,
             $ctx,
             $_GET['cursor'] ?? null,
-            (int) ($_GET['page_size'] ?? PAGE_SIZE_DEFAULT)
+            max(1, min(MAX_PAGE_SIZE, (int) ($_GET['page_size'] ?? PAGE_SIZE_DEFAULT)))
         ),
         $method === 'POST' && $id !== null => dal_add_favorite($pdo, $ctx, $id),
         $method === 'DELETE' && $id !== null => dal_remove_favorite($pdo, $ctx, $id),
