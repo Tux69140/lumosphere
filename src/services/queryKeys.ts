@@ -18,6 +18,8 @@ export const queryKeys = {
   aiSettings: ['ai', 'settings'] as const,
   aiPrompts: ['ai', 'prompts'] as const,
   aiLogs: ['ai', 'logs'] as const,
+  aiRegistry: ['ai', 'registry'] as const,
+  aiUsage: ['ai', 'usage'] as const,
   lotsAll: ['lots'] as const,
   lotsList: (filtersKey: string) => ['lots', 'list', filtersKey] as const,
   lotsCounts: ['lots', 'counts'] as const,
