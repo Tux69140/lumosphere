@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { Navigate, useLocation, useNavigate } from 'react-router'
+import { Link, Navigate, useLocation, useNavigate } from 'react-router'
 import { Eye, EyeSlash } from '@phosphor-icons/react'
 import { z } from 'zod'
 import { useAuth } from '@/hooks/useAuth'
@@ -94,6 +94,12 @@ export function LoginPage() {
               {showPassword ? <EyeSlash size={18} /> : <Eye size={18} />}
             </button>
           </div>
+        </div>
+
+        <div className="text-right">
+          <Link to="/mot-de-passe-oublie" className="text-sm text-(--color-action) hover:underline">
+            Mot de passe oublié ?
+          </Link>
         </div>
 
         <label className="flex items-center gap-2 text-sm text-(--color-text-secondary)">
