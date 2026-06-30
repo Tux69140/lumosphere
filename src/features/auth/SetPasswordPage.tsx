@@ -28,14 +28,17 @@ export function SetPasswordPage() {
 
   useEffect(() => {
     if (!token) return
-    apiClient.tokenInfo(token).then((res) => {
-      if (res.status === 'ok' && res.data) {
-        setRoleId(res.data.role_id)
-        setTokenType(res.data.type)
-      } else {
-        setTokenError(res.errors?.[0] ?? 'Ce lien est invalide ou a expiré.')
-      }
-    })
+    apiClient
+      .tokenInfo(token)
+      .then((res) => {
+        if (res.status === 'ok' && res.data) {
+          setRoleId(res.data.role_id)
+          setTokenType(res.data.type)
+        } else {
+          setTokenError(res.errors?.[0] ?? 'Ce lien est invalide ou a expiré.')
+        }
+      })
+      .catch(() => setTokenError('Erreur réseau. Veuillez réessayer.'))
   }, [token])
 
   const title = tokenType === 'reset' ? 'Nouveau mot de passe' : 'Définir mon mot de passe'
@@ -57,12 +60,17 @@ export function SetPasswordPage() {
       return
     }
     setSubmitting(true)
-    const res = await apiClient.setPassword(token, password)
-    setSubmitting(false)
-    if (res.status === 'ok') {
-      setSuccess(true)
-    } else {
-      setError(res.errors?.[0] ?? 'Une erreur est survenue.')
+    try {
+      const res = await apiClient.setPassword(token, password)
+      if (res.status === 'ok') {
+        setSuccess(true)
+      } else {
+        setError(res.errors?.[0] ?? 'Une erreur est survenue.')
+      }
+    } catch {
+      setError('Erreur réseau. Veuillez réessayer.')
+    } finally {
+      setSubmitting(false)
     }
   }
 
