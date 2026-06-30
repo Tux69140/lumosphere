@@ -81,6 +81,13 @@ class PasswordPolicyTest extends TestCase
         $this->assertSame([], $errors);
     }
 
+    public function testShortEmailLocalDoesNotCauseFalsePositive(): void
+    {
+        // Email local 'jo' (2 chars < 4) ne doit pas bloquer un MdP le contenant
+        $errors = dal_password_validate('Projoint99!XYZ', ROLE_ADMIN, 'jo@test.com', 'Test', 'User');
+        $this->assertSame([], $errors);
+    }
+
     // Règle de force Admin/Éditeur
     public function testAdminRequiresThreeCharClasses(): void
     {

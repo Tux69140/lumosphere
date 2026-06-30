@@ -40,11 +40,12 @@ function dal_password_validate(
         $errors[] = 'Ce mot de passe est trop commun, choisissez-en un autre.';
     }
 
-    // Ressemblance avec le contexte utilisateur (prénom ≥ 4 lettres, nom ≥ 4, partie locale de l'email)
+    // Ressemblance avec le contexte utilisateur (prénom ≥ 4 lettres, nom ≥ 4, partie locale de l'email ≥ 4)
+    $email_local = (string) strstr($email, '@', true);
     $context_words = array_filter([
-        mb_strlen($prenom) >= 4 ? mb_strtolower($prenom) : '',
-        mb_strlen($nom)    >= 4 ? mb_strtolower($nom)    : '',
-        mb_strtolower((string) strstr($email, '@', true)),
+        mb_strlen($prenom)      >= 4 ? mb_strtolower($prenom)      : '',
+        mb_strlen($nom)         >= 4 ? mb_strtolower($nom)         : '',
+        mb_strlen($email_local) >= 4 ? mb_strtolower($email_local) : '',
     ], fn($w) => $w !== '');
     foreach ($context_words as $word) {
         if (str_contains($lower, $word)) {
