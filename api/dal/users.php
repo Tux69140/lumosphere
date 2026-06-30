@@ -14,6 +14,10 @@ function dal_find_users(PDO $pdo, array $ctx): array
                 (u.password_set_at IS NOT NULL) AS is_activated
          FROM users u JOIN roles r ON u.role_id = r.id ORDER BY u.nom, u.prenom'
     )->fetchAll();
+    $rows = array_map(function (array $row): array {
+        $row['is_activated'] = (bool) $row['is_activated'];
+        return $row;
+    }, $rows);
     return dal_ok($rows);
 }
 
@@ -164,9 +168,15 @@ function dal_resend_invite(PDO $pdo, array $ctx, int $user_id, string $ip = ''):
         return dal_error('Ce compte est déjà activé. Utilisez la réinitialisation de mot de passe.');
     }
 
-    dal_token_revoke_user_tokens($pdo, $user_id, 'invite');
-    $token = dal_token_create($pdo, $user_id, 'invite', 7 * 24 * 3600, $ip);
-
+    $pdo->beginTransaction();
+    try {
+        dal_token_revoke_user_tokens($pdo, $user_id, 'invite');
+        $token = dal_token_create($pdo, $user_id, 'invite', 7 * 24 * 3600, $ip);
+        $pdo->commit();
+    } catch (\Throwable $e) {
+        $pdo->rollBack();
+        throw $e;
+    }
     return dal_ok(['invite_token' => $token, 'user' => $user]);
 }
 
