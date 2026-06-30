@@ -50,20 +50,34 @@ def extract_hashtag_keywords(text: str, entities: list | None = None) -> list[st
 
 
 def format_as_markdown(text: str) -> str:
-    """Formater un message nettoyé en Markdown basique."""
+    """Formater un message nettoyé en Markdown basique.
+
+    Les blocs séparés par une ligne vide (\\n\\n) deviennent des paragraphes.
+    Les sauts de ligne simples (\\n) dans un bloc deviennent des hard line breaks
+    CommonMark (deux espaces + \\n) pour préserver la mise en forme visuelle.
+    """
     if not text:
         return ""
     lines = text.split("\n")
     result = []
     for line in lines:
         stripped = line.strip()
-        if not stripped:
-            result.append("")
-            continue
         result.append(stripped)
-    return "\n\n".join(
-        para for para in "\n".join(result).split("\n\n") if para.strip()
-    )
+
+    # Diviser en blocs (séparés par lignes vides), appliquer hard breaks à l'intérieur
+    paragraphs = []
+    current_block: list[str] = []
+    for line in result:
+        if not line:
+            if current_block:
+                paragraphs.append("  \n".join(current_block))
+                current_block = []
+        else:
+            current_block.append(line)
+    if current_block:
+        paragraphs.append("  \n".join(current_block))
+
+    return "\n\n".join(paragraphs)
 
 
 def validate_anti_summarization(original: str, cleaned: str) -> bool:
