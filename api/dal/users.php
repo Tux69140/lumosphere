@@ -45,7 +45,7 @@ function dal_get_user_for_auth(PDO $pdo, string $email): ?array
     return $stmt->fetch() ?: null;
 }
 
-function dal_create_user(PDO $pdo, array $ctx, array $data): array
+function dal_create_user(PDO $pdo, array $ctx, array $data, string $ip = ''): array
 {
     dal_require_permission($ctx, 'admin.users');
     $email = trim($data['email'] ?? '');
@@ -56,6 +56,7 @@ function dal_create_user(PDO $pdo, array $ctx, array $data): array
         return dal_error('Le rôle est requis.');
     }
 
+    $pdo->beginTransaction();
     try {
         $stmt = $pdo->prepare(
             'INSERT INTO users (prenom, nom, email, password_hash, role_id)
@@ -72,14 +73,18 @@ function dal_create_user(PDO $pdo, array $ctx, array $data): array
 
         // Révoquer tout ancien jeton d'invitation et créer le nouveau
         dal_token_revoke_user_tokens($pdo, $user_id, 'invite');
-        $ip    = $_SERVER['REMOTE_ADDR'] ?? '';
         $token = dal_token_create($pdo, $user_id, 'invite', 7 * 24 * 3600, $ip);
+        $pdo->commit();
 
         return dal_ok(['id' => $user_id, 'invite_token' => $token]);
     } catch (\PDOException $e) {
+        $pdo->rollBack();
         if ($e->getCode() === '23000') {
             return dal_error('Un utilisateur avec cet email existe déjà.');
         }
+        throw $e;
+    } catch (\Throwable $e) {
+        $pdo->rollBack();
         throw $e;
     }
 }
@@ -146,7 +151,7 @@ function dal_delete_user(PDO $pdo, array $ctx, int $id): array
  * Renvoie un lien d'invitation à un compte non encore activé.
  * Retourne une erreur si le compte est déjà activé (password_set_at IS NOT NULL).
  */
-function dal_resend_invite(PDO $pdo, array $ctx, int $user_id): array
+function dal_resend_invite(PDO $pdo, array $ctx, int $user_id, string $ip = ''): array
 {
     dal_require_permission($ctx, 'admin.users');
     $stmt = $pdo->prepare('SELECT id, prenom, nom, email, password_set_at FROM users WHERE id = :id');
@@ -160,7 +165,6 @@ function dal_resend_invite(PDO $pdo, array $ctx, int $user_id): array
     }
 
     dal_token_revoke_user_tokens($pdo, $user_id, 'invite');
-    $ip    = $_SERVER['REMOTE_ADDR'] ?? '';
     $token = dal_token_create($pdo, $user_id, 'invite', 7 * 24 * 3600, $ip);
 
     return dal_ok(['invite_token' => $token, 'user' => $user]);
