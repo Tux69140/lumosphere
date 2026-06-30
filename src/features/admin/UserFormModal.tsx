@@ -193,7 +193,8 @@ export function UserFormModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="rounded-md px-3 py-2 text-sm text-(--color-text-secondary)"
+                disabled={submitting}
+                className="rounded-md px-3 py-2 text-sm text-(--color-text-secondary) disabled:opacity-50"
               >
                 Annuler
               </button>
