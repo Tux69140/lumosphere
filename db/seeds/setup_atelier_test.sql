@@ -60,6 +60,7 @@ CREATE TABLE IF NOT EXISTS `documents` (
   `hash_contenu` char(64) DEFAULT NULL,
   `selected` tinyint(1) NOT NULL DEFAULT 1,
   `theme_id` int(11) unsigned DEFAULT NULL,
+  `theme_suggested_id` int(11) unsigned DEFAULT NULL,
   `oeuvre_id` int(11) unsigned DEFAULT NULL,
   `citation_id` int(11) unsigned DEFAULT NULL,
   `date_publication` date DEFAULT NULL,
@@ -132,7 +133,7 @@ CREATE TABLE IF NOT EXISTS `server_jobs` (
 CREATE TABLE IF NOT EXISTS `lot_document_keywords` (
   `document_id` int(10) unsigned NOT NULL,
   `keyword_id` int(10) unsigned NOT NULL,
-  `source` enum('manual','ai_suggested','ai_accepted') NOT NULL DEFAULT 'manual',
+  `source` enum('manual','ai_suggested') NOT NULL DEFAULT 'manual',
   PRIMARY KEY (`document_id`, `keyword_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
