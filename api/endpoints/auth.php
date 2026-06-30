@@ -258,6 +258,7 @@ function _auth_set_password(PDO $pdo, array $body): array
 function _auth_forgot_password(PDO $pdo, array $body): array
 {
     $email = trim($body['email'] ?? '');
+    $ip    = $_SERVER['REMOTE_ADDR'] ?? '';
     // Réponse toujours identique (anti-énumération)
     $neutral_response = dal_ok(['message' => "Si un compte existe pour cette adresse, un email vient d'être envoyé."]);
 
@@ -271,6 +272,12 @@ function _auth_forgot_password(PDO $pdo, array $body): array
         return $neutral_response; // Silencieux pour ne pas aider l'attaquant
     }
 
+    // Rate-limiting par IP
+    $rl_ip = _dal_auth_rl_check($pdo, 'password_reset_attempts_ip', 'ip', $ip);
+    if ($rl_ip['locked']) {
+        return $neutral_response;
+    }
+
     $stmt = $pdo->prepare('SELECT id, prenom, nom, email, role_id, password_set_at FROM users WHERE email = :email');
     $stmt->execute(['email' => $email]);
     $user = $stmt->fetch();
@@ -281,10 +288,10 @@ function _auth_forgot_password(PDO $pdo, array $body): array
     }
 
     _dal_auth_rl_record($pdo, 'password_reset_attempts', 'email', $email);
+    _dal_auth_rl_record($pdo, 'password_reset_attempts_ip', 'ip', $ip);
 
     // Révoquer les anciens jetons de reset et créer le nouveau
     dal_token_revoke_user_tokens($pdo, (int) $user['id'], 'reset');
-    $ip    = $_SERVER['REMOTE_ADDR'] ?? '';
     $token = dal_token_create($pdo, (int) $user['id'], 'reset', 3600, $ip);
 
     $origin    = $GLOBALS['app_config']['allowed_origin'] ?? '';
