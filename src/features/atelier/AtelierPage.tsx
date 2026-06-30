@@ -1,20 +1,12 @@
-import { useState, useMemo } from 'react'
-import { Factory, MagnifyingGlass } from '@phosphor-icons/react'
+import { useState, useMemo, useEffect } from 'react'
+import { Factory, MagnifyingGlass, ArrowsClockwise } from '@phosphor-icons/react'
 import { useLotsList, useLotCounts } from './useLots'
+import { useRunCollect, useTopup } from './useCollecte'
 import { ListeLots } from './components/ListeLots'
 import { LOT_STATUS_LABELS, LOT_STATUS_COLORS } from './types'
 import type { LotStatus } from './types'
 
-const ALL_STATUSES: LotStatus[] = [
-  'en_attente',
-  'en_cours',
-  'en_traitement',
-  'en_revision',
-  'a_reprendre',
-  'pret',
-  'integre',
-  'erreur',
-]
+const ALL_STATUSES: LotStatus[] = ['en_attente', 'en_traitement', 'integre', 'erreur']
 
 export function AtelierPage() {
   const [statusFilter, setStatusFilter] = useState<string>('')
@@ -31,6 +23,14 @@ export function AtelierPage() {
   const filtersKey = JSON.stringify(params)
   const { data, isLoading } = useLotsList(filtersKey, params)
   const { data: counts } = useLotCounts()
+
+  const { run, isPending: collecting } = useRunCollect()
+  const { topup } = useTopup()
+  // Réapprovisionne l'historique à l'ouverture de l'atelier (idempotent côté serveur)
+  useEffect(() => {
+    topup(0)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const lots = useMemo(() => {
     const items = data?.items ?? []
@@ -99,21 +99,46 @@ export function AtelierPage() {
             </h3>
             <div className="space-y-1">
               {['', 'telegram', 'pdf', 'youtube', 'html'].map((s) => (
-                <button
-                  key={s}
-                  type="button"
-                  onClick={() => setSourceFilter(s)}
-                  className={`flex w-full items-center justify-between rounded px-2 py-1.5 text-sm transition-colors ${
-                    sourceFilter === s
-                      ? 'bg-(--color-bg-hover) font-medium text-(--color-text)'
-                      : 'text-(--color-text-muted) hover:bg-(--color-bg-hover)'
-                  }`}
-                >
-                  {s || 'Toutes'}
-                </button>
+                <div key={s} className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setSourceFilter(s)}
+                    className={`flex flex-1 items-center justify-between rounded px-2 py-1.5 text-sm transition-colors ${
+                      sourceFilter === s
+                        ? 'bg-(--color-bg-hover) font-medium text-(--color-text)'
+                        : 'text-(--color-text-muted) hover:bg-(--color-bg-hover)'
+                    }`}
+                  >
+                    {s || 'Toutes'}
+                  </button>
+                  {s === 'telegram' && (
+                    <button
+                      type="button"
+                      onClick={() => run()}
+                      disabled={collecting}
+                      title="Tout récupérer maintenant"
+                      aria-label="Tout récupérer maintenant depuis Telegram"
+                      className="rounded p-1 text-(--color-text-muted) hover:bg-(--color-bg-hover) hover:text-(--color-accent) disabled:opacity-50"
+                    >
+                      <ArrowsClockwise
+                        size={16}
+                        className={collecting ? 'animate-spin' : ''}
+                        aria-hidden="true"
+                      />
+                    </button>
+                  )}
+                </div>
               ))}
             </div>
           </div>
+
+          <button
+            type="button"
+            onClick={() => topup(4)}
+            className="w-full rounded-lg border border-(--color-border) bg-(--color-bg-card) px-2 py-1.5 text-xs text-(--color-text-muted) hover:bg-(--color-bg-hover)"
+          >
+            + M'en donner plus (historique)
+          </button>
         </aside>
 
         {/* Contenu principal */}

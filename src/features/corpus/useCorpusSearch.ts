@@ -1,5 +1,5 @@
 import { useContext } from 'react'
-import { CorpusSearchContext, type CorpusSearchContextValue } from './CorpusSearchProvider'
+import { CorpusSearchContext, type CorpusSearchContextValue } from './CorpusSearchContext'
 
 export function useCorpusSearch(): CorpusSearchContextValue {
   const ctx = useContext(CorpusSearchContext)

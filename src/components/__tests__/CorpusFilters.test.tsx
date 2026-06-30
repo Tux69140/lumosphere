@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { describe, it, expect, vi } from 'vitest'
 import { CorpusFilters } from '../CorpusFilters'
 import { useCorpusSearch } from '@/features/corpus/useCorpusSearch'
-import type { CorpusSearchContextValue } from '@/features/corpus/CorpusSearchProvider'
+import type { CorpusSearchContextValue } from '@/features/corpus/CorpusSearchContext'
 
 vi.mock('@/features/corpus/useCorpusSearch', () => ({ useCorpusSearch: vi.fn() }))
 

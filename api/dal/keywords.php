@@ -5,12 +5,29 @@ declare(strict_types=1);
 require_once __DIR__ . '/core.php';
 
 /**
- * R6 — Normalisation d'un mot-clé : minuscules + trim (UTF-8). Règle unique
- * partagée par la recherche, la création et l'upsert.
+ * R6 (révisé) — Normalisation d'un mot-clé. Règle unique partagée par la
+ * recherche, la création et l'upsert.
+ *
+ * - trim
+ * - la casse est PRÉSERVÉE (« Nécessité » reste « Nécessité ») ;
+ * - en français les MAJUSCULES ne portent pas d'accent : on retire l'accent
+ *   des seules lettres majuscules (« Évolution » → « Evolution »), les
+ *   minuscules accentuées sont conservées.
+ *
+ * L'unicité insensible casse/accents est garantie par la collation
+ * utf8mb4_unicode_520_ci de la colonne keywords.mot.
  */
 function _dal_normalize_keyword(string $mot): string
 {
-    return mb_strtolower(trim($mot), 'UTF-8');
+    $upper_accents = [
+        'À' => 'A', 'Á' => 'A', 'Â' => 'A', 'Ã' => 'A', 'Ä' => 'A', 'Å' => 'A',
+        'È' => 'E', 'É' => 'E', 'Ê' => 'E', 'Ë' => 'E',
+        'Ì' => 'I', 'Í' => 'I', 'Î' => 'I', 'Ï' => 'I',
+        'Ò' => 'O', 'Ó' => 'O', 'Ô' => 'O', 'Õ' => 'O', 'Ö' => 'O',
+        'Ù' => 'U', 'Ú' => 'U', 'Û' => 'U', 'Ü' => 'U',
+        'Ç' => 'C', 'Ñ' => 'N', 'Ý' => 'Y', 'Ÿ' => 'Y',
+    ];
+    return strtr(trim($mot), $upper_accents);
 }
 
 function dal_find_keywords(PDO $pdo, array $ctx, ?string $search = null): array
@@ -40,10 +57,6 @@ function dal_find_keywords(PDO $pdo, array $ctx, ?string $search = null): array
     return dal_ok($stmt->fetchAll());
 }
 
-/**
- * R6 — Keywords normalized: mb_strtolower + trim on write.
- * Collation utf8mb4_unicode_520_ci handles case-insensitive uniqueness.
- */
 function dal_create_keyword(PDO $pdo, array $ctx, string $mot): array
 {
     dal_require_permission($ctx, 'keywords.manage');
@@ -80,6 +93,12 @@ function dal_find_or_create_keyword(PDO $pdo, array $ctx, string $mot): array
     $stmt->execute(['mot' => $normalized]);
     $existing = $stmt->fetch();
     if ($existing) {
+        // Mise à jour de la casse si l'entrée existante diffère (ancienne norm. lowercase).
+        if ($existing['mot'] !== $normalized) {
+            $pdo->prepare('UPDATE keywords SET mot = :mot WHERE id = :id')
+                ->execute(['mot' => $normalized, 'id' => $existing['id']]);
+            $existing['mot'] = $normalized;
+        }
         return dal_ok($existing);
     }
     $stmt = $pdo->prepare('INSERT INTO keywords (mot) VALUES (:mot)');

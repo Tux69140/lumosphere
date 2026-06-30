@@ -26,12 +26,14 @@ function dal_auth_is_session_expired(array $session, int $now): bool
     return ($now - $last) > SESSION_IDLE_TIMEOUT;
 }
 
-function dal_auth_check_rate_limit(PDO $pdo, string $email): array
+/**
+ * Anti-force-brute générique. $table/$col sont des identifiants internes
+ * (jamais de saisie client) ; la valeur testée est liée en paramètre.
+ */
+function _dal_auth_rl_check(PDO $pdo, string $table, string $col, string $value): array
 {
-    $stmt = $pdo->prepare(
-        'SELECT attempt_count, last_attempt_at FROM login_attempts WHERE email = :email'
-    );
-    $stmt->execute(['email' => $email]);
+    $stmt = $pdo->prepare("SELECT attempt_count, last_attempt_at FROM {$table} WHERE {$col} = :v");
+    $stmt->execute(['v' => $value]);
     $row = $stmt->fetch();
 
     if (!$row) {
@@ -40,8 +42,7 @@ function dal_auth_check_rate_limit(PDO $pdo, string $email): array
 
     $elapsed = time() - strtotime($row['last_attempt_at']);
     if ($elapsed >= LOCKOUT_DURATION) {
-        $pdo->prepare('DELETE FROM login_attempts WHERE email = :email')
-            ->execute(['email' => $email]);
+        $pdo->prepare("DELETE FROM {$table} WHERE {$col} = :v")->execute(['v' => $value]);
         return ['locked' => false, 'remaining_seconds' => 0];
     }
 
@@ -52,20 +53,49 @@ function dal_auth_check_rate_limit(PDO $pdo, string $email): array
     return ['locked' => false, 'remaining_seconds' => 0];
 }
 
-function dal_auth_record_failed_attempt(PDO $pdo, string $email): void
+function _dal_auth_rl_record(PDO $pdo, string $table, string $col, string $value): void
 {
     $stmt = $pdo->prepare(
-        'INSERT INTO login_attempts (email, attempt_count, last_attempt_at)
-         VALUES (:email, 1, NOW())
-         ON DUPLICATE KEY UPDATE attempt_count = attempt_count + 1, last_attempt_at = NOW()'
+        "INSERT INTO {$table} ({$col}, attempt_count, last_attempt_at)
+         VALUES (:v, 1, NOW())
+         ON DUPLICATE KEY UPDATE attempt_count = attempt_count + 1, last_attempt_at = NOW()"
     );
-    $stmt->execute(['email' => $email]);
+    $stmt->execute(['v' => $value]);
+}
+
+function _dal_auth_rl_clear(PDO $pdo, string $table, string $col, string $value): void
+{
+    $pdo->prepare("DELETE FROM {$table} WHERE {$col} = :v")->execute(['v' => $value]);
+}
+
+function dal_auth_check_rate_limit(PDO $pdo, string $email): array
+{
+    return _dal_auth_rl_check($pdo, 'login_attempts', 'email', $email);
+}
+
+function dal_auth_record_failed_attempt(PDO $pdo, string $email): void
+{
+    _dal_auth_rl_record($pdo, 'login_attempts', 'email', $email);
 }
 
 function dal_auth_clear_attempts(PDO $pdo, string $email): void
 {
-    $pdo->prepare('DELETE FROM login_attempts WHERE email = :email')
-        ->execute(['email' => $email]);
+    _dal_auth_rl_clear($pdo, 'login_attempts', 'email', $email);
+}
+
+function dal_auth_check_rate_limit_ip(PDO $pdo, string $ip): array
+{
+    return _dal_auth_rl_check($pdo, 'login_attempts_ip', 'ip', $ip);
+}
+
+function dal_auth_record_failed_attempt_ip(PDO $pdo, string $ip): void
+{
+    _dal_auth_rl_record($pdo, 'login_attempts_ip', 'ip', $ip);
+}
+
+function dal_auth_clear_attempts_ip(PDO $pdo, string $ip): void
+{
+    _dal_auth_rl_clear($pdo, 'login_attempts_ip', 'ip', $ip);
 }
 
 function dal_auth_load_permissions(PDO $pdo, int $role_id): array
@@ -162,7 +192,7 @@ function dal_auth_has_any_user(PDO $pdo): bool
 
 function dal_auth_verify_setup_secret(PDO $pdo, string $secret): bool
 {
-    $stored = dal_get_config($pdo, 'setup_secret');
+    $stored = dal_config_value($pdo, 'setup_secret');
     return $stored !== null && $stored !== '' && hash_equals($stored, $secret);
 }
 

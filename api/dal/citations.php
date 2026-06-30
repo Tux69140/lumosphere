@@ -37,8 +37,13 @@ function dal_attach_keywords(PDO $pdo, array $rows): array
 /**
  * Read citations with R7 (soft-delete), R8 (oeuvre access), R9 (keyset pagination).
  */
-function dal_find_citations(PDO $pdo, array $ctx, array $filters = [], ?string $cursor = null, int $page_size = PAGE_SIZE_DEFAULT): array
-{
+function dal_find_citations(
+    PDO $pdo,
+    array $ctx,
+    array $filters = [],
+    ?string $cursor = null,
+    int $page_size = PAGE_SIZE_DEFAULT
+): array {
     dal_require_permission($ctx, 'corpus.read');
     $params = [];
     $where = '1=1';
@@ -109,7 +114,9 @@ function dal_get_citation(PDO $pdo, array $ctx, int $id): array
 
     // Attach keywords
     $kw_stmt = $pdo->prepare(
-        'SELECT k.id, k.mot FROM keywords k JOIN citation_keywords ck ON ck.keyword_id = k.id WHERE ck.citation_id = :cid ORDER BY k.mot'
+        'SELECT k.id, k.mot FROM keywords k '
+        . 'JOIN citation_keywords ck ON ck.keyword_id = k.id '
+        . 'WHERE ck.citation_id = :cid ORDER BY k.mot'
     );
     $kw_stmt->execute(['cid' => $id]);
     $row['keywords'] = $kw_stmt->fetchAll();
@@ -142,8 +149,14 @@ function dal_count_citations(PDO $pdo, array $ctx, array $filters = []): array
 /**
  * FULLTEXT search with R7, R8, R9.
  */
-function dal_search_citations(PDO $pdo, array $ctx, string $query, array $filters = [], ?string $cursor = null, int $page_size = PAGE_SIZE_DEFAULT): array
-{
+function dal_search_citations(
+    PDO $pdo,
+    array $ctx,
+    string $query,
+    array $filters = [],
+    ?string $cursor = null,
+    int $page_size = PAGE_SIZE_DEFAULT
+): array {
     dal_require_permission($ctx, 'corpus.read');
     $query = trim($query);
     if ($query === '') {
@@ -403,7 +416,9 @@ function _dal_build_citation_where(array $filters, array &$params, array $ctx = 
         if ($mode === 'or') {
             $where .= " AND c.id IN (SELECT citation_id FROM citation_keywords WHERE keyword_id IN ({$in_list}))";
         } else {
-            $where .= " AND c.id IN (SELECT citation_id FROM citation_keywords WHERE keyword_id IN ({$in_list}) GROUP BY citation_id HAVING COUNT(DISTINCT keyword_id) = :kw_count)";
+            $where .= " AND c.id IN (SELECT citation_id FROM citation_keywords"
+                . " WHERE keyword_id IN ({$in_list})"
+                . " GROUP BY citation_id HAVING COUNT(DISTINCT keyword_id) = :kw_count)";
             $params[':kw_count'] = count($kw_ids);
         }
     }

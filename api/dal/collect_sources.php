@@ -77,16 +77,20 @@ function _dal_validate_telegram_source(PDO $pdo, array $data, bool $is_create): 
         }
     }
 
-    if (array_key_exists('run_every_hours', $data)
-        && $data['run_every_hours'] !== null && $data['run_every_hours'] !== '') {
+    if (
+        array_key_exists('run_every_hours', $data)
+        && $data['run_every_hours'] !== null && $data['run_every_hours'] !== ''
+    ) {
         $h = (string) $data['run_every_hours'];
         if (!preg_match('/^\d+$/', $h) || (int) $h > 255) {
             $errors[] = 'Le délai doit être un nombre d\'heures entre 0 et 255.';
         }
     }
 
-    if (array_key_exists('oeuvre_id', $data)
-        && $data['oeuvre_id'] !== null && $data['oeuvre_id'] !== '') {
+    if (
+        array_key_exists('oeuvre_id', $data)
+        && $data['oeuvre_id'] !== null && $data['oeuvre_id'] !== ''
+    ) {
         $stmt = $pdo->prepare('SELECT id FROM oeuvres WHERE id = :id');
         $stmt->execute(['id' => (int) $data['oeuvre_id']]);
         if (!$stmt->fetch()) {
@@ -106,7 +110,8 @@ function dal_create_collect_source(PDO $pdo, array $ctx, array $data): array
         return dal_error($errors);
     }
 
-    $oeuvre_id = (isset($data['oeuvre_id']) && $data['oeuvre_id'] !== '' && $data['oeuvre_id'] !== null)
+    // isset() exclut déjà null : pas besoin d'un test !== null supplémentaire.
+    $oeuvre_id = (isset($data['oeuvre_id']) && $data['oeuvre_id'] !== '')
         ? (int) $data['oeuvre_id'] : null;
 
     $stmt = $pdo->prepare(

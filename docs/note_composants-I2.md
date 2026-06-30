@@ -44,7 +44,7 @@
 
 | Élément     | Version | Emplacement            |
 | ----------- | ------- | ---------------------- |
-| Venv Python | 3.11.15 | `epuriel/venvs/py311/` |
+| Venv Python | 3.11.15 | `lumosphere/venvs/py311/` (ancien `epuriel/` à supprimer) |
 | PyMuPDF     | 1.27.2  | Dans le venv py311     |
 | Pillow      | 12.2.0  | Dans le venv py311     |
 | LiteLLM     | 1.86.1  | Dans le venv py311     |

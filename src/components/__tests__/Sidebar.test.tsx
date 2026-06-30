@@ -3,7 +3,7 @@ import { describe, it, expect, vi } from 'vitest'
 import { MemoryRouter } from 'react-router'
 import { Sidebar } from '../Sidebar'
 import { useCorpusSearch } from '@/features/corpus/useCorpusSearch'
-import type { CorpusSearchContextValue } from '@/features/corpus/CorpusSearchProvider'
+import type { CorpusSearchContextValue } from '@/features/corpus/CorpusSearchContext'
 
 vi.mock('@/features/corpus/useCorpusSearch', () => ({ useCorpusSearch: vi.fn() }))
 

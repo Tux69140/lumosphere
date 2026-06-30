@@ -43,9 +43,13 @@ function dal_get_pdo(?array $config = null): PDO
     return $instance;
 }
 
-function dal_ok(mixed $data = null): array
+function dal_ok(mixed $data = null, ?string $message = null): array
 {
-    return ['status' => 'ok', 'data' => $data, 'errors' => []];
+    $response = ['status' => 'ok', 'data' => $data, 'errors' => []];
+    if ($message !== null) {
+        $response['message'] = $message;
+    }
+    return $response;
 }
 
 function dal_error(string|array $errors): array
@@ -90,7 +94,8 @@ function dal_oeuvre_visibility_clause(string $oeuvre_col, array $ctx, array &$pa
         $params[':ctx_abo3'] = ROLE_ABO3;
         $params[':ctx_abo4'] = ROLE_ABO4;
         return " AND ({$oeuvre_col} NOT IN ({$reserved})"
-             . " OR {$oeuvre_col} IN (SELECT oeuvre_id FROM role_oeuvre_access WHERE role_id IN (:ctx_abo3, :ctx_abo4)))";
+             . " OR {$oeuvre_col} IN ("
+             . "SELECT oeuvre_id FROM role_oeuvre_access WHERE role_id IN (:ctx_abo3, :ctx_abo4)))";
     }
 
     $params[':ctx_role'] = $role_id;
@@ -102,8 +107,12 @@ function dal_oeuvre_visibility_clause(string $oeuvre_col, array $ctx, array &$pa
  * R8 — Rights filter per oeuvre, appended to every SELECT on citations/oeuvres.
  * corpus.read_all → no restriction. Otherwise: Publiée only + whitelist Visiteur.
  */
-function dal_oeuvre_access_clause(string $oeuvre_col, array $ctx, array &$params, string $etat_col = 'c.etat_id'): string
-{
+function dal_oeuvre_access_clause(
+    string $oeuvre_col,
+    array $ctx,
+    array &$params,
+    string $etat_col = 'c.etat_id'
+): string {
     if (in_array('corpus.read_all', $ctx['permissions'] ?? [], true)) {
         return '';
     }
@@ -161,8 +170,14 @@ function dal_keyset_clause(string $sort_col, string $id_col, ?array $cursor, str
  *
  * @param int[] $ids
  */
-function _dal_replace_associations(PDO $pdo, string $table, string $fk_col, int $fk_id, string $val_col, array $ids): void
-{
+function _dal_replace_associations(
+    PDO $pdo,
+    string $table,
+    string $fk_col,
+    int $fk_id,
+    string $val_col,
+    array $ids
+): void {
     $pdo->prepare("DELETE FROM {$table} WHERE {$fk_col} = :fk")->execute(['fk' => $fk_id]);
     if (empty($ids)) {
         return;

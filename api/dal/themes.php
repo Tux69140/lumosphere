@@ -7,15 +7,19 @@ require_once __DIR__ . '/core.php';
 function dal_find_themes(PDO $pdo, array $ctx): array
 {
     dal_require_permission($ctx, 'corpus.read');
-    $rows = $pdo->query('SELECT id, nom, parent_id, chemin, description, created_at, updated_at FROM themes ORDER BY chemin, nom')
-                ->fetchAll();
+    $rows = $pdo->query(
+        'SELECT id, nom, parent_id, chemin, description, created_at, updated_at
+         FROM themes ORDER BY chemin, nom'
+    )->fetchAll();
     return dal_ok($rows);
 }
 
 function dal_get_theme(PDO $pdo, array $ctx, int $id): array
 {
     dal_require_permission($ctx, 'corpus.read');
-    $stmt = $pdo->prepare('SELECT id, nom, parent_id, chemin, description, created_at, updated_at FROM themes WHERE id = :id');
+    $stmt = $pdo->prepare(
+        'SELECT id, nom, parent_id, chemin, description, created_at, updated_at FROM themes WHERE id = :id'
+    );
     $stmt->execute(['id' => $id]);
     $row = $stmt->fetch();
     if (!$row) {
@@ -107,7 +111,10 @@ function dal_update_theme(PDO $pdo, array $ctx, int $id, array $data): array
 
     $pdo->beginTransaction();
     try {
-        $stmt = $pdo->prepare('UPDATE themes SET nom = :nom, parent_id = :parent_id, chemin = :chemin, description = :description WHERE id = :id');
+        $stmt = $pdo->prepare(
+            'UPDATE themes SET nom = :nom, parent_id = :parent_id, chemin = :chemin, description = :description
+             WHERE id = :id'
+        );
         $stmt->execute([
             'nom'         => $nom,
             'parent_id'   => $parent_id,

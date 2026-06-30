@@ -5,5 +5,10 @@
     <arg name="extensions" value="php"/>
     <arg name="colors"/>
     <arg value="sp"/>
-    <rule ref="PSR12"/>
+    <rule ref="PSR12">
+        <!-- Architecture procédurale sans autoloader : les modules DAL requièrent
+             leurs dépendances (require_once) en tête tout en déclarant des fonctions.
+             PSR1 SideEffects est incompatible avec ce pattern volontaire. -->
+        <exclude name="PSR1.Files.SideEffects"/>
+    </rule>
 </ruleset>

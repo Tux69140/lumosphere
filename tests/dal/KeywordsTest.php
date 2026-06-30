@@ -18,16 +18,29 @@ final class KeywordsTest extends TestCase
         $this->pdo->exec('DELETE FROM keywords');
     }
 
-    /** R6 — normalize to lowercase */
-    public function test_create_keyword_normalizes_to_lowercase(): void
+    /**
+     * R6 (révisé) — casse préservée ; accents retirés des MAJUSCULES uniquement
+     * (en français, les majuscules ne portent pas d'accent). Les minuscules
+     * accentuées sont conservées. L'unicité reste gérée par la collation.
+     */
+    public function test_create_keyword_preserves_case_strips_uppercase_accents(): void
     {
         $ctx = create_test_ctx(ROLE_ADMIN);
-        $r = dal_create_keyword($this->pdo, $ctx, 'Amour');
-        $this->assertSame('ok', $r['status']);
-
-        $stmt = $this->pdo->prepare('SELECT mot FROM keywords WHERE id = :id');
-        $stmt->execute(['id' => $r['data']['id']]);
-        $this->assertSame('amour', $stmt->fetch()['mot']);
+        $cases = [
+            'Amour'     => 'Amour',     // casse conservée
+            'Nécessité' => 'Nécessité', // minuscules accentuées conservées
+            'Évolution' => 'Evolution', // É majuscule → E sans accent
+            'ÉTAT'      => 'ETAT',      // tout en majuscules
+            'À la fois' => 'A la fois', // À → A
+        ];
+        foreach ($cases as $input => $expected) {
+            $this->pdo->exec('DELETE FROM keywords');
+            $r = dal_create_keyword($this->pdo, $ctx, $input);
+            $this->assertSame('ok', $r['status'], "création de « $input »");
+            $stmt = $this->pdo->prepare('SELECT mot FROM keywords WHERE id = :id');
+            $stmt->execute(['id' => $r['data']['id']]);
+            $this->assertSame($expected, $stmt->fetch()['mot'], "« $input » → « $expected »");
+        }
     }
 
     /** R6 — trim whitespace */
@@ -67,6 +80,30 @@ final class KeywordsTest extends TestCase
         $this->assertSame('ok', $r1['status']);
         $this->assertSame('ok', $r2['status']);
         $this->assertSame($r1['data']['id'], $r2['data']['id']);
+    }
+
+    /**
+     * Cas du bug : mot-clé stocké en minuscules (ancienne normalisation),
+     * find_or_create avec une casse différente doit mettre à jour le mot en base.
+     */
+    public function test_find_or_create_upgrades_lowercase_casing(): void
+    {
+        $ctx = create_test_ctx(ROLE_ADMIN);
+        // Simuler un mot-clé pré-existant en minuscules (ancienne normalisation).
+        $this->pdo->exec("INSERT INTO keywords (mot) VALUES ('nécessité')");
+        $oldId = (int) $this->pdo->lastInsertId();
+
+        // L'utilisateur accepte la suggestion "Nécessité" → find_or_create doit
+        // retrouver le même ID et mettre à jour la casse en base.
+        $r = dal_find_or_create_keyword($this->pdo, $ctx, 'Nécessité');
+        $this->assertSame('ok', $r['status']);
+        $this->assertSame($oldId, $r['data']['id']);
+        $this->assertSame('Nécessité', $r['data']['mot']);
+
+        // La base doit refléter la nouvelle casse.
+        $stmt = $this->pdo->prepare('SELECT mot FROM keywords WHERE id = :id');
+        $stmt->execute(['id' => $oldId]);
+        $this->assertSame('Nécessité', $stmt->fetch()['mot']);
     }
 
     public function test_find_keywords_with_search_prefix(): void

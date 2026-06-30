@@ -85,7 +85,11 @@ function dal_update_user(PDO $pdo, array $ctx, int $id, array $data): array
         return dal_error('Utilisateur introuvable.');
     }
 
-    if (array_key_exists('role_id', $data) && (int) $current['role_id'] === ROLE_ADMIN && (int) $data['role_id'] !== ROLE_ADMIN) {
+    if (
+        array_key_exists('role_id', $data)
+        && (int) $current['role_id'] === ROLE_ADMIN
+        && (int) $data['role_id'] !== ROLE_ADMIN
+    ) {
         if (_dal_count_admins($pdo) <= 1) {
             return dal_error('Impossible de rétrograder le dernier administrateur.');
         }

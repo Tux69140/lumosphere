@@ -8,7 +8,10 @@ function dal_find_auteurs(PDO $pdo, array $ctx, ?string $search = null): array
 {
     dal_require_permission($ctx, 'corpus.read');
     if ($search !== null && $search !== '') {
-        $stmt = $pdo->prepare('SELECT id, nom, site, informations, created_at, updated_at FROM auteurs WHERE nom LIKE :search ORDER BY nom');
+        $stmt = $pdo->prepare(
+            'SELECT id, nom, site, informations, created_at, updated_at
+             FROM auteurs WHERE nom LIKE :search ORDER BY nom'
+        );
         $stmt->execute(['search' => '%' . $search . '%']);
     } else {
         $stmt = $pdo->prepare('SELECT id, nom, site, informations, created_at, updated_at FROM auteurs ORDER BY nom');

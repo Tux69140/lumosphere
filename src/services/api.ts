@@ -258,8 +258,9 @@ export const apiClient = {
   deleteUser: (id: number) => del<void>(`users/${id}`),
 
   // Config
-  getConfig: (key: string) => get<unknown>(`config/${key}`),
+  getConfig: (key: string) => get<string | null>(`config/${key}`),
   setConfig: (key: string, value: string) => put<void>(`config/${key}`, { value }),
+  listConfig: () => get<{ cle: string; valeur: string | null }[]>('config'),
 
   // Favorites
   findFavorites: (params?: Record<string, string>) =>
@@ -295,13 +296,17 @@ export const apiClient = {
   deleteLotDocument: (lotId: number, docId: number) =>
     delWithBody<void>(`lots/${lotId}/document`, { document_id: docId }),
 
+  // Collecte manuelle (atelier)
+  collecteRun: () => post<{ lots: string[] }>('collecte/run', {}),
+  collecteTopup: (more = 0) => post<{ created: number }>('collecte/topup', { more }),
+
   // AI
   aiSuggestKeywords: (citationId: number, contenu: string) =>
     post<{ keywords: string[] }>('ai/suggest-keywords', { citation_id: citationId, contenu }),
   aiSuggestTheme: (citationId: number, contenu: string) =>
     post<{ theme_id: number }>('ai/suggest-theme', { citation_id: citationId, contenu }),
-  aiTestConnection: () =>
-    post<{ ok: boolean; provider: string; model: string }>('ai/test-connection', {}),
+  aiTestConnection: (data?: { provider?: string; model?: string }) =>
+    post<{ ok: boolean; provider: string; model: string }>('ai/test-connection', data ?? {}),
   aiGetSettings: () =>
     get<{
       provider: string
@@ -339,9 +344,70 @@ export const apiClient = {
         latency_ms: number
         status: 'ok' | 'error'
         error_message: string | null
+        error_type: string | null
+        error_origin: string | null
         user_id: number | null
         created_at: string
       }>
       next_cursor: string | null
     }>(`ai/logs${buildQuery(params)}`),
+
+  aiGetRegistry: () =>
+    get<{
+      providers: Record<
+        string,
+        Array<{
+          model_id: string
+          label: string
+          enabled: boolean
+          deprecated: boolean
+          pricing_input_per_million_usd: number | null
+          pricing_output_per_million_usd: number | null
+          pricing_source: string
+          context_window: number
+          supports_json: boolean
+          supports_vision: boolean
+          notes: string | null
+          usable: boolean
+        }>
+      >
+      last_refreshed_at: string | null
+    }>('ai/registry'),
+
+  aiRefreshModels: () =>
+    post<{
+      providers: Array<{ key: string; count: number; error: string | null }>
+      refreshed_at: string
+    }>('ai/models-refresh', {}),
+
+  aiToggleModel: (provider: string, model_id: string, enabled: boolean) =>
+    post<void>('ai/registry-toggle', { provider, model_id, enabled }),
+
+  aiOverrideModel: (data: {
+    provider: string
+    model_id: string
+    pricing_input_per_million_usd?: number | null
+    pricing_output_per_million_usd?: number | null
+    context_window?: number
+    notes?: string | null
+    reset_pricing?: boolean
+  }) => put<void>('ai/registry-override', data),
+
+  aiUsageSummary: () =>
+    get<{
+      total_usd: number
+      by_provider: Record<
+        string,
+        {
+          models: Array<{
+            model: string
+            calls: number
+            prompt_tokens: number
+            completion_tokens: number
+            estimated_usd: number | null
+          }>
+          subtotal_usd: number
+        }
+      >
+    }>('ai/usage-summary'),
 }

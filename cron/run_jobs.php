@@ -1,14 +1,17 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * Runner de jobs Lumosphère.
  * Traite les jobs en file d'attente (server_jobs).
  * Supporte : process_telegram_v2
  */
 
+declare(strict_types=1);
+
 require_once __DIR__ . '/bootstrap_cron.php';
+require_once __DIR__ . '/lib/ai_enrichment.php';
+
+['pdo' => $pdo, 'config' => $config] = cron_bootstrap();
 
 $maxJobs = (int) (getenv('RUN_JOBS_MAX') ?: 1);
 
@@ -239,7 +242,7 @@ function run_process_telegram_v2(PDO $pdo, array $config, array $job, array $pay
 
     // Écrire les résultats dans la base
     $updateStmt = $pdo->prepare(
-        "UPDATE documents SET contenu_revise = ?, status = 'en_revision' WHERE id = ?"
+        "UPDATE documents SET contenu_revise = ?, status = 'en_attente' WHERE id = ?"
     );
 
     $keywordInsert = $pdo->prepare(
@@ -276,17 +279,18 @@ function run_process_telegram_v2(PDO $pdo, array $config, array $job, array $pay
         }
     }
 
-    // Passer le lot en en_revision
-    $pdo->prepare(
-        "UPDATE lots SET status = 'en_revision', updated_at = NOW() WHERE lot_id = ?"
-    )->execute([$lotId]);
+    // Enrichissement IA : suggestions de thème + mots-clés (à valider en révision).
+    // Best-effort : un échec IA n'interrompt pas le traitement du lot.
+    $enrich = epuriel_enrich_lot_documents_ai($pdo, $lotId);
 
-    log_journal($pdo, $lotId, 'traitement_termine', 'en_attente', 'en_revision',
-        "$processedCount document(s) traite(s) par le worker Telegram v2");
+    log_journal($pdo, $lotId, 'traitement_termine', 'en_attente', 'en_attente',
+        "$processedCount document(s) traite(s) par le worker Telegram v2"
+        . " ; enrichissement IA : {$enrich['enriched']} ok, {$enrich['failed']} echec(s)");
 
     return [
         'ok' => true,
         'processed' => $processedCount,
+        'enrichment' => $enrich,
         'stats' => $result['stats'] ?? [],
     ];
 }

@@ -1,6 +1,5 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import {
-  ArrowRight,
   ArrowLineUp,
   CheckCircle,
   WarningCircle,
@@ -12,8 +11,8 @@ import {
   FloppyDisk,
   TreeStructure,
 } from '@phosphor-icons/react'
-import type { LotDetail, LotDocument, LotStatus, ConformityResult } from '../types'
-import { LOT_STATUS_LABELS, LOT_STATUS_COLORS, LOT_VALID_TRANSITIONS } from '../types'
+import type { LotDetail, LotDocument, ConformityResult } from '../types'
+import { LOT_STATUS_LABELS, LOT_STATUS_COLORS } from '../types'
 import {
   useUpdateLotStatus,
   useCheckConformity,
@@ -99,7 +98,9 @@ function MetadataPanel({
     try {
       const res = await apiClient.aiSuggestTheme(doc.id, text)
       if (res.status === 'ok' && res.data?.theme_id) {
-        onUpdate({ document_id: doc.id, theme_id: res.data.theme_id })
+        // Toute proposition IA passe par « suggéré » : validation humaine requise
+        // avant de devenir le thème validé (zone manuelle).
+        onUpdate({ document_id: doc.id, theme_suggested_id: res.data.theme_id })
       }
     } catch {
       /* ignore */
@@ -125,9 +126,22 @@ function MetadataPanel({
     }
   }
 
+  // Mots-clés validés (humains) vs suggérés par l'IA (en attente).
+  const manualKeywords = doc.keywords.filter((k) => k.source === 'manual')
+  const suggestedKeywords = doc.keywords.filter((k) => k.source === 'ai_suggested')
+
   function handleRemoveKeyword(kwId: number) {
-    const remaining = doc.keywords.filter((k) => k.keyword_id !== kwId).map((k) => k.keyword_id)
+    // On ne touche qu'au panier « manuel ».
+    const remaining = manualKeywords.filter((k) => k.keyword_id !== kwId).map((k) => k.keyword_id)
     onSetKeywords({ lotId: lot.id, docId: doc.id, keywordIds: remaining, source: 'manual' })
+  }
+
+  function handleRejectSuggestion(kwId: number) {
+    // Rejeter une suggestion IA = retirer la ligne 'ai_suggested', sans promotion.
+    const remaining = suggestedKeywords
+      .filter((k) => k.keyword_id !== kwId)
+      .map((k) => k.keyword_id)
+    onSetKeywords({ lotId: lot.id, docId: doc.id, keywordIds: remaining, source: 'ai_suggested' })
   }
 
   return (
@@ -165,6 +179,20 @@ function MetadataPanel({
             </option>
           ))}
         </select>
+
+        {/* Suggestion IA de thème (import) : proposée tant qu'aucun thème validé. */}
+        {!doc.theme_id && doc.theme_suggested_id && (
+          <button
+            type="button"
+            onClick={() => onUpdate({ document_id: doc.id, theme_id: doc.theme_suggested_id })}
+            className="mt-1.5 inline-flex items-center gap-1 rounded-md border border-dashed border-amber-400 bg-amber-50 px-2 py-1 text-xs text-amber-700 transition-colors hover:bg-amber-100 dark:border-amber-600 dark:bg-amber-950 dark:text-amber-300"
+            title="Accepter le thème suggéré par l'IA"
+          >
+            <Sparkle size={12} weight="fill" />
+            Suggéré : {doc.theme_suggested_nom}
+            <CheckCircle size={12} weight="fill" />
+          </button>
+        )}
       </div>
 
       {/* Œuvre */}
@@ -205,7 +233,7 @@ function MetadataPanel({
           </button>
         </label>
         <div className="flex flex-wrap items-center gap-1.5">
-          {doc.keywords.map((kw) => (
+          {manualKeywords.map((kw) => (
             <span
               key={kw.keyword_id}
               className="inline-flex items-center gap-1 rounded-full bg-(--color-tag-bg) px-2 py-0.5 text-xs text-(--color-tag-text)"
@@ -217,6 +245,35 @@ function MetadataPanel({
                 onClick={() => handleRemoveKeyword(kw.keyword_id)}
                 className="ml-0.5 rounded-full p-0.5 hover:bg-red-200 dark:hover:bg-red-800"
                 aria-label={`Retirer ${kw.mot}`}
+              >
+                <X size={10} />
+              </button>
+            </span>
+          ))}
+
+          {/* Mots-clés suggérés par l'IA à l'import : accepter (✓) ou rejeter (✗). */}
+          {suggestedKeywords.map((kw) => (
+            <span
+              key={`sug-${kw.keyword_id}`}
+              className="inline-flex items-center gap-1 rounded-full border border-dashed border-amber-400 bg-amber-50 px-2 py-0.5 text-xs text-amber-700 dark:border-amber-600 dark:bg-amber-950 dark:text-amber-300"
+            >
+              <Sparkle size={10} weight="fill" />
+              {kw.mot}
+              <button
+                type="button"
+                onClick={() => onKeywordsAccepted([kw.keyword_id])}
+                className="ml-0.5 rounded-full p-0.5 hover:bg-green-200 dark:hover:bg-green-800"
+                aria-label={`Accepter ${kw.mot}`}
+                title="Accepter ce mot-clé"
+              >
+                <CheckCircle size={11} weight="fill" />
+              </button>
+              <button
+                type="button"
+                onClick={() => handleRejectSuggestion(kw.keyword_id)}
+                className="rounded-full p-0.5 hover:bg-red-200 dark:hover:bg-red-800"
+                aria-label={`Rejeter ${kw.mot}`}
+                title="Rejeter ce mot-clé"
               >
                 <X size={10} />
               </button>
@@ -407,12 +464,31 @@ export function DetailLot({ lot, onKeywordsAccepted }: Props) {
   const { data: themes } = useThemes()
   const { data: oeuvres } = useOeuvres()
 
-  const nextStates = LOT_VALID_TRANSITIONS[lot.status]
   const includedCount = lot.documents.filter((d) => d.selected).length
+  const isWorking = lot.status === 'en_traitement'
+
+  // Auto-transition : dès qu'un lot en attente est ouvert, il passe en traitement.
+  useEffect(() => {
+    if (lot.status === 'en_attente') {
+      updateStatus.mutate({ id: lot.id, status: 'en_traitement' })
+    }
+    // On ne re-déclenche pas si lot.status change (une seule fois à l'ouverture).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lot.id])
 
   async function handleCheckConformity() {
     const result = await checkConformity.mutateAsync(lot.id)
     setConformity(result)
+  }
+
+  // Vérifie la conformité puis intègre seulement si tout est conforme ;
+  // sinon le bloc d'alerte affiche les champs manquants par message.
+  async function handleIntegrate() {
+    const result = await checkConformity.mutateAsync(lot.id)
+    setConformity(result)
+    if (result.conforme) {
+      integrateLot.mutate(lot.id)
+    }
   }
 
   function handleUpdate(data: Record<string, unknown>) {
@@ -495,8 +571,20 @@ export function DetailLot({ lot, onKeywordsAccepted }: Props) {
             ))}
           </select>
 
-          {lot.status === 'pret' && (
+          {isWorking && (
             <>
+              <button
+                type="button"
+                onClick={() => {
+                  const doc = lot.documents.find((d) => d.selected)
+                  if (doc) updateDocument.mutate({ lotId: lot.id, data: { document_id: doc.id } })
+                }}
+                disabled={updateDocument.isPending}
+                className="flex items-center gap-1.5 rounded-md border border-(--color-border) px-3 py-2 text-sm font-medium text-(--color-text) transition-colors hover:bg-(--color-bg-hover)"
+              >
+                <FloppyDisk size={16} />
+                {updateDocument.isPending ? 'Enregistrement...' : 'Enregistrer'}
+              </button>
               <button
                 type="button"
                 onClick={handleCheckConformity}
@@ -508,31 +596,18 @@ export function DetailLot({ lot, onKeywordsAccepted }: Props) {
               </button>
               <button
                 type="button"
-                onClick={() => integrateLot.mutate(lot.id)}
-                disabled={integrateLot.isPending || (conformity !== null && !conformity.conforme)}
+                onClick={handleIntegrate}
+                disabled={
+                  integrateLot.isPending ||
+                  checkConformity.isPending ||
+                  (conformity !== null && !conformity.conforme)
+                }
                 className="flex items-center gap-1.5 rounded-md bg-green-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-green-700 disabled:opacity-50"
               >
                 <CheckCircle size={16} weight="fill" />
-                {integrateLot.isPending ? 'Intégration...' : 'Intégrer au corpus'}
+                {integrateLot.isPending ? 'Intégration...' : 'Intégrer au Corpus'}
               </button>
             </>
-          )}
-
-          {nextStates.length > 0 && lot.status !== 'pret' && (
-            <div className="flex gap-1">
-              {nextStates.map((next: LotStatus) => (
-                <button
-                  key={next}
-                  type="button"
-                  onClick={() => updateStatus.mutate({ id: lot.id, status: next })}
-                  disabled={updateStatus.isPending}
-                  className="flex items-center gap-1.5 rounded-md border border-(--color-border) px-3 py-2 text-sm font-medium text-(--color-text) transition-colors hover:bg-(--color-bg-hover)"
-                >
-                  <ArrowRight size={14} />
-                  {LOT_STATUS_LABELS[next]}
-                </button>
-              ))}
-            </div>
           )}
         </div>
       </div>

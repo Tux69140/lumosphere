@@ -46,6 +46,9 @@ export function AccueilPage() {
     return () => observer.disconnect()
   }, [hasMore, loadMore, items.length])
 
+  // TanStack Virtual renvoie des fonctions non mémoïsables : le React Compiler
+  // saute volontairement ce composant, ce qui est sans effet ici.
+  // eslint-disable-next-line react-hooks/incompatible-library
   const virtualizer = useVirtualizer({
     count: items.length,
     getScrollElement: () => parentRef.current,

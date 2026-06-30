@@ -17,6 +17,7 @@ Distribution des longueurs :
 import argparse
 import os
 import random
+from collections import Counter
 
 parser = argparse.ArgumentParser(description='Génère un fichier SQL de seed de citations.')
 parser.add_argument('--n', type=int, default=10000,
@@ -217,7 +218,10 @@ def esc(s):
 out = []
 out.append("-- ┌──────────────────────────────────────────────────────────────────────────────┐")
 out.append(f"-- │ GÉNÉRÉ par db/seeds/generate_citations.py (SEED=42, N={N})                 │")
-out.append(f"-- │ Distribution : {NB_TRES_LONG} très longs | {_n_long} longs | {_n_moyen} moyens | {_n_court} courts │")
+out.append(
+    f"-- │ Distribution : {NB_TRES_LONG} très longs | {_n_long} longs | "
+    f"{_n_moyen} moyens | {_n_court} courts │"
+)
 out.append("-- │ NE PAS MODIFIER — régénérer :                                               │")
 out.append("-- │   python3 db/seeds/generate_citations.py --n <N>                            │")
 out.append("-- └──────────────────────────────────────────────────────────────────────────────┘")
@@ -237,7 +241,7 @@ out.append("")
 out.append("-- 2. Œuvres (7 canoniques)")
 for nom, abr in OEUVRES:
     var = OEUVRE_VARS[nom]
-    out.append(f"INSERT INTO oeuvres (auteur_id, nom, abreviation)")
+    out.append("INSERT INTO oeuvres (auteur_id, nom, abreviation)")
     out.append(f"SELECT @auteur_gen, '{esc(nom)}', '{abr}'")
     out.append(f"WHERE NOT EXISTS (SELECT 1 FROM oeuvres WHERE nom = '{esc(nom)}');")
     out.append(f"SET {var} = (SELECT id FROM oeuvres WHERE nom = '{esc(nom)}');")
@@ -271,19 +275,28 @@ for i in range(N):
     kws = random.sample(KEYWORDS, random.randint(2, 4))
 
     out.append(f"-- [{idx:05d}] {sid} ({LONGUEURS_DIST[i]})")
-    out.append(f"INSERT INTO citations (contenu, oeuvre_id, theme_id, etat_id, auteur_nom, source_item_id, date_entree)")
+    out.append(
+        "INSERT INTO citations (contenu, oeuvre_id, theme_id, "
+        "etat_id, auteur_nom, source_item_id, date_entree)"
+    )
     out.append(f"SELECT '{contenu}',")
     out.append(f"  {oeuvre_var},")
     out.append(f"  (SELECT id FROM themes WHERE nom = '{esc(theme)}'),")
     out.append(f"  {etat_var},")
-    out.append(f"  'Lulumineuse',")
+    out.append("  'Lulumineuse',")
     out.append(f"  '{sid}',")
     out.append(f"  '{date}'")
-    out.append(f"WHERE NOT EXISTS (SELECT 1 FROM citations WHERE source_item_id = '{sid}' AND deleted_at IS NULL);")
-    out.append(f"SET @cit = (SELECT id FROM citations WHERE source_item_id = '{sid}' AND deleted_at IS NULL);")
+    out.append(
+        f"WHERE NOT EXISTS (SELECT 1 FROM citations WHERE source_item_id = '{sid}' "
+        "AND deleted_at IS NULL);"
+    )
+    out.append(
+        f"SET @cit = (SELECT id FROM citations WHERE source_item_id = '{sid}' "
+        "AND deleted_at IS NULL);"
+    )
     out.append("")
     for kw in kws:
-        out.append(f"INSERT IGNORE INTO citation_keywords (citation_id, keyword_id)")
+        out.append("INSERT IGNORE INTO citation_keywords (citation_id, keyword_id)")
         out.append(f"  SELECT @cit, id FROM keywords WHERE mot = '{esc(kw)}' AND @cit IS NOT NULL;")
     out.append("")
 
@@ -296,7 +309,6 @@ with open(_output_path, "w", encoding="utf-8") as _f:
     _f.write("\n".join(out) + "\n")
 
 # Rapport
-from collections import Counter
 dist = Counter(LONGUEURS_DIST)
 print(f"Fichier généré : {_output_path}")
 print(f"Total         : {N} citations")

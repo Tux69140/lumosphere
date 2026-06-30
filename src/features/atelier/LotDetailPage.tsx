@@ -19,9 +19,12 @@ export function LotDetailPage() {
     if (!lot) return
     const doc = lot.documents.find((d) => d.id === docId)
     if (!doc) return
-    const existingIds = doc.keywords.map((kw) => kw.keyword_id)
-    const merged = [...new Set([...existingIds, ...keywordIds])]
-    setKeywords.mutate({ lotId: lot.id, docId, keywordIds: merged, source: 'ai_accepted' })
+    // On ne reconstruit que le panier « validé/humain » : les mots-clés déjà
+    // manuels + ceux qu'on accepte (l'upsert promeut un 'ai_suggested' en 'manual').
+    // Les suggestions IA non acceptées restent telles quelles.
+    const manualIds = doc.keywords.filter((kw) => kw.source === 'manual').map((kw) => kw.keyword_id)
+    const merged = [...new Set([...manualIds, ...keywordIds])]
+    setKeywords.mutate({ lotId: lot.id, docId, keywordIds: merged, source: 'manual' })
   }
 
   if (isLoading)

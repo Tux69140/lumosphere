@@ -174,7 +174,7 @@ But : **voir les résultats** le plus tôt possible et valider schéma + droits 
 - [x] Auteurs · œuvres (abréviation, auteur, URL, réf libraire, accès Abo3/Abo4) · **thèmes ≤ 2 niveaux** · mots-clés (normalisés, saisie qui propose l'existant) · états · emojis.
 
 ### III.3 — Consultation publique complète
-- [x] Bandeau supérieur collant (logo/titre, favoris, bibliothèque, contact, aide **contextuelle** (modale dont le contenu varie par page/section — clé par route), thème clair/sombre, configuration des rôles autorisés, connexion).
+- [x] Bandeau supérieur collant (logo/titre, favoris, bibliothèque, contact, /re **contextuelle** (modale dont le contenu varie par page/section — clé par route), thème clair/sombre, configuration des rôles autorisés, connexion).
 - [ ] **Panneau de filtres** (œuvres, auteurs, thèmes/sous-thèmes, mots-clés OU/ET + filtre alphabétique, dates, plein texte, réinitialisation), repliable sur mobile.
 - [x] **Zone de résultats** : compteur, critères actifs en **badges supprimables**, cartes, `Fin des résultats.`
 - [ ] **Favoris** web (local navigateur) + favoris reliés.
@@ -233,9 +233,17 @@ Construit les chaînes **une à une**. Chaque chaîne finit par : validation d'u
 - [ ] Brancher la **validation du lot** sur l'écriture corpus en transaction (cf. migration 6.3) : conformité (jeu complet, doublons), mapping I.6, état `À Corriger`, suppression du lot après écriture vérifiée.
 - [ ] **Visualisation** : l'entrée intégrée **apparaît dans la bibliothèque** (boucle de feedback Phases II/III).
 
+> **Correctif banc d'essai e2e (2026-06-29)** — intégration au corpus en 1 clic + bug de conformité :
+> 1. **Conformité non appliquée (bug)** : `dal_integrate_lot` vérifiait la conformité mais ne la bloquait pas (`status='ok'` même si `conforme=false`) — des lots non conformes ont été intégrés (lots 41, 24, sans œuvre/thème). Corrigé : un lot non conforme renvoie désormais une erreur avec le détail des manques, **avant** toute écriture (`api/dal/lots.php`). Test : `tests/dal/LotsTest.php`.
+> 2. **Parcours en 1 clic (cahier §5)** : le bouton **« Intégrer au Corpus »** est maintenant visible dès « En révision » (`DetailLot.tsx`). Au clic il vérifie la conformité puis intègre si conforme, sinon affiche les champs manquants par message. L'intégration backend accepte `en_revision` ou `pret`. La transition manuelle « Prêt » est masquée (redondante).
+
 ### IV.2 — Chaîne Telegram complète (bot `@Actualis_bot`) — cahier Phase 1
 - [ ] Collecte par bot, agrégation par période, **fenêtre de révision** (sélectionner/grouper/prévisualiser), enrichissement IA **avant** révision, travail éditorial manuel, enrichissement IA **synonymes** après révision, **règle Telegram** (thèmes + mots-clés requis) → intégration corpus. Dédoublonnage `telegram_message_id` + marqueur de collecte.
 - [ ] **Tests** : collecte/agrégation sur lot de démonstration, révision, intégration, dédoublonnage.
+
+> **Correctifs banc d'essai e2e (2026-06-29)** — deux bugs détectés et corrigés en débogage :
+> 1. **Œuvre non pré-remplie dans l'atelier** : l'agrégation lisait `oeuvre_id` dans `config_json` au lieu de la colonne `collect_sources.oeuvre_id`. Corrigé (`cron/lib/telegram_pipeline.php`) → l'œuvre de la source se propage aux documents du lot. Test de non-régression ajouté (`tests/dal/TelegramPipelineTest.php`).
+> 2. **Œuvre « Telegram » affichée en double** dans Admin → Œuvres : la requête de liste faisait un `JOIN collect_sources` qui dupliquait la ligne œuvre **par source** (rappel : une œuvre peut avoir plusieurs canaux — ici Actualis + Epuriel de test). Corrigé (`api/dal/oeuvres.php`) → une œuvre = une ligne. Garde anti-doublon ajoutée (`dal_create_oeuvre`/`dal_update_oeuvre` + contrainte `UNIQUE (auteur_id, nom)` via `db/migrations/014_oeuvres_unique.sql`), tests `tests/dal/OeuvresTest.php`.
 
 ### IV.3 — Extraction des composants communs (Epuriel E.6)
 Après le **premier Telegram de bout en bout**, isoler les composants réutilisables (ne pas les laisser enfermés dans Telegram) :
@@ -282,11 +290,13 @@ Après un vrai cas traité, renforcer la gestion globale (faire d'Epuriel un **p
   - Cron digest : agrège les lots prêts depuis `dernier_envoi_at`, envoie le récapitulatif, met à jour `dernier_envoi_at`.
   - Templates email simples (HTML inline, pas de moteur de templates).
 - [ ] **CGU / Mentions légales (RGPD)** : page accessible depuis le pied de page. Doit mentionner : (1) le suivi des sessions de connexion (IP, navigateur) conservé 90 jours à des fins de sécurité ; (2) l'enregistrement temporaire de l'email en cas de tentatives de connexion échouées (purgé après 30 min). Base légale : intérêt légitime (sécurité du compte). *(Exigence issue de T07, détaillée dans le cahier des charges §31.)*
-- [ ] **Import Telegram manuel** : config chiffrée, gestion des canaux, lien canal→œuvre, récupération par dates, révision, **import transactionnel**, dédoublonnage.
-  - **Étape 1 — Config identifiants** : champs API ID / API Hash / Session String avec textes gris d'indication (« Obtenu depuis my.telegram.org. Jamais affiché après enregistrement. ») ; badge statut vert « Ok » ou rouge « Configuration à enregistrer » ; bouton d'aide ouvrant une modale avec la procédure d'installation Telethon (onglets Windows / Debian).
-  - **Étape 2 — Gérer les canaux** : liste des canaux sauvegardés (modifier / supprimer) ; ajout avec Channel ID + auteur par défaut associé ; bouton d'aide avec procédure de récupération du Channel ID (privé ou public).
-  - **Étape 3 — Lancer un import** : dropdown canal (depuis les canaux configurés), dates début / fin, bouton « Récupérer les messages ».
-  - **Fenêtre de révision** : sélection / désélection (boutons tout sélectionner / tout désélectionner), groupement avec le message précédent (indication visuelle : indentation + bordure gauche mauve), bouton « Importer les N entrées ».
+- [ ] **Collecte manuelle + moteur d'import historique** *(T40 — design révisé 2026-06-28, voir `docs/superpowers/specs/2026-06-28-collecte-manuelle-design.md`)*. La piste « compte Telethon + config chiffrée sur serveur » est **abandonnée** (credentials d'un compte sur hébergement mutualisé). Deux entrées vers un **moteur d'import générique** réutilisable par les futures sources.
+  - **Moteur générique** (fondation à poser ici, à réutiliser pour YouTube/PDF/articles) : `réserve (tampon) → découpage en petits lots → réapprovisionnement auto → atelier`. Seul le **découpeur** change par source (Telegram = par semaine ; YouTube = par vidéo ; PDF = par chapitre ; article = par article). Module PHP partagé `cron/lib/telegram_pipeline.php`, appelé par les crons **et** l'endpoint manuel (anti-duplication).
+  - **Séparation des flux** : la réserve (`telegram_updates_buffer`) marque chaque message d'une **origine** (`live` | `historique`). L'agrégation live ne lit que `live`, le tapis roulant ne lit que `historique`. Jamais de mélange.
+  - **Entrée 1 — picto live** : pictogramme « ⟳ Tout récupérer maintenant » à droite de la ligne `telegram` (carte SOURCE de l'atelier). Enchaîne **collecte (d'abord) → agrégation de tout le « en attente » → nettoyage en coulisse**. Endpoint `POST /api/collecte/run` ; worker réveillé via `exec()` (pas d'attente du cron) ; lot affiché aussitôt en `en_traitement`. **Toasts sonner** : lancé / prêt ✅ (lien) / erreur ⚠️ (rouge), via **sondage** du statut.
+  - **Entrée 2 — historique par fichier d'export** : pas de page web. Script SSH `cron/import_telegram_history.php <source_id> <export.json…>` (export Telegram Desktop JSON, texte seul) → réserve `origine=historique`. Découpage **hebdomadaire** ; **réapprovisionnement automatique** (≤ 8 lots « en attente », `POST /api/collecte/topup` appelé à l'ouverture de l'atelier + bouton « m'en donner plus »). **Interrupteur** par source `history_import_enabled` (actif/terminé) + pastille de progression (« 12/98 »).
+  - **BDD (migration 011)** : `telegram_updates_buffer.origin` ; `collect_sources.history_import_enabled` (seuil/découpage dans `config_json`).
+  - **Anti-collision** : `GET_LOCK()` par source ; dédup réserve par `update_id` ; garde corpus existante (`telegram_message_id`/`hash_contenu`) inchangée.
 - [ ] **Sauvegardes / restauration** : dump base + médias + bibliothèque, restauration contrôlée, remise à zéro (double confirmation).
 - [ ] **Emballage magasins** via PWABuilder (MSIX ; TWA + `assetlinks.json`) ; **responsive** desktop/tablette/mobile finalisé.
 

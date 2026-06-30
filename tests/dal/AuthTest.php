@@ -54,6 +54,35 @@ class AuthTest extends TestCase
         $this->assertFalse($result['locked']);
     }
 
+    public function testRateLimitIpNotLockedInitially(): void
+    {
+        $result = dal_auth_check_rate_limit_ip($this->pdo, '203.0.113.10');
+        $this->assertFalse($result['locked']);
+        $this->assertSame(0, $result['remaining_seconds']);
+    }
+
+    public function testRateLimitIpLocksAfterMaxAttempts(): void
+    {
+        $ip = '203.0.113.42';
+        for ($i = 0; $i < MAX_LOGIN_ATTEMPTS; $i++) {
+            dal_auth_record_failed_attempt_ip($this->pdo, $ip);
+        }
+        $result = dal_auth_check_rate_limit_ip($this->pdo, $ip);
+        $this->assertTrue($result['locked']);
+        $this->assertGreaterThan(0, $result['remaining_seconds']);
+    }
+
+    public function testClearAttemptsIpResetsCounter(): void
+    {
+        $ip = '203.0.113.99';
+        for ($i = 0; $i < 3; $i++) {
+            dal_auth_record_failed_attempt_ip($this->pdo, $ip);
+        }
+        dal_auth_clear_attempts_ip($this->pdo, $ip);
+        $result = dal_auth_check_rate_limit_ip($this->pdo, $ip);
+        $this->assertFalse($result['locked']);
+    }
+
     public function testLoadPermissionsReturnsCodeArray(): void
     {
         $perms = dal_auth_load_permissions($this->pdo, ROLE_ADMIN);

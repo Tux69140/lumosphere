@@ -48,6 +48,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 // JSON output
 header('Content-Type: application/json; charset=utf-8');
+header('X-Content-Type-Options: nosniff');
+header('Referrer-Policy: no-referrer');
 
 // Parse URI for setup-mode check and CSRF bypass
 $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
@@ -60,7 +62,11 @@ if ($first_segment === 'auth' && in_array($second_segment, ['csrf', 'setup', 'lo
     // These routes are always accessible
 } elseif (!dal_auth_has_any_user($pdo)) {
     http_response_code(503);
-    echo json_encode(['status' => 'error', 'data' => null, 'errors' => ['Application non configurée. Créez le premier administrateur.']]);
+    echo json_encode([
+        'status' => 'error',
+        'data' => null,
+        'errors' => ['Application non configurée. Créez le premier administrateur.'],
+    ]);
     exit;
 }
 
@@ -82,7 +88,11 @@ if (isset($_SESSION['user_id'], $_SESSION['last_activity'])) {
     if ($token_hash !== null && dal_auth_is_session_revoked($pdo, $token_hash)) {
         _clear_session();
         http_response_code(401);
-        echo json_encode(['status' => 'error', 'data' => null, 'errors' => ['Session révoquée par un administrateur.']]);
+        echo json_encode([
+            'status' => 'error',
+            'data' => null,
+            'errors' => ['Session révoquée par un administrateur.'],
+        ]);
         exit;
     }
 
@@ -110,7 +120,7 @@ if (in_array($_SERVER['REQUEST_METHOD'], ['POST', 'PUT', 'DELETE'], true)) {
     $session_token = $_SESSION['csrf_token'] ?? '';
     // Skip CSRF for login and setup endpoints (no pre-existing session)
     $is_csrf_exempt = ($first_segment === 'auth' && in_array($second_segment, ['login', 'setup'], true));
-    if (!$is_csrf_exempt && ($token === '' || $token !== $session_token)) {
+    if (!$is_csrf_exempt && ($token === '' || !hash_equals((string) $session_token, (string) $token))) {
         http_response_code(403);
         echo json_encode(['status' => 'error', 'data' => null, 'errors' => ['Jeton CSRF invalide.']]);
         exit;
@@ -119,6 +129,7 @@ if (in_array($_SERVER['REQUEST_METHOD'], ['POST', 'PUT', 'DELETE'], true)) {
 
 // Build user context
 // Pour les visiteurs non connectés, charger les permissions du rôle Visiteur depuis la DB.
+$visitor_permissions = [];
 if (!isset($_SESSION['permissions'])) {
     $vp_stmt = $pdo->prepare(
         'SELECT p.code FROM permissions p

@@ -8,49 +8,167 @@ import {
   TextT,
   ClockCounterClockwise,
   FloppyDisk,
+  Rows,
 } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { useQuery, useMutation, useInfiniteQuery, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@/services/api'
 import { queryKeys } from '@/services/queryKeys'
+import { AiCatalogTab } from './AiCatalogTab'
 
-type Tab = 'config' | 'prompts' | 'logs'
+type Tab = 'config' | 'prompts' | 'logs' | 'catalogue'
 
 const TABS: { key: Tab; label: string; icon: typeof Gear }[] = [
   { key: 'config', label: 'Configuration', icon: Gear },
   { key: 'prompts', label: 'Prompts', icon: TextT },
   { key: 'logs', label: 'Journal', icon: ClockCounterClockwise },
+  { key: 'catalogue', label: 'Catalogue', icon: Rows },
 ]
+
+const PROVIDER_LABELS: Record<string, string> = {
+  openai: 'OpenAI',
+  mistral: 'Mistral AI',
+  anthropic: 'Anthropic',
+  deepseek: 'DeepSeek',
+  gemini: 'Google Gemini',
+}
+
+type UsageSummary = {
+  total_usd: number
+  by_provider: Record<string, { subtotal_usd: number }>
+}
+
+function CompactUsageSummary() {
+  const { data } = useQuery({
+    queryKey: queryKeys.aiUsage,
+    queryFn: () => apiClient.aiUsageSummary(),
+  })
+  const usage = data?.data as UsageSummary | undefined
+  if (!usage || usage.total_usd === 0) return null
+
+  return (
+    <div className="border-t border-(--color-border) p-3">
+      <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-(--color-text-secondary)">
+        Dépense estimée
+      </p>
+      <p className="mb-2 font-mono text-sm font-semibold text-(--color-text-primary)">
+        ${usage.total_usd.toFixed(4)}
+      </p>
+      {Object.entries(usage.by_provider).map(([key, p]) => (
+        <div key={key} className="flex items-center justify-between gap-2 text-xs">
+          <span className="truncate text-(--color-text-secondary)">
+            {PROVIDER_LABELS[key] ?? key}
+          </span>
+          <span className="shrink-0 font-mono text-(--color-text-secondary)">
+            ${p.subtotal_usd.toFixed(4)}
+          </span>
+        </div>
+      ))}
+      <p className="mt-2 text-xs text-(--color-text-placeholder)">
+        Tokens journalisés × tarifs catalogue
+      </p>
+    </div>
+  )
+}
+
+type RegistryProviders = { providers: Record<string, unknown[]>; last_refreshed_at: string | null }
 
 export function LiteLLMConfigPage() {
   const [tab, setTab] = useState<Tab>('config')
+  const [selectedProvider, setSelectedProvider] = useState<string | null>(null)
+
+  const { data: registryRes } = useQuery({
+    queryKey: queryKeys.aiRegistry,
+    queryFn: () => apiClient.aiGetRegistry(),
+    enabled: tab === 'catalogue',
+  })
+  const providerKeys = Object.keys(
+    (registryRes?.data as RegistryProviders | undefined)?.providers ?? {},
+  )
+  const effectiveProvider = selectedProvider ?? providerKeys[0] ?? null
 
   return (
-    <div className="mx-auto max-w-3xl py-8">
-      <h1 className="mb-6 text-xl font-semibold text-(--color-text-primary)">
+    <div className="flex flex-col gap-3 pb-4 pt-2">
+      <h1 className="text-xl font-semibold text-(--color-text-primary)">
         Configuration IA (LiteLLM)
       </h1>
 
-      <div className="mb-6 flex gap-1 rounded-lg border border-(--color-border) bg-(--color-bg-card) p-1">
-        {TABS.map(({ key, label, icon: Icon }) => (
-          <button
-            key={key}
-            onClick={() => setTab(key)}
-            className={`flex flex-1 items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-              tab === key
-                ? 'bg-(--color-action) text-(--color-action-text)'
-                : 'text-(--color-text-secondary) hover:bg-(--color-bg-page)'
-            }`}
-          >
-            <Icon className="h-4 w-4" aria-hidden="true" />
-            {label}
-          </button>
-        ))}
-      </div>
+      {/* Container borné : sidebar + contenu scrollent chacun indépendamment */}
+      <div
+        className="flex overflow-hidden rounded-lg border border-(--color-border)"
+        style={{ height: 'calc(100vh - 11rem)' }}
+      >
+        {/* Sidebar gauche navigation */}
+        <aside className="flex w-52 shrink-0 flex-col overflow-y-auto">
+          <nav className="flex-1 p-2 pt-3">
+            {TABS.map(({ key, label, icon: Icon }) => (
+              <div key={key}>
+                <button
+                  onClick={() => setTab(key)}
+                  className={[
+                    'flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm transition-colors',
+                    tab === key
+                      ? 'bg-(--color-accent-bg) font-medium text-(--color-text-primary)'
+                      : 'text-(--color-text-secondary) hover:bg-(--color-bg-button) hover:text-(--color-text-primary)',
+                  ].join(' ')}
+                >
+                  <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+                  {label}
+                </button>
 
-      {tab === 'config' && <ConfigTab />}
-      {tab === 'prompts' && <PromptsTab />}
-      {tab === 'logs' && <LogsTab />}
+                {/* Sous-entrées fournisseurs sous l'onglet Catalogue */}
+                {key === 'catalogue' && tab === 'catalogue' && providerKeys.length > 0 && (
+                  <div className="ml-4 mt-0.5 flex flex-col gap-0.5">
+                    {providerKeys.map((pk) => (
+                      <button
+                        key={pk}
+                        onClick={() => setSelectedProvider(pk)}
+                        className={[
+                          'flex w-full items-center gap-2 rounded-md px-3 py-1.5 text-left text-xs transition-colors',
+                          effectiveProvider === pk
+                            ? 'bg-(--color-accent-bg) text-(--color-text-primary)'
+                            : 'text-(--color-text-secondary) hover:bg-(--color-bg-button) hover:text-(--color-text-primary)',
+                        ].join(' ')}
+                      >
+                        <span
+                          className={`h-1.5 w-1.5 shrink-0 rounded-full ${
+                            effectiveProvider === pk
+                              ? 'bg-(--color-action)'
+                              : 'bg-(--color-text-placeholder)'
+                          }`}
+                          aria-hidden="true"
+                        />
+                        {PROVIDER_LABELS[pk] ?? pk}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </nav>
+          <CompactUsageSummary />
+        </aside>
+
+        {/* Contenu de l'onglet actif */}
+        <div className="flex-1 overflow-auto border-l border-(--color-border)">
+          {tab === 'config' && (
+            <div className="p-6">
+              <ConfigTab />
+            </div>
+          )}
+          {tab === 'prompts' && (
+            <div className="p-6">
+              <PromptsTab />
+            </div>
+          )}
+          {tab === 'logs' && (
+            <div className="p-6">
+              <LogsTab />
+            </div>
+          )}
+          {tab === 'catalogue' && <AiCatalogTab selectedProvider={effectiveProvider} />}
+        </div>
+      </div>
     </div>
   )
 }
@@ -112,7 +230,7 @@ function ConfigTab() {
   async function handleTest() {
     setTesting(true)
     setTestResult(null)
-    const res = await apiClient.aiTestConnection()
+    const res = await apiClient.aiTestConnection({ provider, model })
     setTesting(false)
     if (res.status === 'ok' && res.data) {
       setTestResult(res.data)
@@ -148,7 +266,7 @@ function ConfigTab() {
               onChange={(e) => {
                 setProvider(e.target.value)
                 const p = catalog.find((c) => c.key === e.target.value)
-                setModel(p?.default ?? '')
+                setModel(p?.models[0] ?? p?.default ?? '')
               }}
               className="rounded-md border border-(--color-border) bg-(--color-bg-field) px-3 py-2 text-sm text-(--color-text-primary)"
             >

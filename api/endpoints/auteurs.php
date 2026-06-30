@@ -8,7 +8,8 @@ function endpoint_auteurs(PDO $pdo, array $ctx, string $method, ?int $id, ?array
 {
     return match (true) {
         $method === 'GET' && $id === null => dal_find_auteurs(
-            $pdo, $ctx,
+            $pdo,
+            $ctx,
             $_GET['search'] ?? null
         ),
         $method === 'GET' && $id !== null => dal_get_auteur($pdo, $ctx, $id),

@@ -62,7 +62,8 @@ function endpoint_lots(PDO $pdo, array $ctx, string $method, ?int $id, ?array $b
         // PUT /api/lots/documents/{id}/keywords — mots-clés d'un document
         $method === 'PUT' && $id !== null && $action === 'document-keywords' =>
             dal_set_lot_document_keywords(
-                $pdo, $ctx, (int) ($body['document_id'] ?? 0), $body['keyword_ids'] ?? [], $body['source'] ?? 'manual'
+                $pdo,
+                $ctx, (int) ($body['document_id'] ?? 0), $body['keyword_ids'] ?? [], $body['source'] ?? 'manual'
             ),
 
         // DELETE /api/lots/{id}/document — supprimer un document du lot

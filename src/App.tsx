@@ -4,8 +4,8 @@ import { AuthLayout } from '@/layouts/AuthLayout'
 import { AccueilPage } from '@/features/accueil/AccueilPage'
 import { LoginPage } from '@/features/auth/LoginPage'
 import { NotFoundPage } from '@/features/NotFoundPage'
-import { RequireAdmin } from '@/components/RequireAdmin'
-import { RequireAtelier } from '@/components/RequireAtelier'
+import { RequireRole } from '@/components/RequireRole'
+import { ROLE_ADMIN, ROLE_EDITEUR } from '@/constants/roles'
 import { AtelierPage } from '@/features/atelier/AtelierPage'
 import { LotDetailPage } from '@/features/atelier/LotDetailPage'
 import { UsersPage } from '@/features/admin/UsersPage'
@@ -19,17 +19,18 @@ import { EtatsPage } from '@/features/admin/EtatsPage'
 import { EmojisPage } from '@/features/admin/EmojisPage'
 import { CitationsAdminPage } from '@/features/admin/CitationsAdminPage'
 import { LiteLLMConfigPage } from '@/features/admin/LiteLLMConfigPage'
+import { SettingsPage } from '@/features/admin/SettingsPage'
 
 export default function App() {
   return (
     <Routes>
       <Route element={<MainLayout />}>
         <Route index element={<AccueilPage />} />
-        <Route path="atelier" element={<RequireAtelier />}>
+        <Route path="atelier" element={<RequireRole roles={[ROLE_ADMIN, ROLE_EDITEUR]} />}>
           <Route index element={<AtelierPage />} />
           <Route path="lot/:id" element={<LotDetailPage />} />
         </Route>
-        <Route path="admin" element={<RequireAdmin />}>
+        <Route path="admin" element={<RequireRole roles={[ROLE_ADMIN]} />}>
           <Route index element={<Navigate to="/admin/utilisateurs" replace />} />
           <Route path="utilisateurs" element={<UsersPage />} />
           <Route path="roles" element={<RolesAccessPage />} />
@@ -42,6 +43,7 @@ export default function App() {
           <Route path="emojis" element={<EmojisPage />} />
           <Route path="citations" element={<CitationsAdminPage />} />
           <Route path="ia" element={<LiteLLMConfigPage />} />
+          <Route path="parametres" element={<SettingsPage />} />
         </Route>
         <Route path="*" element={<NotFoundPage />} />
       </Route>

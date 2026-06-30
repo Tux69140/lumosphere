@@ -1,0 +1,7 @@
+0 	10 	* 	* 	* 	/usr/local/bin/php /home2/mist2786/public_html/cron/collect_telegram_bot.php >> /home2/mist2786/public_html/reports/collect_telegram_bot.log 2>&1
+
+45 	16 	* 	* 	* 	/usr/local/bin/php /home2/mist2786/public_html/cron/collect_telegram_bot.php >> /home2/mist2786/public_html/reports/collect_telegram_bot.log 2>&1
+
+10 	17 	* 	* 	* 	/usr/local/bin/php /home2/mist2786/public_html/cron/run_jobs.php >> /home2/mist2786/public_html/reports/run_jobs.log 2>&1
+
+0 	17 	* 	* 	* 	/usr/local/bin/php /home2/mist2786/public_html/cron/agregateur_telegram.php >> /home2/mist2786/public_html/reports/collect_telegram_weekly.log 2>&1
