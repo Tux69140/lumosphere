@@ -5,6 +5,11 @@ declare(strict_types=1);
 require_once dirname(__DIR__) . '/dal/users.php';
 require_once dirname(__DIR__) . '/dal/auth.php';
 require_once dirname(__DIR__) . '/dal/config.php';
+require_once dirname(__DIR__) . '/dal/password_tokens.php';
+require_once dirname(__DIR__) . '/dal/password_policy.php';
+require_once dirname(__DIR__) . '/lib/mailer.php';
+require_once dirname(__DIR__) . '/templates/mail_invite.php';
+require_once dirname(__DIR__) . '/templates/mail_reset.php';
 
 function endpoint_auth(PDO $pdo, array $ctx, string $method, ?int $id, ?array $body, ?string $action): array
 {
@@ -17,6 +22,9 @@ function endpoint_auth(PDO $pdo, array $ctx, string $method, ?int $id, ?array $b
         $method === 'GET' && $action === 'sessions' => dal_auth_find_active_sessions($pdo, $ctx),
         $method === 'DELETE' && $action === 'sessions' && $id !== null
             => dal_auth_force_logout($pdo, $ctx, $id),
+        $method === 'GET'  && $action === 'token-info'      => _auth_token_info($pdo, $_GET['token'] ?? ''),
+        $method === 'POST' && $action === 'set-password'    => _auth_set_password($pdo, $body ?? []),
+        $method === 'POST' && $action === 'forgot-password' => _auth_forgot_password($pdo, $body ?? []),
         default => dal_error('Méthode non supportée.'),
     };
 }
@@ -102,6 +110,11 @@ function _auth_login(PDO $pdo, array $body): array
     dal_auth_clear_attempts($pdo, $email);
     dal_auth_clear_attempts_ip($pdo, $ip);
 
+    // Connexion réussie — vérifier que le compte est activé
+    if ($user['password_set_at'] === null) {
+        return dal_error("Votre compte n'est pas encore activé. Vérifiez vos emails pour définir votre mot de passe.");
+    }
+
     $remember = !empty($body['remember']);
     _auth_init_session($pdo, (int) $user['id'], (int) $user['role_id'], $remember);
 
@@ -174,4 +187,111 @@ function _auth_setup(PDO $pdo, array $body): array
         'email'   => trim($body['email'] ?? ''),
         'role_id' => ROLE_ADMIN,
     ]);
+}
+
+function _auth_token_info(PDO $pdo, string $raw_token): array
+{
+    if ($raw_token === '') {
+        return dal_error('Jeton manquant.');
+    }
+    $token = dal_token_find_valid($pdo, $raw_token);
+    if ($token === null) {
+        return dal_error('Ce lien est invalide ou a expiré.');
+    }
+    // Charger le rôle de l'utilisateur pour que le frontend adapte la jauge de force
+    $stmt = $pdo->prepare('SELECT role_id FROM users WHERE id = :id');
+    $stmt->execute(['id' => $token['user_id']]);
+    $user = $stmt->fetch();
+    if (!$user) {
+        return dal_error('Utilisateur introuvable.');
+    }
+    return dal_ok(['role_id' => (int) $user['role_id'], 'type' => $token['type']]);
+}
+
+function _auth_set_password(PDO $pdo, array $body): array
+{
+    $raw_token = trim($body['token'] ?? '');
+    $password  = $body['password'] ?? '';
+
+    if ($raw_token === '') {
+        return dal_error('Jeton manquant.');
+    }
+
+    $token = dal_token_find_valid($pdo, $raw_token);
+    if ($token === null) {
+        return dal_error('Ce lien est invalide ou a expiré. Demandez un nouvel envoi.');
+    }
+
+    $stmt = $pdo->prepare('SELECT id, prenom, nom, email, role_id FROM users WHERE id = :id');
+    $stmt->execute(['id' => $token['user_id']]);
+    $user = $stmt->fetch();
+    if (!$user) {
+        return dal_error('Utilisateur introuvable.');
+    }
+
+    // Valider la force du mot de passe
+    $errors = dal_password_validate(
+        $password,
+        (int) $user['role_id'],
+        $user['email'],
+        $user['prenom'],
+        $user['nom']
+    );
+    if (!empty($errors)) {
+        return dal_error($errors[0]);
+    }
+
+    // Appliquer le nouveau mot de passe et activer le compte
+    $pdo->prepare(
+        'UPDATE users SET password_hash = :hash, password_set_at = NOW() WHERE id = :id'
+    )->execute([
+        'hash' => password_hash($password, PASSWORD_BCRYPT, ['cost' => 12]),
+        'id'   => $user['id'],
+    ]);
+
+    // Consommer le jeton (usage unique)
+    dal_token_consume($pdo, (int) $token['id']);
+
+    return dal_ok(['message' => 'Mot de passe défini avec succès. Vous pouvez maintenant vous connecter.']);
+}
+
+function _auth_forgot_password(PDO $pdo, array $body): array
+{
+    $email = trim($body['email'] ?? '');
+    // Réponse toujours identique (anti-énumération)
+    $neutral_response = dal_ok(['message' => "Si un compte existe pour cette adresse, un email vient d'être envoyé."]);
+
+    if ($email === '') {
+        return $neutral_response;
+    }
+
+    // Rate-limiting par email (réutilise l'infrastructure existante)
+    $rl = _dal_auth_rl_check($pdo, 'password_reset_attempts', 'email', $email);
+    if ($rl['locked']) {
+        return $neutral_response; // Silencieux pour ne pas aider l'attaquant
+    }
+
+    $stmt = $pdo->prepare('SELECT id, prenom, nom, email, role_id, password_set_at FROM users WHERE email = :email');
+    $stmt->execute(['email' => $email]);
+    $user = $stmt->fetch();
+
+    if (!$user || $user['password_set_at'] === null) {
+        // Compte inexistant ou non activé : ne rien faire, réponse neutre
+        return $neutral_response;
+    }
+
+    _dal_auth_rl_record($pdo, 'password_reset_attempts', 'email', $email);
+
+    // Révoquer les anciens jetons de reset et créer le nouveau
+    dal_token_revoke_user_tokens($pdo, (int) $user['id'], 'reset');
+    $ip    = $_SERVER['REMOTE_ADDR'] ?? '';
+    $token = dal_token_create($pdo, (int) $user['id'], 'reset', 3600, $ip);
+
+    $origin    = $GLOBALS['app_config']['allowed_origin'] ?? '';
+    $reset_url = "{$origin}/definir-mot-de-passe?token={$token}";
+
+    $tpl = mail_template_reset($user['prenom'], $reset_url);
+    send_mail($user['email'], "{$user['prenom']} {$user['nom']}", $tpl['subject'], $tpl['html'], $tpl['text']);
+
+    return $neutral_response;
 }
