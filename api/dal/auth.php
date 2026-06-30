@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/core.php';
 require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/password_policy.php';
 
 const MAX_LOGIN_ATTEMPTS   = 5;
 const LOCKOUT_DURATION     = 1800; // 30 minutes
@@ -211,20 +212,28 @@ function dal_auth_create_first_admin(PDO $pdo, array $data): array
     if ($email === '') {
         return dal_error('L\'email est requis.');
     }
-    if (mb_strlen($password) < 8) {
-        return dal_error('Le mot de passe doit contenir au moins 8 caractères.');
+    $pwd_errors = dal_password_validate(
+        $password,
+        ROLE_ADMIN,
+        $email,
+        $prenom,
+        $nom
+    );
+    if (!empty($pwd_errors)) {
+        return dal_error($pwd_errors[0]);
     }
 
     $stmt = $pdo->prepare(
-        'INSERT INTO users (prenom, nom, email, password_hash, role_id)
-         VALUES (:prenom, :nom, :email, :password_hash, :role_id)'
+        'INSERT INTO users (prenom, nom, email, password_hash, role_id, password_set_at)
+         VALUES (:prenom, :nom, :email, :password_hash, :role_id, :password_set_at)'
     );
     $stmt->execute([
-        'prenom'        => $prenom,
-        'nom'           => $nom,
-        'email'         => $email,
-        'password_hash' => password_hash($password, PASSWORD_BCRYPT, ['cost' => 12]),
-        'role_id'       => ROLE_ADMIN,
+        'prenom'           => $prenom,
+        'nom'              => $nom,
+        'email'            => $email,
+        'password_hash'    => password_hash($password, PASSWORD_BCRYPT, ['cost' => 12]),
+        'role_id'          => ROLE_ADMIN,
+        'password_set_at'  => date('Y-m-d H:i:s'),
     ]);
     return dal_ok(['id' => (int) $pdo->lastInsertId()]);
 }
