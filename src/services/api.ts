@@ -150,6 +150,16 @@ export const apiClient = {
     onSessionExpired = callback
   },
 
+  // Gestion des mots de passe (endpoints publics)
+  tokenInfo: (token: string) =>
+    get<{ role_id: number; type: 'invite' | 'reset' }>(
+      `auth/token-info?token=${encodeURIComponent(token)}`,
+    ),
+  setPassword: (token: string, password: string) =>
+    post<{ message: string }>('auth/set-password', { token, password }),
+  forgotPassword: (email: string) => post<{ message: string }>('auth/forgot-password', { email }),
+  resendInvite: (userId: number) => post<{ message: string }>(`users/${userId}/resend-invite`, {}),
+
   // Citations
   findCitations: (params?: Record<string, string>) =>
     get<{ items: unknown[]; next_cursor: string | null }>(`citations${buildQuery(params)}`),
@@ -251,7 +261,18 @@ export const apiClient = {
     put<{ oeuvre_ids: number[] }>(`roles/${roleId}/oeuvres`, { oeuvre_ids: oeuvreIds }),
 
   // Users
-  findUsers: () => get<unknown[]>('users'),
+  findUsers: () =>
+    get<
+      {
+        id: number
+        prenom: string
+        nom: string
+        email: string
+        role_id: number
+        role_nom: string
+        is_activated: boolean
+      }[]
+    >('users'),
   getUser: (id: number) => get<unknown>(`users/${id}`),
   createUser: (data: unknown) => post<{ id: number }>('users', data),
   updateUser: (id: number, data: unknown) => put<{ id: number }>(`users/${id}`, data),

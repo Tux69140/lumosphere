@@ -3,6 +3,7 @@ import { MainLayout } from '@/layouts/MainLayout'
 import { AuthLayout } from '@/layouts/AuthLayout'
 import { AccueilPage } from '@/features/accueil/AccueilPage'
 import { LoginPage } from '@/features/auth/LoginPage'
+import { SetPasswordPage } from '@/features/auth/SetPasswordPage'
 import { NotFoundPage } from '@/features/NotFoundPage'
 import { RequireRole } from '@/components/RequireRole'
 import { ROLE_ADMIN, ROLE_EDITEUR } from '@/constants/roles'
@@ -49,6 +50,7 @@ export default function App() {
       </Route>
       <Route element={<AuthLayout />}>
         <Route path="login" element={<LoginPage />} />
+        <Route path="definir-mot-de-passe" element={<SetPasswordPage />} />
       </Route>
     </Routes>
   )
