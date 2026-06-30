@@ -137,12 +137,26 @@ function tg_flatten_export_text(mixed $text): string
     if (!is_array($text)) {
         return '';
     }
+    $mdMap = [
+        'bold'          => ['**', '**'],
+        'italic'        => ['_',  '_'],
+        'underline'     => ['<u>', '</u>'],
+        'strikethrough' => ['~~', '~~'],
+        'code'          => ['`',  '`'],
+    ];
     $parts = [];
     foreach ($text as $frag) {
         if (is_string($frag)) {
             $parts[] = $frag;
         } elseif (is_array($frag) && isset($frag['text'])) {
-            $parts[] = (string) $frag['text'];
+            $t = (string) $frag['text'];
+            $type = (string) ($frag['type'] ?? '');
+            if (isset($mdMap[$type])) {
+                [$open, $close] = $mdMap[$type];
+                $parts[] = $open . $t . $close;
+            } else {
+                $parts[] = $t;
+            }
         }
     }
     return implode('', $parts);

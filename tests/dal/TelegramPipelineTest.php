@@ -204,6 +204,61 @@ class TelegramPipelineTest extends TestCase
         $this->assertSame('#tag texte', $result);
     }
 
+    // --- tg_flatten_export_text() ---
+
+    public function testFlattenExportTextString(): void
+    {
+        $result = tg_flatten_export_text('texte simple');
+        $this->assertSame('texte simple', $result);
+    }
+
+    public function testFlattenExportTextBoldFragment(): void
+    {
+        $fragments = [
+            'Titre ',
+            ['type' => 'bold', 'text' => 'important'],
+            ' fin.',
+        ];
+        $result = tg_flatten_export_text($fragments);
+        $this->assertSame('Titre **important** fin.', $result);
+    }
+
+    public function testFlattenExportTextItalic(): void
+    {
+        $fragments = [['type' => 'italic', 'text' => 'stop']];
+        $result = tg_flatten_export_text($fragments);
+        $this->assertSame('_stop_', $result);
+    }
+
+    public function testFlattenExportTextUnderline(): void
+    {
+        $fragments = [['type' => 'underline', 'text' => 'note']];
+        $result = tg_flatten_export_text($fragments);
+        $this->assertSame('<u>note</u>', $result);
+    }
+
+    public function testFlattenExportTextStrikethrough(): void
+    {
+        $fragments = [['type' => 'strikethrough', 'text' => 'ancien']];
+        $result = tg_flatten_export_text($fragments);
+        $this->assertSame('~~ancien~~', $result);
+    }
+
+    public function testFlattenExportTextCode(): void
+    {
+        $fragments = [['type' => 'code', 'text' => 'php -v']];
+        $result = tg_flatten_export_text($fragments);
+        $this->assertSame('`php -v`', $result);
+    }
+
+    public function testFlattenExportTextUnknownTypePassthrough(): void
+    {
+        // Type inconnu = texte brut, pas de marqueur
+        $fragments = [['type' => 'mention', 'text' => '@user']];
+        $result = tg_flatten_export_text($fragments);
+        $this->assertSame('@user', $result);
+    }
+
     /**
      * Régression : l'œuvre cible configurée sur la source (collect_sources.oeuvre_id)
      * doit être propagée aux documents du lot, pour pré-remplir l'atelier.
