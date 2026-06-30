@@ -16,6 +16,7 @@ export function UsersPage() {
   const load = useCallback(() => {
     apiClient.findUsers().then((r) => {
       if (r.status === 'ok') setUsers((r.data ?? []) as UserRow[])
+      else toast.error(r.errors?.[0] ?? 'Impossible de charger les utilisateurs.')
     })
   }, [])
 
@@ -23,6 +24,7 @@ export function UsersPage() {
     load()
     apiClient.findRoles().then((r) => {
       if (r.status === 'ok') setRoles((r.data ?? []) as Role[])
+      else toast.error(r.errors?.[0] ?? 'Impossible de charger les rôles.')
     })
   }, [load])
 

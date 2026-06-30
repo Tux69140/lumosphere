@@ -2,13 +2,6 @@
 
 declare(strict_types=1);
 
-// Session config
-ini_set('session.cookie_httponly', '1');
-ini_set('session.cookie_secure', '1');
-ini_set('session.cookie_samesite', 'Lax');
-ini_set('session.gc_maxlifetime', '2592000'); // 30 jours : préserver les sessions « se souvenir de moi »
-session_start();
-
 /**
  * Vide et détruit la session courante (expiration / révocation par un admin).
  */
@@ -18,9 +11,23 @@ function _clear_session(): void
     session_destroy();
 }
 
-// Load config (outside repo)
+// Load config (outside repo) — avant session_start() pour configurer session.save_path
 $config = require dirname(__DIR__) . '/config/config.php';
 date_default_timezone_set($config['timezone'] ?? 'Europe/Paris');
+
+// Session config
+// session.save_path doit pointer vers un dossier privé hors /tmp partagé (o2switch purge /tmp à 24 min).
+if (!empty($config['session_save_path'])) {
+    ini_set('session.save_path', $config['session_save_path']);
+    // Activer le GC maison pour éviter l'accumulation de fichiers dans ce dossier privé.
+    ini_set('session.gc_probability', '1');
+    ini_set('session.gc_divisor', '100');
+}
+ini_set('session.cookie_httponly', '1');
+ini_set('session.cookie_secure', '1');
+ini_set('session.cookie_samesite', 'Lax');
+ini_set('session.gc_maxlifetime', '2592000'); // 30 jours : préserver les sessions « se souvenir de moi »
+session_start();
 
 // PDO
 require_once __DIR__ . '/dal/core.php';

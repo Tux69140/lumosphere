@@ -57,9 +57,14 @@ function dal_error(string|array $errors): array
     return ['status' => 'error', 'data' => null, 'errors' => is_array($errors) ? $errors : [$errors]];
 }
 
+class AuthRequiredException extends RuntimeException {}
+
 function dal_require_permission(array $ctx, string $permission_code): void
 {
     if (!in_array($permission_code, $ctx['permissions'], true)) {
+        if ($ctx['user_id'] === null) {
+            throw new AuthRequiredException('Authentification requise.');
+        }
         throw new RuntimeException("Permission requise : {$permission_code}");
     }
 }

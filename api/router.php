@@ -43,6 +43,9 @@ function route(PDO $pdo, array $ctx): void
     try {
         $result = $handler($pdo, $ctx, $method, $id, $body, $action);
         echo json_encode($result);
+    } catch (AuthRequiredException $e) {
+        http_response_code(401);
+        echo json_encode(dal_error($e->getMessage()));
     } catch (RuntimeException $e) {
         http_response_code(403);
         echo json_encode(dal_error($e->getMessage()));

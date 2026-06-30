@@ -1,29 +1,37 @@
 <?php
-// Database
-$config['db_host'] = '127.0.0.1';
-$config['db_name'] = 'lumosphere';
-$config['db_user'] = 'lumosphere';
-$config['db_pass'] = 'secret';
 
-// App
-$config['timezone']       = 'Europe/Paris';
-$config['allowed_origin'] = 'https://your-domain.example.com';
-$config['setup_secret']   = 'change-me-before-first-run';
+return [
+    // Database
+    'db_host' => '127.0.0.1',
+    'db_name' => 'lumosphere',
+    'db_user' => 'lumosphere',
+    'db_pass' => 'secret',
 
-// LiteLLM — legacy proxy mode (optional, overrides per-provider keys)
-$config['litellm_base_url'] = '';
-$config['litellm_api_key']  = '';
-$config['litellm_model']    = '';
+    // App
+    'timezone'       => 'Europe/Paris',
+    'allowed_origin' => 'https://your-domain.example.com',
+    'setup_secret'   => 'change-me-before-first-run',
 
-// AI Provider API keys (one per provider, leave empty if unused)
-$config['mistral_api_key']   = '';
-$config['anthropic_api_key'] = '';
-$config['openai_api_key']    = '';
-$config['gemini_api_key']    = '';
-$config['deepseek_api_key']  = '';
+    // Sessions PHP — dossier privé hors /tmp partagé (évite la purge système à ~24 min sur o2switch).
+    // Créer manuellement : mkdir -p /home2/mist2786/lumosphere/sessions && chmod 700 /home2/mist2786/lumosphere/sessions
+    // Laisser vide ('') pour utiliser le save_path par défaut du serveur (déconseillé en production).
+    'session_save_path' => '/home2/mist2786/lumosphere/sessions',
 
-// Telegram bot (cron collection)
-$config['telegram_bot_token'] = '';
+    // LiteLLM — legacy proxy mode (optional, overrides per-provider keys)
+    'litellm_base_url' => '',
+    'litellm_api_key'  => '',
+    'litellm_model'    => '',
 
-// Workers (Python venv)
-$config['python_bin'] = '/home2/mist2786/lumosphere/venvs/py311/bin/python3';
+    // AI Provider API keys (one per provider, leave empty if unused)
+    'mistral_api_key'   => '',
+    'anthropic_api_key' => '',
+    'openai_api_key'    => '',
+    'gemini_api_key'    => '',
+    'deepseek_api_key'  => '',
+
+    // Telegram bot (cron collection)
+    'telegram_bot_token' => '',
+
+    // Workers (Python venv)
+    'python_bin' => '/home2/mist2786/lumosphere/venvs/py311/bin/python3',
+];
