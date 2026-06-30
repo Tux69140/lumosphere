@@ -302,4 +302,18 @@ class TelegramPipelineTest extends TestCase
             $pdo->rollBack();
         }
     }
+
+    public function testMessagePayloadPreservesEntityFormatting(): void
+    {
+        // Message Telegram simulé avec entité bold sur "essentiel" (offset=3, length=9)
+        $message = [
+            'message_id' => 42,
+            'date'       => 1751000000,
+            'chat'       => ['id' => -100123, 'username' => 'lulumineuse'],
+            'text'       => 'Le essentiel du sommeil',
+            'entities'   => [['type' => 'bold', 'offset' => 3, 'length' => 9]],
+        ];
+        $payload = epuriel_telegram_message_payload($message);
+        $this->assertSame('Le **essentiel** du sommeil', $payload['text']);
+    }
 }

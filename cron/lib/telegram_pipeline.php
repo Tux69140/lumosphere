@@ -548,13 +548,23 @@ function epuriel_telegram_source_chat_id(array $config): ?int
 function epuriel_telegram_message_payload(array $message, ?int $updateId = null): array
 {
     $chat = is_array($message['chat'] ?? null) ? $message['chat'] : [];
-    $textParts = [];
+
+    // Appliquer le formatage Telegram (entités Bot API) en Markdown avant stockage
+    $textMd    = null;
+    $captionMd = null;
     if (isset($message['text']) && trim((string) $message['text']) !== '') {
-        $textParts[] = (string) $message['text'];
+        $textMd = tg_entities_to_markdown(
+            (string) $message['text'],
+            $message['entities'] ?? []
+        );
     }
     if (isset($message['caption']) && trim((string) $message['caption']) !== '') {
-        $textParts[] = (string) $message['caption'];
+        $captionMd = tg_entities_to_markdown(
+            (string) $message['caption'],
+            $message['caption_entities'] ?? []
+        );
     }
+    $combinedText = implode("\n\n", array_filter([$textMd, $captionMd], fn($t) => $t !== null));
 
     $entities = array_merge(
         epuriel_telegram_payload_entities($message['entities'] ?? [], (string) ($message['text'] ?? '')),
@@ -566,7 +576,7 @@ function epuriel_telegram_message_payload(array $message, ?int $updateId = null)
         'date' => date('c', (int) ($message['date'] ?? time())),
         'chat_id' => $chat['id'] ?? 0,
         'chat_username' => ltrim((string) ($chat['username'] ?? ''), '@'),
-        'text' => count($textParts) > 0 ? implode("\n\n", $textParts) : null,
+        'text' => $combinedText !== '' ? $combinedText : null,
         'entities' => $entities,
     ];
 
