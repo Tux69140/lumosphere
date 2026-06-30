@@ -37,9 +37,14 @@ function _users_create(PDO $pdo, array $ctx, array $body, string $ip): array
 
     $origin  = $GLOBALS['app_config']['allowed_origin'] ?? '';
     $set_url = "{$origin}/definir-mot-de-passe?token={$token}";
-    $tpl     = mail_template_invite($user['prenom'], $set_url);
 
-    send_mail($user['email'], "{$user['prenom']} {$user['nom']}", $tpl['subject'], $tpl['html'], $tpl['text']);
+    try {
+        $tpl = mail_template_invite($user['prenom'], $set_url);
+        send_mail($user['email'], "{$user['prenom']} {$user['nom']}", $tpl['subject'], $tpl['html'], $tpl['text']);
+    } catch (\RuntimeException $e) {
+        error_log('users_create: envoi invitation échoué — ' . $e->getMessage());
+        return dal_ok(['id' => $user_id, 'warning' => 'L\'invitation n\'a pas pu être envoyée. Utilisez « Renvoyer l\'invitation » depuis la liste des utilisateurs.']);
+    }
 
     return dal_ok(['id' => $user_id]);
 }

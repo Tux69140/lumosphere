@@ -2,7 +2,6 @@
 declare(strict_types=1);
 
 use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\SMTP;
 
 /**
  * Envoie un email via SMTP (config dans $GLOBALS['app_config']['smtp']).
