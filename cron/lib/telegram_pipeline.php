@@ -61,6 +61,73 @@ function tg_parse_telegram_export(array $json): array
     return $out;
 }
 
+/**
+ * Applique les entités de formatage Telegram (Bot API) à un texte brut
+ * pour produire du Markdown CommonMark.
+ *
+ * Les offsets Telegram sont en UTF-16 code units (un emoji = 2 unités).
+ * On construit une table de correspondance UTF-16 → index char Unicode.
+ */
+function tg_entities_to_markdown(string $text, array $entities): string
+{
+    if ($text === '' || empty($entities)) {
+        return $text;
+    }
+
+    $formattingMap = [
+        'bold'          => ['**', '**'],
+        'italic'        => ['_',  '_'],
+        'underline'     => ['<u>', '</u>'],
+        'strikethrough' => ['~~', '~~'],
+        'code'          => ['`',  '`'],
+    ];
+
+    // Filtrer les entités de formatage avec offset+length
+    $relevant = array_values(array_filter($entities, fn($e) =>
+        is_array($e) &&
+        isset($e['type'], $e['offset'], $e['length']) &&
+        isset($formattingMap[$e['type']])
+    ));
+
+    if (empty($relevant)) {
+        return $text;
+    }
+
+    // Table UTF-16 offset → index char (mb_str_split = code points Unicode)
+    $chars = mb_str_split($text, 1, 'UTF-8');
+    $utf16ToChar = [];
+    $u16 = 0;
+    foreach ($chars as $i => $ch) {
+        $utf16ToChar[$u16] = $i;
+        $u16 += (mb_ord($ch, 'UTF-8') > 0xFFFF) ? 2 : 1;
+    }
+    $utf16ToChar[$u16] = count($chars); // sentinelle de fin
+
+    // Construire la liste des insertions [charIndex, marqueur]
+    $insertions = [];
+    foreach ($relevant as $entity) {
+        [$open, $close] = $formattingMap[$entity['type']];
+        $start = $utf16ToChar[(int) $entity['offset']] ?? null;
+        $end   = $utf16ToChar[(int) $entity['offset'] + (int) $entity['length']] ?? null;
+        if ($start === null || $end === null) {
+            continue;
+        }
+        $insertions[] = [$end,   $close, 1]; // fermeture = priorité haute
+        $insertions[] = [$start, $open,  0];
+    }
+
+    // Trier en ordre décroissant de position pour ne pas décaler les indices
+    usort($insertions, fn($a, $b) =>
+        $b[0] !== $a[0] ? $b[0] <=> $a[0] : $b[2] <=> $a[2]
+    );
+
+    foreach ($insertions as [$pos, $marker]) {
+        array_splice($chars, $pos, 0, [$marker]);
+    }
+
+    return implode('', $chars);
+}
+
 /** Aplatit le champ "text" (chaîne ou tableau de fragments) en texte brut. */
 function tg_flatten_export_text(mixed $text): string
 {
@@ -129,12 +196,32 @@ function tg_aggregate_source(PDO $pdo, array $source, string $origin, ?string $d
 
     $messages = [];
     $bufferIds = [];
+    $indexByMessageId = []; // message_id => [position dans $messages, update_id retenu]
     foreach ($rows as $row) {
-        $payload = json_decode((string) $row['payload_json'], true);
-        if (is_array($payload) && trim((string) ($payload['text'] ?? '')) !== '') {
-            $messages[] = $payload;
-        }
+        // Toutes les lignes de buffer sont consommées (marquées lot_created), même
+        // les versions précédentes d'un message édité.
         $bufferIds[] = (int) $row['id'];
+
+        $payload = json_decode((string) $row['payload_json'], true);
+        if (!is_array($payload) || trim((string) ($payload['text'] ?? '')) === '') {
+            continue;
+        }
+
+        // Dédup par message_id : un message édité revient avec le même message_id
+        // mais un update_id plus élevé (edited_channel_post). Le buffer ne déduplique
+        // que par update_id, donc on filtre ici en gardant la dernière version.
+        $messageId = (int) $row['message_id'];
+        $updateId  = (int) $row['update_id'];
+        if (isset($indexByMessageId[$messageId])) {
+            [$pos, $keptUpdateId] = $indexByMessageId[$messageId];
+            if ($updateId >= $keptUpdateId) {
+                $messages[$pos] = $payload;
+                $indexByMessageId[$messageId] = [$pos, $updateId];
+            }
+            continue;
+        }
+        $indexByMessageId[$messageId] = [count($messages), $updateId];
+        $messages[] = $payload;
     }
     if (count($messages) === 0) {
         return ['lot_id' => null, 'documents' => 0];

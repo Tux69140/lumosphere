@@ -118,6 +118,93 @@ class TelegramPipelineTest extends TestCase
     }
 
     /**
+     * Régression doublons : un message édité sur le canal revient avec le MÊME
+     * message_id mais un update_id différent (edited_channel_post). Le buffer ne
+     * déduplique que par update_id, donc 2 lignes existent. L'agrégation ne doit
+     * créer qu'UN document (la dernière version = update_id le plus élevé), et
+     * consommer les 2 lignes de buffer.
+     */
+    public function testAggregateDeduplicatesEditedMessageByMessageId(): void
+    {
+        $pdo = \Tests\Dal\TestHelper::getTestPdo();
+        $pdo->beginTransaction();
+        try {
+            $pdo->prepare("INSERT INTO collect_sources (source_type, nom, enabled)
+                           VALUES ('telegram','Canal Test',1)")->execute();
+            $sourceId = (int) $pdo->lastInsertId();
+            $source = $pdo->query("SELECT * FROM collect_sources WHERE id=$sourceId")->fetch();
+
+            // Même message_id (500), 2 update_id : original puis édition (texte corrigé).
+            $ins = $pdo->prepare("INSERT INTO telegram_updates_buffer
+                (collect_source_id, origin, update_id, message_id, chat_id, message_date, buffer_status, payload_json)
+                VALUES (?,?,?,?,?,?, 'buffered', ?)");
+            $ins->execute([$sourceId,'live',10,500,-100,'2026-06-29 10:00:00','{"message_id":500,"date":"2026-06-29T10:00:00","text":"version initiale"}']);
+            $ins->execute([$sourceId,'live',11,500,-100,'2026-06-29 10:00:00','{"message_id":500,"date":"2026-06-29T10:00:00","text":"version corrigee (editee)"}']);
+
+            $res = tg_aggregate_source($pdo, $source, 'live', null, null);
+
+            // Un seul document malgré les 2 lignes de buffer.
+            $this->assertSame(1, $res['documents']);
+            $count = $pdo->query("SELECT COUNT(*) FROM documents WHERE lot_id = " . $pdo->quote($res['lot_id']))->fetchColumn();
+            $this->assertSame(1, (int) $count);
+            // C'est la dernière version (édition) qui est conservée.
+            $contenu = $pdo->query("SELECT contenu_brut FROM documents WHERE lot_id = " . $pdo->quote($res['lot_id']))->fetchColumn();
+            $this->assertSame('version corrigee (editee)', $contenu);
+            // Les 2 lignes de buffer sont consommées (pas de résidu 'buffered').
+            $reste = $pdo->query("SELECT COUNT(*) FROM telegram_updates_buffer WHERE message_id=500 AND buffer_status='buffered'")->fetchColumn();
+            $this->assertSame(0, (int) $reste);
+        } finally {
+            $pdo->rollBack();
+        }
+    }
+
+    // --- tg_entities_to_markdown() ---
+
+    public function testEntitiesSimpleBold(): void
+    {
+        // "Hello world" avec bold sur "world" (offset=6, length=5, UTF-16)
+        $entities = [['type' => 'bold', 'offset' => 6, 'length' => 5]];
+        $result = tg_entities_to_markdown('Hello world', $entities);
+        $this->assertSame('Hello **world**', $result);
+    }
+
+    public function testEntitiesItalic(): void
+    {
+        $entities = [['type' => 'italic', 'offset' => 0, 'length' => 4]];
+        $result = tg_entities_to_markdown('stop maintenant', $entities);
+        $this->assertSame('_stop_ maintenant', $result);
+    }
+
+    public function testEntitiesUnderline(): void
+    {
+        $entities = [['type' => 'underline', 'offset' => 0, 'length' => 3]];
+        $result = tg_entities_to_markdown('abc def', $entities);
+        $this->assertSame('<u>abc</u> def', $result);
+    }
+
+    public function testEntitiesEmojiOffset(): void
+    {
+        // "🕊 bold" — emoji 🕊 = 2 UTF-16 units, donc bold commence à offset 3 (2 + space)
+        $entities = [['type' => 'bold', 'offset' => 3, 'length' => 4]];
+        $result = tg_entities_to_markdown('🕊 bold', $entities);
+        $this->assertSame('🕊 **bold**', $result);
+    }
+
+    public function testEntitiesEmpty(): void
+    {
+        $result = tg_entities_to_markdown('texte sans entité', []);
+        $this->assertSame('texte sans entité', $result);
+    }
+
+    public function testEntitiesUnknownTypeIgnored(): void
+    {
+        // hashtag et url ignorés (pas de formatage inline)
+        $entities = [['type' => 'hashtag', 'offset' => 0, 'length' => 4]];
+        $result = tg_entities_to_markdown('#tag texte', $entities);
+        $this->assertSame('#tag texte', $result);
+    }
+
+    /**
      * Régression : l'œuvre cible configurée sur la source (collect_sources.oeuvre_id)
      * doit être propagée aux documents du lot, pour pré-remplir l'atelier.
      */
