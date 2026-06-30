@@ -54,18 +54,17 @@ function dal_password_validate(
         }
     }
 
-    // Niveau « Fort » obligatoire pour Éditeur/Admin
-    // Règle : ≥ 3 classes de caractères sur 4, OU ≥ 20 caractères (phrase de passe)
-    if ($is_privileged && empty($errors)) {
-        $classes = 0;
-        if (preg_match('/[a-z]/', $password)) $classes++;
-        if (preg_match('/[A-Z]/', $password)) $classes++;
-        if (preg_match('/[0-9]/', $password)) $classes++;
-        if (preg_match('/[^A-Za-z0-9]/u', $password)) $classes++;
+    // Vérification de force via zxcvbn
+    $zxcvbn = new \ZxcvbnPhp\Zxcvbn();
+    $result = $zxcvbn->passwordStrength($password, array_values($context_words));
+    $score = $result['score']; // 0–4
 
-        if ($len < 20 && $classes < 3) {
-            $errors[] = 'Pour les comptes éditeur et administrateur, le mot de passe doit mélanger au moins 3 types de caractères (minuscules, majuscules, chiffres, symboles), ou faire au moins 20 caractères.';
+    if ($is_privileged) {
+        if ($score < 3) {
+            $errors[] = 'Ce mot de passe n\'est pas assez robuste. Utilisez un mot de passe fort (barre verte).';
         }
+    } elseif ($score < 2) {
+        $errors[] = 'Ce mot de passe est trop facile à deviner.';
     }
 
     return $errors;

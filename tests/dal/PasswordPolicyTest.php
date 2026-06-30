@@ -9,10 +9,10 @@ require_once __DIR__ . '/../../api/dal/password_policy.php';
 
 class PasswordPolicyTest extends TestCase
 {
-    // Abonnés : min 8 caractères
+    // Abonnés : min 8 caractères avec score zxcvbn ≥ 2
     public function testAbo3AcceptsEightChars(): void
     {
-        $this->assertSame([], dal_password_validate('abcdefgh', ROLE_ABO3));
+        $this->assertSame([], dal_password_validate('Abcde1fg', ROLE_ABO3));
     }
 
     public function testAbo3RejectsSevenChars(): void
@@ -88,14 +88,7 @@ class PasswordPolicyTest extends TestCase
         $this->assertSame([], $errors);
     }
 
-    // Règle de force Admin/Éditeur
-    public function testAdminRequiresThreeCharClasses(): void
-    {
-        // 14 chars mais 2 classes seulement (minuscules + majuscules)
-        $errors = dal_password_validate('AbcDefGhiJklMn', ROLE_ADMIN);
-        $this->assertNotEmpty($errors);
-    }
-
+    // Règle de force Admin/Éditeur via zxcvbn (score ≥ 3 requis)
     public function testAdminAcceptsThreeCharClasses(): void
     {
         $errors = dal_password_validate('AbcDefGhi123', ROLE_ADMIN);
