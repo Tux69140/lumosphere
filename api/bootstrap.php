@@ -2,6 +2,13 @@
 
 declare(strict_types=1);
 
+// Composer autoload (PHPMailer et autres dépendances)
+$_composer_autoload = dirname(__DIR__) . '/vendor/autoload.php';
+if (file_exists($_composer_autoload)) {
+    require_once $_composer_autoload;
+}
+unset($_composer_autoload);
+
 /**
  * Vide et détruit la session courante (expiration / révocation par un admin).
  */
@@ -13,6 +20,7 @@ function _clear_session(): void
 
 // Load config (outside repo) — avant session_start() pour configurer session.save_path
 $config = require dirname(__DIR__) . '/config/config.php';
+$GLOBALS['app_config'] = $config;
 date_default_timezone_set($config['timezone'] ?? 'Europe/Paris');
 
 // Session config
@@ -65,7 +73,7 @@ $first_segment = explode('/', trim($path, '/'))[0] ?? '';
 $second_segment = explode('/', trim($path, '/'))[1] ?? '';
 
 // Setup mode: block all routes except auth/csrf and auth/setup when no user exists
-if ($first_segment === 'auth' && in_array($second_segment, ['csrf', 'setup', 'login'], true)) {
+if ($first_segment === 'auth' && in_array($second_segment, ['csrf', 'setup', 'login', 'token-info', 'set-password', 'forgot-password'], true)) {
     // These routes are always accessible
 } elseif (!dal_auth_has_any_user($pdo)) {
     http_response_code(503);
@@ -126,7 +134,7 @@ if (in_array($_SERVER['REQUEST_METHOD'], ['POST', 'PUT', 'DELETE'], true)) {
     $token = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
     $session_token = $_SESSION['csrf_token'] ?? '';
     // Skip CSRF for login and setup endpoints (no pre-existing session)
-    $is_csrf_exempt = ($first_segment === 'auth' && in_array($second_segment, ['login', 'setup'], true));
+    $is_csrf_exempt = ($first_segment === 'auth' && in_array($second_segment, ['login', 'setup', 'set-password', 'forgot-password'], true));
     if (!$is_csrf_exempt && ($token === '' || !hash_equals((string) $session_token, (string) $token))) {
         http_response_code(403);
         echo json_encode(['status' => 'error', 'data' => null, 'errors' => ['Jeton CSRF invalide.']]);

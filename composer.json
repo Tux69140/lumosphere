@@ -2,6 +2,9 @@
     "name": "lumosphere/api",
     "description": "Lumosphère DAL",
     "type": "project",
+    "require": {
+        "phpmailer/phpmailer": "^6.9"
+    },
     "require-dev": {
         "phpunit/phpunit": "^13.2",
         "phpstan/phpstan": "^2.2",

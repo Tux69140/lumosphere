@@ -34,4 +34,17 @@ return [
 
     // Workers (Python venv)
     'python_bin' => '/home2/mist2786/lumosphere/venvs/py311/bin/python3',
+
+    // SMTP — envoi d'emails (invitation, réinitialisation de mot de passe)
+    // Créer la boîte comptes@lumosphere.org dans le cPanel o2switch avant de remplir.
+    'smtp' => [
+        'host'       => 'mail.lumosphere.org',  // serveur SMTP o2switch (ou smtp.o2switch.net)
+        'port'       => 587,                     // 587 (STARTTLS) ou 465 (SSL)
+        'encryption' => 'tls',                   // 'tls' pour STARTTLS, 'ssl' pour port 465
+        'username'   => 'comptes@lumosphere.org',
+        'password'   => '',                      // mot de passe de la boîte comptes@
+        'from_email' => 'comptes@lumosphere.org',
+        'from_name'  => 'Lumosphère',
+        'reply_to'   => 'contact@lumosphere.org',
+    ],
 ];
