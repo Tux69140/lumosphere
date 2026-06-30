@@ -199,7 +199,7 @@ function _auth_token_info(PDO $pdo, string $raw_token): array
         return dal_error('Ce lien est invalide ou a expiré.');
     }
     // Charger le rôle de l'utilisateur pour que le frontend adapte la jauge de force
-    $stmt = $pdo->prepare('SELECT role_id FROM users WHERE id = :id');
+    $stmt = $pdo->prepare('SELECT role_id FROM users WHERE id = :id AND deleted_at IS NULL');
     $stmt->execute(['id' => $token['user_id']]);
     $user = $stmt->fetch();
     if (!$user) {
@@ -222,7 +222,7 @@ function _auth_set_password(PDO $pdo, array $body): array
         return dal_error('Ce lien est invalide ou a expiré. Demandez un nouvel envoi.');
     }
 
-    $stmt = $pdo->prepare('SELECT id, prenom, nom, email, role_id FROM users WHERE id = :id');
+    $stmt = $pdo->prepare('SELECT id, prenom, nom, email, role_id FROM users WHERE id = :id AND deleted_at IS NULL');
     $stmt->execute(['id' => $token['user_id']]);
     $user = $stmt->fetch();
     if (!$user) {
@@ -271,7 +271,7 @@ function _auth_forgot_password(PDO $pdo, array $body): array
         return $neutral_response; // Silencieux pour ne pas aider l'attaquant
     }
 
-    $stmt = $pdo->prepare('SELECT id, prenom, nom, email, role_id, password_set_at FROM users WHERE email = :email');
+    $stmt = $pdo->prepare('SELECT id, prenom, nom, email, role_id, password_set_at FROM users WHERE email = :email AND deleted_at IS NULL');
     $stmt->execute(['email' => $email]);
     $user = $stmt->fetch();
 
