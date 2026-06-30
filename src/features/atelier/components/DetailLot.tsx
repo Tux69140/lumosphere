@@ -136,14 +136,6 @@ function MetadataPanel({
     onSetKeywords({ lotId: lot.id, docId: doc.id, keywordIds: remaining, source: 'manual' })
   }
 
-  function handleRejectSuggestion(kwId: number) {
-    // Rejeter une suggestion IA = retirer la ligne 'ai_suggested', sans promotion.
-    const remaining = suggestedKeywords
-      .filter((k) => k.keyword_id !== kwId)
-      .map((k) => k.keyword_id)
-    onSetKeywords({ lotId: lot.id, docId: doc.id, keywordIds: remaining, source: 'ai_suggested' })
-  }
-
   return (
     <div className="space-y-4">
       {/* Thème */}
@@ -251,33 +243,19 @@ function MetadataPanel({
             </span>
           ))}
 
-          {/* Mots-clés suggérés par l'IA à l'import : accepter (✓) ou rejeter (✗). */}
+          {/* Mots-clés suggérés par l'IA à l'import : toucher le badge = accepter. */}
           {suggestedKeywords.map((kw) => (
-            <span
+            <button
               key={`sug-${kw.keyword_id}`}
-              className="inline-flex items-center gap-1 rounded-full border border-dashed border-amber-400 bg-amber-50 px-2 py-0.5 text-xs text-amber-700 dark:border-amber-600 dark:bg-amber-950 dark:text-amber-300"
+              type="button"
+              onClick={() => onKeywordsAccepted([kw.keyword_id])}
+              className="inline-flex items-center gap-1 rounded-full border border-dashed border-amber-400 bg-amber-50 px-2.5 py-1 text-xs text-amber-700 transition-colors hover:border-amber-500 hover:bg-amber-100 dark:border-amber-600 dark:bg-amber-950 dark:text-amber-300 dark:hover:bg-amber-900"
+              title={`Accepter « ${kw.mot} »`}
+              aria-label={`Accepter le mot-clé ${kw.mot}`}
             >
               <Sparkle size={10} weight="fill" />
               {kw.mot}
-              <button
-                type="button"
-                onClick={() => onKeywordsAccepted([kw.keyword_id])}
-                className="ml-0.5 rounded-full p-0.5 hover:bg-green-200 dark:hover:bg-green-800"
-                aria-label={`Accepter ${kw.mot}`}
-                title="Accepter ce mot-clé"
-              >
-                <CheckCircle size={11} weight="fill" />
-              </button>
-              <button
-                type="button"
-                onClick={() => handleRejectSuggestion(kw.keyword_id)}
-                className="rounded-full p-0.5 hover:bg-red-200 dark:hover:bg-red-800"
-                aria-label={`Rejeter ${kw.mot}`}
-                title="Rejeter ce mot-clé"
-              >
-                <X size={10} />
-              </button>
-            </span>
+            </button>
           ))}
 
           {aiSuggestions.map((mot) => (
@@ -556,12 +534,12 @@ export function DetailLot({ lot, onKeywordsAccepted }: Props) {
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
           {/* Sélecteur d'œuvre du lot */}
           <select
             value={lotOeuvreId ?? ''}
             onChange={(e) => handleLotOeuvreChange(e.target.value ? Number(e.target.value) : null)}
-            className="rounded-md border border-(--color-border) bg-(--color-bg-card) px-2 py-2 text-sm text-(--color-text)"
+            className="w-full rounded-md border border-(--color-border) bg-(--color-bg-card) px-2 py-2 text-sm text-(--color-text) sm:w-auto"
           >
             <option value="">Œuvre du lot</option>
             {(oeuvres as Array<{ id: number; nom: string }> | undefined)?.map((o) => (
@@ -580,7 +558,7 @@ export function DetailLot({ lot, onKeywordsAccepted }: Props) {
                   if (doc) updateDocument.mutate({ lotId: lot.id, data: { document_id: doc.id } })
                 }}
                 disabled={updateDocument.isPending}
-                className="flex items-center gap-1.5 rounded-md border border-(--color-border) px-3 py-2 text-sm font-medium text-(--color-text) transition-colors hover:bg-(--color-bg-hover)"
+                className="flex w-full items-center justify-center gap-1.5 rounded-md border border-(--color-border) px-3 py-2 text-sm font-medium text-(--color-text) transition-colors hover:bg-(--color-bg-hover) sm:w-auto"
               >
                 <FloppyDisk size={16} />
                 {updateDocument.isPending ? 'Enregistrement...' : 'Enregistrer'}
@@ -589,7 +567,7 @@ export function DetailLot({ lot, onKeywordsAccepted }: Props) {
                 type="button"
                 onClick={handleCheckConformity}
                 disabled={checkConformity.isPending}
-                className="flex items-center gap-1.5 rounded-md border border-(--color-border) px-3 py-2 text-sm font-medium text-(--color-text) transition-colors hover:bg-(--color-bg-hover)"
+                className="flex w-full items-center justify-center gap-1.5 rounded-md border border-(--color-border) px-3 py-2 text-sm font-medium text-(--color-text) transition-colors hover:bg-(--color-bg-hover) sm:w-auto"
               >
                 <WarningCircle size={16} />
                 {checkConformity.isPending ? 'Vérification...' : 'Vérifier conformité'}
@@ -602,7 +580,7 @@ export function DetailLot({ lot, onKeywordsAccepted }: Props) {
                   checkConformity.isPending ||
                   (conformity !== null && !conformity.conforme)
                 }
-                className="flex items-center gap-1.5 rounded-md bg-green-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-green-700 disabled:opacity-50"
+                className="flex w-full items-center justify-center gap-1.5 rounded-md bg-green-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-green-700 disabled:opacity-50 sm:w-auto"
               >
                 <CheckCircle size={16} weight="fill" />
                 {integrateLot.isPending ? 'Intégration...' : 'Intégrer au Corpus'}
