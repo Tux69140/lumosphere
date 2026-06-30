@@ -63,7 +63,12 @@ function _users_resend_invite(PDO $pdo, array $ctx, int $user_id, string $ip): a
     $set_url = "{$origin}/definir-mot-de-passe?token={$token}";
     $tpl     = mail_template_invite($user['prenom'], $set_url);
 
-    send_mail($user['email'], "{$user['prenom']} {$user['nom']}", $tpl['subject'], $tpl['html'], $tpl['text']);
+    try {
+        send_mail($user['email'], "{$user['prenom']} {$user['nom']}", $tpl['subject'], $tpl['html'], $tpl['text']);
+    } catch (\RuntimeException $e) {
+        error_log('[resend-invite] send_mail failed: ' . $e->getMessage());
+        return dal_ok(['warning' => "L'email n'a pas pu être envoyé. Réessayez dans un moment."]);
+    }
 
     return dal_ok(['message' => 'Invitation renvoyée.']);
 }
