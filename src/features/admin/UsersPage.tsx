@@ -5,7 +5,14 @@ import { apiClient } from '@/services/api'
 import { UserFormModal } from './UserFormModal'
 
 type Role = { id: number; nom: string }
-type UserRow = { id: number; prenom: string; nom: string; email: string; role_id: number }
+type UserRow = {
+  id: number
+  prenom: string
+  nom: string
+  email: string
+  role_id: number
+  is_activated: boolean
+}
 
 export function UsersPage() {
   const [users, setUsers] = useState<UserRow[]>([])
@@ -63,6 +70,7 @@ export function UsersPage() {
             <th>Nom</th>
             <th>Email</th>
             <th>Rôle</th>
+            <th>Statut</th>
             <th className="text-right">Actions</th>
           </tr>
         </thead>
@@ -73,6 +81,11 @@ export function UsersPage() {
               <td>{u.nom}</td>
               <td>{u.email}</td>
               <td>{roleName(u.role_id)}</td>
+              <td>
+                <span className={u.is_activated ? 'text-green-600' : 'text-orange-500'}>
+                  {u.is_activated ? 'Actif' : 'En attente'}
+                </span>
+              </td>
               <td className="text-right">
                 <button
                   aria-label={`Modifier ${u.email}`}
