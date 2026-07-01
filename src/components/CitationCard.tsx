@@ -19,9 +19,9 @@ type CitationCardProps = {
   onToggleFavorite?: () => void
 }
 
-function CardKeywords({ mots_cles }: { mots_cles: string[] }) {
+function CardKeywords({ mots_cles, className = '' }: { mots_cles: string[]; className?: string }) {
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className={`flex flex-wrap gap-2 ${className}`.trim()}>
       {mots_cles.map((mc) => (
         <span
           key={mc}
@@ -128,7 +128,7 @@ export function CitationCard({
 
         {/* Pied mobile : mots-clés + actions ; masqué sur desktop (déplacé dans le rail) */}
         <div className="mt-3 flex min-h-[30px] items-center justify-between gap-2 border-t border-(--color-border) pt-3 lg:hidden">
-          <CardKeywords mots_cles={mots_cles} />
+          <CardKeywords mots_cles={mots_cles} className="flex-1" />
           <CardActions
             isFavorited={isFavorited}
             onToggleFavorite={onToggleFavorite}
