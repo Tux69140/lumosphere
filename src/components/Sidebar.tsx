@@ -23,11 +23,9 @@ export function Sidebar() {
   return (
     <aside
       id="corpus-filters"
-      className={`w-full shrink-0 border-b border-(--color-border) bg-(--color-bg-sidebar) lg:block lg:w-80 lg:border-b-0 lg:border-r ${
-        filtersOpen ? 'block' : 'hidden'
-      }`}
+      className={`w-full shrink-0 lg:block lg:w-96 ${filtersOpen ? 'block' : 'hidden'}`}
     >
-      <div className="flex flex-col lg:sticky lg:top-16 lg:max-h-[calc(100vh-4rem)]">
+      <div className="flex flex-col rounded-lg border border-(--color-border) bg-(--color-bg-card) shadow-sm lg:sticky lg:top-16 lg:max-h-[calc(100vh-4rem)]">
         <div className="flex-grow overflow-y-auto p-4">
           <CorpusFilters />
         </div>

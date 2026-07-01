@@ -89,4 +89,10 @@ describe('Sidebar', () => {
     expect(screen.queryByRole('button', { name: /réinitialiser/i })).not.toBeInTheDocument()
     expect(screen.queryByRole('link', { name: /lulumineuse/i })).not.toBeInTheDocument()
   })
+
+  it('la sidebar corpus est rendue en carte (bordure + ombre)', () => {
+    renderAt('/')
+    const region = document.getElementById('corpus-filters')!
+    expect(region.querySelector('.rounded-lg.shadow-sm')).not.toBeNull()
+  })
 })
