@@ -58,7 +58,7 @@
   --color-accent-bg: #ffffdf;
   --color-accent-text: #9a3412;
   /* Or « encre » : version foncée de l'accent pour le TEXTE (contraste ≥ 4,5:1 sur blanc) */
-  --color-accent-ink: #8a6d2f;
+  --color-accent-ink: #7a5f28; /* or-encre foncé — lisible sur crème (~5,7:1) et blanc */
   --color-tag-bg: #ececff;
   --color-tag-text: #4338ca;
   --color-border: #e2e8f0;
@@ -87,14 +87,14 @@
   --color-text-header-secondary: #cbd5e1;
   --color-link-header: #e2e8f0;
   --color-icon-header: #f8fafc;
-  --color-action: #818cf8;
+  --color-action: #3f7a54; /* vert nuit (rappel du bandeau) — texte blanc 5,1:1 */
   --color-action-hover: #6366f1;
-  --color-action-text: #0f172a;
-  --color-accent: #fb923c;
+  --color-action-text: #ffffff;
+  --color-accent: #d3b67b; /* Or Parchemin de marque (remplace l'orange) */
   --color-accent-bg: #000040;
   --color-accent-text: #fdba74;
-  /* En mode sombre, l'orange d'accent est déjà lisible sur les cartes (#1e293b) */
-  --color-accent-ink: #fb923c;
+  /* En mode sombre, l'or d'accent est lisible sur les cartes (#1e293b) */
+  --color-accent-ink: #d3b67b; /* accent texte sombre = or de marque (7,5:1 sur carte) */
   --color-tag-bg: #312e81;
   --color-tag-text: #c7d2fe;
   --color-border: #475569;
@@ -178,4 +178,8 @@ body {
   .milkdown-host .milkdown .ProseMirror {
     padding: 2rem 4rem;
   }
+}
+
+input[type='checkbox'] {
+  accent-color: var(--color-action);
 }
