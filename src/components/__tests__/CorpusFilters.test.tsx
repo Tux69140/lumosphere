@@ -61,13 +61,18 @@ describe('CorpusFilters', () => {
     expect(toggleOeuvre).toHaveBeenCalledWith(1)
   })
 
-  it('bouton Réinitialiser visible uniquement si hasActiveFilters est vrai', () => {
-    vi.mocked(useCorpusSearch).mockReturnValue(makeSearch({ hasActiveFilters: false }))
-    const { rerender } = render(<CorpusFilters />)
-    expect(screen.queryByRole('button', { name: /réinitialiser/i })).not.toBeInTheDocument()
-
+  it('ne rend plus le bouton Réinitialiser (déplacé dans le pied de la Sidebar)', () => {
     vi.mocked(useCorpusSearch).mockReturnValue(makeSearch({ hasActiveFilters: true }))
-    rerender(<CorpusFilters />)
-    expect(screen.getByRole('button', { name: /réinitialiser/i })).toBeInTheDocument()
+    render(<CorpusFilters />)
+    expect(screen.queryByRole('button', { name: /réinitialiser/i })).not.toBeInTheDocument()
+  })
+
+  it('mode OU/ET des mots-clés visible même sans mot-clé sélectionné', () => {
+    vi.mocked(useCorpusSearch).mockReturnValue(
+      makeSearch({ keywords: [{ id: 1, mot: 'paix' }], keywordIds: [] }),
+    )
+    render(<CorpusFilters />)
+    expect(screen.getByRole('button', { name: 'OU' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'ET' })).toBeInTheDocument()
   })
 })

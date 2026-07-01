@@ -38,8 +38,6 @@ export function CorpusFilters() {
     setDateFrom,
     setDateTo,
     setSort,
-    reset,
-    hasActiveFilters,
   } = useCorpusSearch()
 
   return (
@@ -183,33 +181,31 @@ export function CorpusFilters() {
                 </label>
               ))}
             </div>
-            {keywordIds.length >= 1 && (
-              <div className="mt-2 flex items-center gap-2">
-                <span className="text-xs text-(--color-text-secondary)">Mode :</span>
-                <button
-                  type="button"
-                  onClick={() => setKeywordMode('OR')}
-                  className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-                    keywordMode === 'OR'
-                      ? 'bg-(--color-action) text-(--color-action-text)'
-                      : 'bg-(--color-bg-sidebar) text-(--color-text-secondary) hover:bg-(--color-bg-button)'
-                  }`}
-                >
-                  OU
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setKeywordMode('AND')}
-                  className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-                    keywordMode === 'AND'
-                      ? 'bg-(--color-action) text-(--color-action-text)'
-                      : 'bg-(--color-bg-sidebar) text-(--color-text-secondary) hover:bg-(--color-bg-button)'
-                  }`}
-                >
-                  ET
-                </button>
-              </div>
-            )}
+            <div className="mt-2 flex items-center gap-2">
+              <span className="text-xs text-(--color-text-secondary)">Mode :</span>
+              <button
+                type="button"
+                onClick={() => setKeywordMode('OR')}
+                className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                  keywordMode === 'OR'
+                    ? 'bg-(--color-action) text-(--color-action-text)'
+                    : 'bg-(--color-bg-sidebar) text-(--color-text-secondary) hover:bg-(--color-bg-button)'
+                }`}
+              >
+                OU
+              </button>
+              <button
+                type="button"
+                onClick={() => setKeywordMode('AND')}
+                className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                  keywordMode === 'AND'
+                    ? 'bg-(--color-action) text-(--color-action-text)'
+                    : 'bg-(--color-bg-sidebar) text-(--color-text-secondary) hover:bg-(--color-bg-button)'
+                }`}
+              >
+                ET
+              </button>
+            </div>
           </>
         )}
       </div>
@@ -237,16 +233,6 @@ export function CorpusFilters() {
           </label>
         </div>
       </div>
-
-      {hasActiveFilters && (
-        <button
-          type="button"
-          onClick={reset}
-          className="mt-1 rounded-sm text-sm font-medium text-(--color-accent-ink) hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--color-action)"
-        >
-          Réinitialiser
-        </button>
-      )}
     </>
   )
 }
