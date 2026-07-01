@@ -9,27 +9,48 @@ RewriteEngine On
   Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
 </IfModule>
 
-# Ressources statiques toujours accessibles
+# ── Règles TOUJOURS actives (maintenance ET production) — ne jamais commenter ──
+
+# Ressources statiques toujours accessibles (images, CSS, JS…)
 RewriteRule \.(css|js|jpg|jpeg|png|gif|svg|ico|woff2?)$ - [L]
 
-# Page de maintenance elle-même
-RewriteRule ^maintenance\.html$ - [L]
-
-# API toujours accessible
+# API toujours accessible (sinon la SPA de prod la détournerait vers index.html)
 RewriteRule ^api/ - [L]
 
-# Paramètre secret ?dev=ouilulu → pose le cookie (8 h) et redirige
+# Page de maintenance elle-même (toujours accessible pour l'afficher)
+RewriteRule ^maintenance\.html$ - [L]
+
+# ══════════════════════════════════════════════════════════════════════
+# MODE MAINTENANCE
+# Pour passer en PRODUCTION : commenter TOUT le bloc situé entre cette
+# barre et la barre « FIN MODE MAINTENANCE » ci-dessous (préfixer d'un #).
+# Pour revenir en maintenance : décommenter ce même bloc.
+# ══════════════════════════════════════════════════════════════════════
+
+# Accès secret : visiter ?dev=ouilulu pose un cookie 8h et redirige
+# → permet de naviguer sur le vrai site sans voir la maintenance
 RewriteCond %{QUERY_STRING} (?:^|&)dev=ouilulu(?:&|$)
 RewriteRule ^(.*)$ /$1? [CO=lumosphere_dev:ouilulu:.%{HTTP_HOST}:480:/:Secure,NE,R=302,L]
 
-# Cookie présent + fichier existant (dont index.html) → servir directement
+# Cookie présent + fichier existant → servir directement
 RewriteCond %{HTTP_COOKIE} lumosphere_dev=ouilulu
 RewriteCond %{REQUEST_FILENAME} -f
 RewriteRule ^ - [L]
 
-# Cookie présent + route SPA (non-fichier) → index.html
+# Cookie présent + route SPA → index.html
 RewriteCond %{HTTP_COOKIE} lumosphere_dev=ouilulu
 RewriteRule ^ /index.html [L]
 
 # Tout autre visiteur → page de maintenance
 RewriteRule ^ /maintenance.html [R=302,L]
+
+# ══════════════════════════════════════════════════════════════════════
+# FIN MODE MAINTENANCE
+# ══════════════════════════════════════════════════════════════════════
+
+# SPA routing (production) — sert index.html pour les routes profondes
+# (/login après timeout, /bibliotheque, etc.). Ignoré en maintenance car
+# les règles ci-dessus interceptent tout avant d'arriver ici.
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteRule ^ - [L]
+RewriteRule ^ /index.html [L]
