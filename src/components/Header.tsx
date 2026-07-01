@@ -1,23 +1,15 @@
 // src/components/Header.tsx
 import { useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router'
-import {
-  SunHorizon,
-  List,
-  X,
-  SignIn,
-  SignOut,
-  GearSix,
-  Funnel,
-  Heart,
-  Factory,
-} from '@phosphor-icons/react'
+import { List, X, SignIn, SignOut, GearSix, Funnel, Heart, Factory } from '@phosphor-icons/react'
 import { ThemeToggle } from './ThemeToggle'
 import { HelpButton } from './HelpButton'
 import { useAuth } from '@/hooks/useAuth'
 import { useFavorites } from '@/hooks/useFavorites'
 import { useCorpusSearchOptional } from '@/features/corpus/useCorpusSearch'
 import { ROLE_ADMIN, ROLE_EDITEUR } from '@/constants/roles'
+import wordmarkClair from '@/assets/lumosphere-wordmark-clair.png'
+import wordmarkSombre from '@/assets/lumosphere-wordmark-sombre.png'
 
 export function Header() {
   const [menuOpen, setMenuOpen] = useState(false)
@@ -114,9 +106,14 @@ export function Header() {
   return (
     <header className="sticky top-0 z-50 border-b border-(--color-border-header) bg-(--color-bg-header) px-4 shadow-sm lg:px-6">
       <div className="flex h-16 items-center justify-between">
-        <Link to="/" className="flex items-center gap-2 no-underline">
-          <SunHorizon size={28} weight="fill" className="text-(--color-accent)" />
-          <span className="text-lg font-bold text-(--color-text-header)">Lumosphère</span>
+        <Link to="/" aria-label="Lumosphère — accueil" className="flex items-center no-underline">
+          <img src={wordmarkClair} alt="" aria-hidden="true" className="h-9 w-auto dark:hidden" />
+          <img
+            src={wordmarkSombre}
+            alt=""
+            aria-hidden="true"
+            className="hidden h-9 w-auto dark:block"
+          />
         </Link>
 
         <div className="flex items-center gap-2">

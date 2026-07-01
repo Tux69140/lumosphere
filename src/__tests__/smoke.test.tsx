@@ -35,6 +35,8 @@ describe('Smoke', () => {
         </MemoryRouter>
       </QueryClientProvider>,
     )
-    await waitFor(() => expect(screen.getByText('Lumosphère')).toBeInTheDocument())
+    await waitFor(() =>
+      expect(screen.getByRole('link', { name: /lumosphère/i })).toBeInTheDocument(),
+    )
   })
 })
