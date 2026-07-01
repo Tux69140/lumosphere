@@ -43,12 +43,16 @@ export function ResultsInfoBar() {
     keywordMode,
     dateFrom,
     dateTo,
+    sort,
+    setSort,
     toggleOeuvre,
     toggleTheme,
     toggleKeyword,
     setDateFrom,
     setDateTo,
   } = useCorpusSearch()
+
+  const statusMessage: string | null = null // réservé aux messages « Traitement/Export en cours… »
 
   const displayCount = total ?? items.length
   const countLabel =
@@ -58,15 +62,47 @@ export function ResultsInfoBar() {
 
   return (
     <div className="mb-4 space-y-2">
-      <div className="flex min-h-[58px] items-center justify-between rounded-lg border border-(--color-border) bg-(--color-bg-card) p-3">
-        <div className="flex-1" />
+      <div
+        className={`flex min-h-[52px] items-center gap-4 rounded-lg p-3 ${
+          statusMessage ? 'border border-(--color-border) bg-(--color-bg-card)' : ''
+        }`}
+      >
+        <div className="flex-1 text-sm text-(--color-text-secondary)">{statusMessage}</div>
         <span
           role="status"
           aria-live="polite"
-          className="rounded-full bg-(--color-bg-sidebar) px-3 py-1 text-sm font-medium text-(--color-text-secondary)"
+          className="text-sm font-semibold text-(--color-text-primary)"
         >
           {countLabel}
         </span>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-(--color-text-secondary)">Afficher par :</span>
+          <button
+            type="button"
+            onClick={() => setSort('date')}
+            aria-pressed={sort === 'date'}
+            className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+              sort === 'date'
+                ? 'bg-(--color-action) text-(--color-action-text)'
+                : 'border border-(--color-border) bg-(--color-bg-sidebar) text-(--color-text-secondary) hover:bg-(--color-bg-button)'
+            }`}
+          >
+            Date
+          </button>
+          <button
+            type="button"
+            onClick={() => setSort('score')}
+            disabled={query.trim() === ''}
+            aria-pressed={sort === 'score'}
+            className={`rounded-full px-3 py-1 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+              sort === 'score'
+                ? 'bg-(--color-action) text-(--color-action-text)'
+                : 'border border-(--color-border) bg-(--color-bg-sidebar) text-(--color-text-secondary) hover:bg-(--color-bg-button)'
+            }`}
+          >
+            Pertinence
+          </button>
+        </div>
       </div>
 
       {hasActiveFilters && (
