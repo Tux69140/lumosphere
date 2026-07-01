@@ -9,10 +9,9 @@ export function MainLayout() {
     <CorpusSearchProvider>
       <div className="flex min-h-screen flex-col">
         <Header />
-        {/* Sidebar collée à gauche, contenu en pleine largeur à droite. */}
-        <div className="flex flex-1 flex-col lg:flex-row">
+        <div className="mx-auto flex w-full max-w-screen-2xl flex-1 flex-col gap-6 p-4 lg:flex-row lg:p-6">
           <Sidebar />
-          <main className="flex-1 p-4 lg:p-6">
+          <main className="min-w-0 flex-1">
             <Outlet />
           </main>
         </div>
