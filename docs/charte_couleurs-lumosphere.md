@@ -1,6 +1,8 @@
 # Charte couleurs — Lumosphère
 
 > Palette validée. Source de vérité pour les couleurs de l'application.
+>
+> **Note (2026-07-01)** — Le *fond de la barre de menu supérieure* a été adapté (clair `#FDF7F1`, sombre `#14281E`) pour se fondre avec les wordmarks de marque (`src/assets/lumosphere-wordmark-*.png`). Le reste de la palette est inchangé.
 
 ## Mode clair
 
@@ -8,7 +10,7 @@
 |------|-----|
 | Fond de page principal | `#f8fefc` |
 | Fond des cartes et panneaux | `#ffffff` |
-| Fond de la barre de menu supérieure | `#ffffff` |
+| Fond de la barre de menu supérieure | `#FDF7F1` |
 | Texte du menu supérieur | `#38444D` |
 | Texte secondaire du menu supérieur | `#64748b` |
 | Liens du menu supérieur | `#1e293b` |
@@ -44,7 +46,7 @@
 |------|-----|
 | Fond de page principal | `#0f172a` |
 | Fond des cartes et panneaux | `#1e293b` |
-| Fond de la barre de menu supérieure | `#1e293b` |
+| Fond de la barre de menu supérieure | `#14281E` |
 | Texte du menu supérieur | `#f8fafc` |
 | Texte secondaire du menu supérieur | `#cbd5e1` |
 | Liens du menu supérieur | `#e2e8f0` |
