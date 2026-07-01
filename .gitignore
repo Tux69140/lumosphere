@@ -42,3 +42,5 @@ test-results/
 Thumbs.db
 .superpowers/
 .phpunit.result.cache
+
+.worktrees/
