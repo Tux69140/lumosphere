@@ -31,7 +31,6 @@ export type MarkdownToolbarProps = {
   onToggleEmphasis?: () => void
   onToggleBulletList?: () => void
   onToggleBlockquote?: () => void
-  onToggleLink?: () => void
 }
 
 export function MarkdownToolbar({
@@ -43,7 +42,6 @@ export function MarkdownToolbar({
   onToggleEmphasis,
   onToggleBulletList,
   onToggleBlockquote,
-  onToggleLink,
 }: MarkdownToolbarProps) {
   const [blockOpen, setBlockOpen] = useState(false)
   const [emojiOpen, setEmojiOpen] = useState(false)
@@ -51,7 +49,7 @@ export function MarkdownToolbar({
   const blockRef = useRef<HTMLDivElement>(null)
   const moreRef = useRef<HTMLDivElement>(null)
 
-  // Fermeture des menus au clic extérieur
+  // Fermeture des menus au clic/toucher extérieur.
   useEffect(() => {
     if (!blockOpen && !moreOpen) return
     function onOutside(e: MouseEvent) {
@@ -85,36 +83,48 @@ export function MarkdownToolbar({
     onInsert('texte[^note]\n\n[^note]: Contenu de la note.\n')
   }
 
-  // onMouseDown preventDefault = empêche le blur de l'éditeur lors du clic sur un bouton,
-  // ce qui préserve la sélection de texte avant d'appliquer le formatage.
-  const keepFocus = (e: React.MouseEvent) => e.preventDefault()
+  // Lien au curseur : pas besoin de sélectionner du texte au préalable.
+  // On demande le libellé puis l'adresse, et on insère du Markdown que
+  // le moteur parse en nœud « lien » (aucune syntaxe brute visible ensuite).
+  function insertLink() {
+    const text = window.prompt('Texte du lien') ?? ''
+    const href = window.prompt('Adresse du lien (ex. https://…)')
+    if (!href) return
+    onInsert(`[${text || href}](${href})`)
+  }
 
+  // Cibles tactiles 36 px. PAS de onMouseDown/preventDefault : celui-ci
+  // supprimait le clic synthétisé sur Android Chrome (B/I muets).
+  // Le parent appelle focusEditor() après chaque commande pour conserver
+  // le clavier mobile ouvert.
   const btnCls =
-    'flex h-8 w-8 shrink-0 items-center justify-center rounded transition-colors hover:bg-(--color-bg-button) active:bg-(--color-bg-button)'
-  const sep = <div className="mx-1 h-5 w-px shrink-0 bg-(--color-border)" aria-hidden="true" />
+    'flex h-9 w-9 shrink-0 items-center justify-center rounded-md transition-colors hover:bg-(--color-bg-button) active:bg-(--color-bg-button)'
+  const sep = <div className="mx-0.5 h-5 w-px shrink-0 bg-(--color-border)" aria-hidden="true" />
   const currentLabel = BLOCK_LABELS[currentBlockType ?? 'paragraph'] ?? 'Paragraphe'
 
+  // flex-wrap = filet anti-débordement : si la largeur manque, les boutons
+  // passent à la ligne plutôt que de déborder ou d'être rognés.
+  // PAS d'overflow-hidden (il coupait les menus déroulants en absolu).
   return (
-    <div className="flex min-w-0 flex-1 flex-nowrap items-center gap-0.5 overflow-hidden">
-      {/* Menu déroulant type de bloc (remplace le <select> natif Android) */}
+    <div className="flex w-full flex-wrap items-center gap-1">
+      {/* Style de bloc (Paragraphe / Titres) — menu déroulant custom, agit au curseur */}
       {onSetHeading && (
         <div ref={blockRef} className="relative shrink-0">
           <button
             type="button"
-            onMouseDown={keepFocus}
             onClick={() => setBlockOpen((o) => !o)}
             aria-expanded={blockOpen}
             aria-haspopup="listbox"
-            className="flex h-8 items-center gap-1 rounded-md border border-(--color-border) bg-(--color-bg-field) px-2 text-sm text-(--color-text-primary) hover:bg-(--color-bg-button)"
+            className="flex h-9 items-center gap-1 rounded-md border border-(--color-border) bg-(--color-bg-field) px-2 text-sm text-(--color-text-primary) hover:bg-(--color-bg-button)"
           >
-            <span className="max-w-[72px] truncate">{currentLabel}</span>
+            <span className="max-w-[80px] truncate">{currentLabel}</span>
             <CaretDown className="h-3 w-3 shrink-0 opacity-60" aria-hidden="true" />
           </button>
 
           {blockOpen && (
             <div
               role="listbox"
-              className="absolute left-0 top-full z-20 mt-1 min-w-[120px] rounded-lg border border-(--color-border) bg-(--color-bg-card) py-1 shadow-lg"
+              className="absolute left-0 top-full z-20 mt-1 min-w-[130px] rounded-lg border border-(--color-border) bg-(--color-bg-card) py-1 shadow-lg"
             >
               {(
                 [
@@ -129,9 +139,8 @@ export function MarkdownToolbar({
                   type="button"
                   role="option"
                   aria-selected={currentBlockType === key}
-                  onMouseDown={keepFocus}
                   onClick={() => setBlock(level)}
-                  className={`flex w-full items-center px-3 py-2 text-sm hover:bg-(--color-bg-button) ${
+                  className={`flex w-full items-center px-3 py-2.5 text-sm hover:bg-(--color-bg-button) ${
                     currentBlockType === key
                       ? 'font-semibold text-(--color-accent-ink)'
                       : 'text-(--color-text-primary)'
@@ -147,11 +156,10 @@ export function MarkdownToolbar({
 
       {sep}
 
-      {/* Marques de mise en forme — toujours visibles, keepFocus préserve la sélection */}
+      {/* Marques et blocs — agissent au curseur, jamais besoin de sélectionner */}
       {onToggleStrong && (
         <button
           type="button"
-          onMouseDown={keepFocus}
           onClick={onToggleStrong}
           className={btnCls}
           aria-label="Gras"
@@ -163,7 +171,6 @@ export function MarkdownToolbar({
       {onToggleEmphasis && (
         <button
           type="button"
-          onMouseDown={keepFocus}
           onClick={onToggleEmphasis}
           className={btnCls}
           aria-label="Italique"
@@ -175,7 +182,6 @@ export function MarkdownToolbar({
       {onToggleBulletList && (
         <button
           type="button"
-          onMouseDown={keepFocus}
           onClick={onToggleBulletList}
           className={btnCls}
           aria-label="Liste à puces"
@@ -187,7 +193,6 @@ export function MarkdownToolbar({
       {onToggleBlockquote && (
         <button
           type="button"
-          onMouseDown={keepFocus}
           onClick={onToggleBlockquote}
           className={btnCls}
           aria-label="Citation"
@@ -196,26 +201,16 @@ export function MarkdownToolbar({
           <Quotes className="h-4 w-4" aria-hidden="true" />
         </button>
       )}
-      {onToggleLink && (
-        <button
-          type="button"
-          onMouseDown={keepFocus}
-          onClick={onToggleLink}
-          className={btnCls}
-          aria-label="Lien"
-          title="Lien (sélectionner le texte d'abord)"
-        >
-          <Link className="h-4 w-4" aria-hidden="true" />
-        </button>
-      )}
+      <button type="button" onClick={insertLink} className={btnCls} aria-label="Lien" title="Lien">
+        <Link className="h-4 w-4" aria-hidden="true" />
+      </button>
 
       {sep}
 
-      {/* Menu « … » : insertions spéciales et réinitialisation */}
+      {/* Menu « … » : insertions secondaires + réinitialisation */}
       <div ref={moreRef} className="relative shrink-0">
         <button
           type="button"
-          onMouseDown={keepFocus}
           onClick={() => setMoreOpen((o) => !o)}
           className={btnCls}
           aria-label="Plus d'options"
@@ -226,12 +221,11 @@ export function MarkdownToolbar({
         </button>
 
         {moreOpen && (
-          <div className="absolute left-0 top-full z-20 mt-1 min-w-[170px] rounded-lg border border-(--color-border) bg-(--color-bg-card) py-1 shadow-lg">
+          <div className="absolute right-0 top-full z-20 mt-1 min-w-[190px] rounded-lg border border-(--color-border) bg-(--color-bg-card) py-1 shadow-lg">
             {/* Emoji */}
             <div className="relative">
               <button
                 type="button"
-                onMouseDown={keepFocus}
                 onClick={() => setEmojiOpen((o) => !o)}
                 className="flex w-full items-center gap-2 px-3 py-2.5 text-sm text-(--color-text-primary) hover:bg-(--color-bg-button)"
               >
@@ -239,12 +233,11 @@ export function MarkdownToolbar({
                 Emoji
               </button>
               {emojiOpen && (
-                <div className="absolute left-full top-0 z-30 ml-1 flex flex-wrap gap-1 rounded-lg border border-(--color-border) bg-(--color-bg-card) p-2 shadow-md">
+                <div className="absolute right-full top-0 z-30 mr-1 flex w-[180px] flex-wrap gap-1 rounded-lg border border-(--color-border) bg-(--color-bg-card) p-2 shadow-md">
                   {EMOJIS.map((e) => (
                     <button
                       key={e}
                       type="button"
-                      onMouseDown={keepFocus}
                       className="h-9 w-9 rounded text-xl hover:bg-(--color-bg-button)"
                       onClick={() => {
                         onInsert(e)
@@ -263,7 +256,6 @@ export function MarkdownToolbar({
             {/* Image */}
             <button
               type="button"
-              onMouseDown={keepFocus}
               onClick={insertImage}
               className="flex w-full items-center gap-2 px-3 py-2.5 text-sm text-(--color-text-primary) hover:bg-(--color-bg-button)"
             >
@@ -274,7 +266,6 @@ export function MarkdownToolbar({
             {/* Note de bas de page */}
             <button
               type="button"
-              onMouseDown={keepFocus}
               onClick={insertFootnote}
               className="flex w-full items-center gap-2 px-3 py-2.5 text-sm text-(--color-text-primary) hover:bg-(--color-bg-button)"
             >
@@ -287,7 +278,6 @@ export function MarkdownToolbar({
             {/* Réinitialiser */}
             <button
               type="button"
-              onMouseDown={keepFocus}
               onClick={() => {
                 onReset()
                 setMoreOpen(false)
