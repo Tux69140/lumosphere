@@ -33,7 +33,12 @@ test.describe('Responsive', () => {
     await page.setViewportSize({ width: 1280, height: 600 })
     await page.goto('/')
 
-    await expect(page.getByRole('button', { name: /réinitialiser/i })).toBeVisible()
+    const resetButton = page.getByRole('button', { name: /réinitialiser/i })
+    await expect(resetButton).toBeVisible()
+
+    const box = await resetButton.boundingBox()
+    expect(box).not.toBeNull()
+    expect(box!.y + box!.height).toBeLessThanOrEqual(600)
   })
 
   test("desktop: Réinitialiser est désactivé par défaut, s'active avec un filtre, puis réinitialise", async ({
