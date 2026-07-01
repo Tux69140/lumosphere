@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useWindowVirtualizer } from '@tanstack/react-virtual'
 import { CitationCard } from '@/components/CitationCard'
 import { CitationCardSkeleton } from '@/components/CitationCardSkeleton'
@@ -31,6 +31,7 @@ export function AccueilPage() {
   const items = isClientFiltered ? rawItems.filter((c) => favoriteIds.has(c.id)) : rawItems
   const sentinelRef = useRef<HTMLDivElement | null>(null)
   const listRef = useRef<HTMLDivElement>(null)
+  const listOffsetRef = useRef(0)
   const [editingId, setEditingId] = useState<number | null>(null)
 
   useEffect(() => {
@@ -46,16 +47,25 @@ export function AccueilPage() {
     return () => observer.disconnect()
   }, [hasMore, loadMore, items.length])
 
-  // Pattern officiel scrollMargin de useWindowVirtualizer : lecture de
-  // listRef.current pendant le rendu, hors périmètre du React Compiler.
-  /* eslint-disable react-hooks/refs */
+  // Pattern officiel scrollMargin de useWindowVirtualizer : l'offset du DOM
+  // est capturé dans une ref "simple" (jamais attachée en ref={...} JSX) via
+  // useLayoutEffect, puis cette ref simple est lue pendant le rendu. La règle
+  // react-hooks/refs (React Compiler) interdit toute lecture de ref.current
+  // pendant le rendu, y compris pour une ref non-DOM mise à jour de façon
+  // synchrone en amont — cas non distingué par l'analyse statique de la
+  // règle. Suppression ciblée à cette seule ligne, conforme au pattern
+  // officiel TanStack Virtual pour useWindowVirtualizer.
+  useLayoutEffect(() => {
+    listOffsetRef.current = listRef.current?.offsetTop ?? 0
+  }, [])
+
   const virtualizer = useWindowVirtualizer({
     count: items.length,
     estimateSize: () => 200,
     overscan: 5,
-    scrollMargin: listRef.current?.offsetTop ?? 0,
+    // eslint-disable-next-line react-hooks/refs -- lecture volontaire d'une ref simple mise à jour via useLayoutEffect, pattern officiel TanStack Virtual
+    scrollMargin: listOffsetRef.current,
   })
-  /* eslint-enable react-hooks/refs */
 
   const useVirtual = items.length > VIRTUALIZE_THRESHOLD
 
