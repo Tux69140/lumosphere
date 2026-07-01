@@ -30,7 +30,8 @@ test.describe('Responsive', () => {
   test('desktop: le pied de sidebar (Réinitialiser) reste visible sans défiler la page', async ({
     page,
   }) => {
-    await page.setViewportSize({ width: 1280, height: 600 })
+    const viewportHeight = 600
+    await page.setViewportSize({ width: 1280, height: viewportHeight })
     await page.goto('/')
 
     const resetButton = page.getByRole('button', { name: /réinitialiser/i })
@@ -38,7 +39,7 @@ test.describe('Responsive', () => {
 
     const box = await resetButton.boundingBox()
     expect(box).not.toBeNull()
-    expect(box!.y + box!.height).toBeLessThanOrEqual(600)
+    expect(box!.y + box!.height).toBeLessThanOrEqual(viewportHeight)
   })
 
   test("desktop: Réinitialiser est désactivé par défaut, s'active avec un filtre, puis réinitialise", async ({

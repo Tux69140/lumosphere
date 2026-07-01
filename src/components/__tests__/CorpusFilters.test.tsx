@@ -62,7 +62,7 @@ describe('CorpusFilters', () => {
   })
 
   it('ne rend plus le bouton Réinitialiser (déplacé dans le pied de la Sidebar)', () => {
-    vi.mocked(useCorpusSearch).mockReturnValue(makeSearch({ hasActiveFilters: true }))
+    vi.mocked(useCorpusSearch).mockReturnValue(makeSearch())
     render(<CorpusFilters />)
     expect(screen.queryByRole('button', { name: /réinitialiser/i })).not.toBeInTheDocument()
   })

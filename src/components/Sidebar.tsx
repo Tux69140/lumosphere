@@ -36,21 +36,17 @@ export function Sidebar() {
             type="button"
             onClick={reset}
             disabled={!hasActiveFilters}
-            className="w-full rounded-md bg-(--color-action) px-3 py-2 text-sm font-medium text-(--color-action-text) transition-colors hover:bg-(--color-action-hover) disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-(--color-action)"
+            className="w-full rounded-md bg-(--color-action) px-3 py-2 text-sm font-medium text-(--color-action-text) transition-colors hover:bg-(--color-action-hover) disabled:cursor-not-allowed disabled:opacity-50"
           >
             Réinitialiser
           </button>
           <a
-            href="http://www.lulumineuse.com"
+            href="https://www.lulumineuse.com"
             target="_blank"
             rel="noopener noreferrer"
             className="mt-3 flex items-center gap-2 text-xs text-(--color-text-secondary) transition-colors hover:text-(--color-action)"
           >
-            <img
-              src={lulumineuseLogo}
-              alt="Logo Lulumineuse"
-              className="h-5 w-5 shrink-0 object-contain"
-            />
+            <img src={lulumineuseLogo} alt="" className="h-5 w-5 shrink-0 object-contain" />
             <span>D&apos;après les partages de Lulumineuse</span>
           </a>
         </div>
