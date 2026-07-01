@@ -7,7 +7,7 @@ import type { CorpusSearchContextValue } from '@/features/corpus/CorpusSearchCon
 
 vi.mock('@/features/corpus/useCorpusSearch', () => ({ useCorpusSearch: vi.fn() }))
 
-function mockSearch() {
+function mockSearch(overrides: Record<string, unknown> = {}) {
   const base = {
     query: '',
     setQuery: vi.fn(),
@@ -38,12 +38,13 @@ function mockSearch() {
     hasActiveFilters: false,
     filtersOpen: false,
     toggleFilters: vi.fn(),
+    ...overrides,
   } as unknown as CorpusSearchContextValue
   vi.mocked(useCorpusSearch).mockReturnValue(base)
 }
 
-function renderAt(path: string) {
-  mockSearch()
+function renderAt(path: string, overrides: Record<string, unknown> = {}) {
+  mockSearch(overrides)
   return render(
     <MemoryRouter initialEntries={[path]}>
       <Sidebar />
@@ -62,5 +63,30 @@ describe('Sidebar', () => {
     expect(screen.getByRole('link', { name: /utilisateurs/i })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /rôles et droits/i })).toBeInTheDocument()
     expect(screen.queryByLabelText('Rechercher dans le contenu')).not.toBeInTheDocument()
+  })
+
+  it('hors admin : bouton Réinitialiser toujours présent, désactivé sans filtre actif', () => {
+    renderAt('/', { hasActiveFilters: false })
+    expect(screen.getByRole('button', { name: /réinitialiser/i })).toBeDisabled()
+  })
+
+  it('hors admin : bouton Réinitialiser actif si des filtres sont posés, et déclenche reset', async () => {
+    const reset = vi.fn()
+    renderAt('/', { hasActiveFilters: true, reset })
+    const button = screen.getByRole('button', { name: /réinitialiser/i })
+    expect(button).toBeEnabled()
+    button.click()
+    expect(reset).toHaveBeenCalled()
+  })
+
+  it('hors admin : affiche le crédit Lulumineuse dans le pied', () => {
+    renderAt('/')
+    expect(screen.getByRole('link', { name: /lulumineuse/i })).toBeInTheDocument()
+  })
+
+  it("en section admin : n'affiche pas le pied de filtres (Réinitialiser / crédit)", () => {
+    renderAt('/admin/utilisateurs')
+    expect(screen.queryByRole('button', { name: /réinitialiser/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: /lulumineuse/i })).not.toBeInTheDocument()
   })
 })

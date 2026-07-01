@@ -16,3 +16,7 @@ Déposer la nouvelle version **au même chemin, même nom**. Contraintes :
 
 Version rognée initiale produite depuis `docs/UI/Nom-clair.png` / `Nom-sombre.png` via :
 `convert <source> -crop 1536x300+0+35 +repage <cible>`
+
+## Crédit Lulumineuse (pied de sidebar)
+
+`lulumineuse-logo.png` — logo affiché dans le pied fixe de la sidebar de filtrage (`src/components/Sidebar.tsx`), à côté du lien vers lulumineuse.com. Source : archive de référence locale (backend de la démo Index Lulumineux), copié tel quel.
