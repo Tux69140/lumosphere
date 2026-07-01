@@ -40,10 +40,12 @@ export function SetPasswordPage() {
           setTokenData({
             roleId: res.data.role_id,
             type: res.data.type,
-            prenom: res.data.prenom,
-            nom: res.data.nom,
-            email: res.data.email,
-            roleNom: res.data.role_nom,
+            // Défauts défensifs : couvre une fenêtre de déploiement où le frontend
+            // serait servi avant que le backend n'expose ces champs.
+            prenom: res.data.prenom ?? '',
+            nom: res.data.nom ?? '',
+            email: res.data.email ?? '',
+            roleNom: res.data.role_nom ?? '',
           })
         } else {
           setTokenError(res.errors?.[0] ?? 'Ce lien est invalide ou a expiré.')

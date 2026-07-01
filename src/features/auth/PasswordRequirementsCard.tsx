@@ -50,7 +50,7 @@ export function PasswordRequirementsCard({
       ? 'Encore 1 caractère'
       : `Encore ${conditions.length.remaining} caractères`
 
-  const strengthBar = STRENGTH_BAR[conditions.strength.level] ?? STRENGTH_BAR.weak
+  const strengthBar = STRENGTH_BAR[conditions.strength.level]
 
   return (
     <div className="mt-2 rounded-lg border border-(--color-border) bg-(--color-bg-card) p-4">
