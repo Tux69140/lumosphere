@@ -152,9 +152,14 @@ export const apiClient = {
 
   // Gestion des mots de passe (endpoints publics)
   tokenInfo: (token: string) =>
-    get<{ role_id: number; type: 'invite' | 'reset' }>(
-      `auth/token-info?token=${encodeURIComponent(token)}`,
-    ),
+    get<{
+      role_id: number
+      type: 'invite' | 'reset'
+      prenom: string
+      nom: string
+      email: string
+      role_nom: string
+    }>(`auth/token-info?token=${encodeURIComponent(token)}`),
   setPassword: (token: string, password: string) =>
     post<{ message: string }>('auth/set-password', { token, password }),
   forgotPassword: (email: string) => post<{ message: string }>('auth/forgot-password', { email }),

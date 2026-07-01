@@ -198,14 +198,24 @@ function _auth_token_info(PDO $pdo, string $raw_token): array
     if ($token === null) {
         return dal_error('Ce lien est invalide ou a expiré.');
     }
-    // Charger le rôle de l'utilisateur pour que le frontend adapte la jauge de force
-    $stmt = $pdo->prepare('SELECT role_id FROM users WHERE id = :id');
+    // Charger le rôle + l'identité pour que le frontend affiche la carte des conditions du mot de passe
+    $stmt = $pdo->prepare(
+        'SELECT u.role_id, u.prenom, u.nom, u.email, r.nom AS role_nom
+         FROM users u JOIN roles r ON u.role_id = r.id WHERE u.id = :id'
+    );
     $stmt->execute(['id' => $token['user_id']]);
     $user = $stmt->fetch();
     if (!$user) {
         return dal_error('Utilisateur introuvable.');
     }
-    return dal_ok(['role_id' => (int) $user['role_id'], 'type' => $token['type']]);
+    return dal_ok([
+        'role_id'  => (int) $user['role_id'],
+        'type'     => $token['type'],
+        'prenom'   => $user['prenom'],
+        'nom'      => $user['nom'],
+        'email'    => $user['email'],
+        'role_nom' => $user['role_nom'],
+    ]);
 }
 
 function _auth_set_password(PDO $pdo, array $body): array
