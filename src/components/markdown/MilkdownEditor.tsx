@@ -10,6 +10,7 @@ import {
   wrapInBlockquoteCommand,
 } from '@milkdown/kit/preset/commonmark'
 import { editorViewCtx } from '@milkdown/kit/core'
+import { TextSelection } from '@milkdown/kit/prose/state'
 import { Code, Eye, TextAa, CaretDown } from '@phosphor-icons/react'
 import '@milkdown/crepe/theme/common/style.css'
 import '@milkdown/crepe/theme/nord.css'
@@ -60,15 +61,43 @@ export const MilkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       crepeRef.current?.editor.action((ctx) => ctx.get(editorViewCtx).focus())
     }, [])
 
+    // Étend la sélection au mot entier sous le curseur quand rien n'est sélectionné.
+    // Couvre les caractères français accentués (é, è, à, ç, œ…).
+    const selectWordAtCursor = useCallback(() => {
+      if (!crepeRef.current) return
+      crepeRef.current.editor.action((ctx) => {
+        const view = ctx.get(editorViewCtx)
+        const { state, dispatch } = view
+        if (!state.selection.empty) return // une sélection existe déjà → on la respecte
+        const { $from } = state.selection
+        const text = $from.parent.textContent
+        const offset = $from.parentOffset
+        const wordChar = /[\wàâäéèêëîïôöùûüÿæœÀÂÄÉÈÊËÎÏÔÖÙÛÜŸÆŒçÇ'-]/
+        let start = offset
+        let end = offset
+        while (start > 0 && wordChar.test(text[start - 1]!)) start--
+        while (end < text.length && wordChar.test(text[end]!)) end++
+        if (start === end) return // curseur dans un espace → on n'étend pas
+        const nodeStart = $from.start()
+        dispatch(
+          state.tr.setSelection(
+            TextSelection.create(state.doc, nodeStart + start, nodeStart + end),
+          ),
+        )
+      })
+    }, [])
+
     const handleToggleStrong = useCallback(() => {
+      selectWordAtCursor()
       crepeRef.current?.editor.action(callCommand(toggleStrongCommand.key))
       focusEditor()
-    }, [focusEditor])
+    }, [focusEditor, selectWordAtCursor])
 
     const handleToggleEmphasis = useCallback(() => {
+      selectWordAtCursor()
       crepeRef.current?.editor.action(callCommand(toggleEmphasisCommand.key))
       focusEditor()
-    }, [focusEditor])
+    }, [focusEditor, selectWordAtCursor])
 
     const handleToggleBulletList = useCallback(() => {
       crepeRef.current?.editor.action(callCommand(wrapInBulletListCommand.key))
