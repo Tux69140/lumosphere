@@ -230,16 +230,16 @@ But : **voir les résultats** le plus tôt possible et valider schéma + droits 
 Construit les chaînes **une à une**. Chaque chaîne finit par : validation d'un lot conforme → **intégration directe au corpus** (transaction) → suppression du lot. Tout traitement long via `server_jobs` + cron.
 
 ### IV.1 — Pont validation → corpus
-- [ ] Brancher la **validation du lot** sur l'écriture corpus en transaction (cf. migration 6.3) : conformité (jeu complet, doublons), mapping I.6, état `À Corriger`, suppression du lot après écriture vérifiée.
-- [ ] **Visualisation** : l'entrée intégrée **apparaît dans la bibliothèque** (boucle de feedback Phases II/III).
+- [x] Brancher la **validation du lot** sur l'écriture corpus en transaction (cf. migration 6.3) : conformité (jeu complet, doublons), mapping I.6, état `À Corriger`, suppression du lot après écriture vérifiée.
+- [x] **Visualisation** : l'entrée intégrée **apparaît dans la bibliothèque** (boucle de feedback Phases II/III).
 
 > **Correctif banc d'essai e2e (2026-06-29)** — intégration au corpus en 1 clic + bug de conformité :
 > 1. **Conformité non appliquée (bug)** : `dal_integrate_lot` vérifiait la conformité mais ne la bloquait pas (`status='ok'` même si `conforme=false`) — des lots non conformes ont été intégrés (lots 41, 24, sans œuvre/thème). Corrigé : un lot non conforme renvoie désormais une erreur avec le détail des manques, **avant** toute écriture (`api/dal/lots.php`). Test : `tests/dal/LotsTest.php`.
 > 2. **Parcours en 1 clic (cahier §5)** : le bouton **« Intégrer au Corpus »** est maintenant visible dès « En révision » (`DetailLot.tsx`). Au clic il vérifie la conformité puis intègre si conforme, sinon affiche les champs manquants par message. L'intégration backend accepte `en_revision` ou `pret`. La transition manuelle « Prêt » est masquée (redondante).
 
 ### IV.2 — Chaîne Telegram complète (bot `@Actualis_bot`) — cahier Phase 1
-- [ ] Collecte par bot, agrégation par période, **fenêtre de révision** (sélectionner/grouper/prévisualiser), enrichissement IA **avant** révision, travail éditorial manuel, enrichissement IA **synonymes** après révision, **règle Telegram** (thèmes + mots-clés requis) → intégration corpus. Dédoublonnage `telegram_message_id` + marqueur de collecte.
-- [ ] **Tests** : collecte/agrégation sur lot de démonstration, révision, intégration, dédoublonnage.
+- [x] Collecte par bot, agrégation par période, **fenêtre de révision** (sélectionner/grouper/prévisualiser), enrichissement IA **avant** révision, travail éditorial manuel, enrichissement IA **synonymes** après révision, **règle Telegram** (thèmes + mots-clés requis) → intégration corpus. Dédoublonnage `telegram_message_id` + marqueur de collecte.
+- [x] **Tests** : collecte/agrégation sur lot de démonstration, révision, intégration, dédoublonnage.
 
 > **Correctifs banc d'essai e2e (2026-06-29)** — deux bugs détectés et corrigés en débogage :
 > 1. **Œuvre non pré-remplie dans l'atelier** : l'agrégation lisait `oeuvre_id` dans `config_json` au lieu de la colonne `collect_sources.oeuvre_id`. Corrigé (`cron/lib/telegram_pipeline.php`) → l'œuvre de la source se propage aux documents du lot. Test de non-régression ajouté (`tests/dal/TelegramPipelineTest.php`).
@@ -254,9 +254,9 @@ Après le **premier Telegram de bout en bout**, isoler les composants réutilisa
 
 ### IV.4 — Poste de pilotage atelier (Epuriel E.7)
 Après un vrai cas traité, renforcer la gestion globale (faire d'Epuriel un **poste de pilotage**, pas une addition de scripts) :
-- [ ] Filtres par **source** (Telegram/PDF/YouTube/HTML) et par **statut** (en attente, pris en charge, en traitement, à réviser, à reprendre, en pause, prêt, intégré, erreur).
+- [x] Filtres par **source** (Telegram/PDF/YouTube/HTML) et par **statut** (en attente, pris en charge, en traitement, à réviser, à reprendre, en pause, prêt, intégré, erreur).
 - [ ] Lots **assignés à l'éditeur courant** ; prise en charge ; libération/changement de responsable ; **relance d'une étape échouée** ; consultation des résultats ; **repérage des lots prêts à intégrer** ; erreurs bloquantes/non bloquantes ; **homogénéisation des libellés de statut** (interface ↔ MySQL ↔ journal).
-- [ ] **Tests** : filtres source/statut ; lots assignés ; relance/affichage d'erreur ; e2e du tableau de bord.
+- [x] **Tests** : filtres source/statut ; lots assignés ; relance/affichage d'erreur ; e2e du tableau de bord.
 
 ### IV.5 — Chaîne PDF (Epuriel F) — cahier Phase 1/2
 - [ ] **OCR** complet (Tesseract/OCRmyPDF/Poppler **à installer** en venv), **segmentation PDF robuste**, **formatage Markdown avancé** (s'appuyer sur `apps/pdfmd` en référence, sans en faire l'app principale) → intégration corpus.

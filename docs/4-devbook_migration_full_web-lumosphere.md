@@ -211,12 +211,12 @@ Décision du chef de projet : **ne conserver aucune trace des étapes**, sauf en
 - [x] **[maintenant]** **Mode débogage global** (`config.mode_debug_global`, **défaut OFF**) — *fait : seed `007_config_seed.sql` + `api/dal/config.php` (`dal_is_debug_mode`), 7 tests ConfigTest.* Décision chef de projet : **global seulement** (pas d'override par lot).
 - [x] **[maintenant]** **Durée de rétention du journal** (`config.journal_retention_days = 90`) — *fait : seed `007_config_seed.sql`.*
 - [x] **[sans objet]** **Persister en base, par source auto-collectée** (Telegram, YouTube, HTML — pas le PDF manuel) : `collect_sources.last_marker` + `first_marker`. **Déjà présents** au schéma, rien à faire.
-- [ ] **[Phase 6.3]** Après intégration réussie au corpus (écriture vérifiée), **effacer tout le dossier du lot** : `0_raw/` (source brute incluse), dossiers d'étapes intermédiaires, `*_exports/`, `manifest.json`, `journal.csv`. Respecte `mode_debug_global`.
-- [ ] **[Phase 6.3]** Nettoyage **automatique** après import réussi (aujourd'hui surtout manuel via `epuriel_handle_lot_delete`) ; nettoyage volontaire conservé pour les résidus.
-- [ ] **[Phase 4]** Supprimer la production de `manifest.json` + `journal.csv` par lot (la base est la vérité) et des dossiers `*_exports/`.
-- [ ] **[Phase 4]** **Journal réduit** : suivi léger en base (créé / pris / validé / supprimé, erreurs) ; pas de trace par étape ; brancher l'élagage à `journal_retention_days` (cron `run_jobs.php`).
-- [ ] **[Phase 4]** `telegram_updates_buffer` **purgé** systématiquement après agrégation en lot.
-- [ ] **[Phase 4]** Adapter `epuriel_ensure_lot_dirs` / `epuriel_source_dirs` (`bootstrap.php`) vers un dossier de travail minimal et transitoire.
+- [x] **[Phase 6.3]** Après intégration réussie au corpus (écriture vérifiée), **effacer tout le dossier du lot** : `0_raw/` (source brute incluse), dossiers d'étapes intermédiaires, `*_exports/`, `manifest.json`, `journal.csv`. Respecte `mode_debug_global`.
+- [x] **[Phase 6.3]** Nettoyage **automatique** après import réussi (aujourd'hui surtout manuel via `epuriel_handle_lot_delete`) ; nettoyage volontaire conservé pour les résidus.
+- [x] **[Phase 4]** Supprimer la production de `manifest.json` + `journal.csv` par lot (la base est la vérité) et des dossiers `*_exports/`.
+- [x] **[Phase 4]** **Journal réduit** : suivi léger en base (créé / pris / validé / supprimé, erreurs) ; pas de trace par étape ; brancher l'élagage à `journal_retention_days` (cron `run_jobs.php`).
+- [x] **[Phase 4]** `telegram_updates_buffer` **purgé** systématiquement après agrégation en lot.
+- [x] **[Phase 4]** Adapter `epuriel_ensure_lot_dirs` / `epuriel_source_dirs` (`bootstrap.php`) vers un dossier de travail minimal et transitoire.
 
 ---
 
