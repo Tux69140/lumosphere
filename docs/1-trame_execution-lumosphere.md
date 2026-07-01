@@ -69,8 +69,8 @@
 | ~T18~ | Dev §III.4 | Moteur de recherche complet : OR/AND mots-clés, pagination keyset, debounce 300ms, virtualisation >200 | T11, T17 |
 | ~T19~ | Dev §III.5 | Éditeur Markdown riche (implémentation selon T15) | T15 |
 | ~T20~ | Dev §III.6 | Gestion entrées : table TanStack, bulk actions, soft-delete, quick edit, verrou concurrent | T16, T19 |
-| T21 | Dev §III.7 | IA LiteLLM : config providers, suggestions mots-clés/thèmes, validation humaine obligatoire | T16 |
-| T22 | Dev §III.8 | Tests Phase III : unit DAL, droits Abo3/Abo4, perfs (1k/10k/50k), accessibilité | T14–T21 |
+| ~T21~ | Dev §III.7 | IA LiteLLM : config providers, suggestions mots-clés/thèmes, validation humaine obligatoire | T16 |
+| ~T22~ | Dev §III.8 | Tests Phase III : unit DAL, droits Abo3/Abo4, perfs (1k/10k/50k), accessibilité | T14–T21 |
 
 **✓ VALIDATION** : bibliothèque complète fonctionnelle. Éditeur peut créer/modifier/publier. Recherche rapide à 50k entrées.
 
@@ -82,14 +82,14 @@
 
 | # | Source | Tâche | Prérequis |
 |---|--------|-------|-----------|
-| T23 | Mig §6.1 | ✅ Promotion web : renommer mockServices → webServices, simplifier createServices | T08 |
-| T24 | Mig §6.3 | ✅ Réécriture pivot→corpus : intégration directe en transaction, abandon fichier pivot | T06 |
-| T25 | Dev §I.6 | ✅ Mapping atelier→corpus : contrat, garde conformité (jeu complet), hash dedup | T24 |
-| T26 | Dev §IV.1 | ✅ Pont validation lot → écriture corpus + suppression lot | T24, T25 |
-| T27 | Mig §6.3 complément | ✅ Machine d'états des lots : implémentation des transitions (cf. diagramme ajouté) | T26 |
-| T28 | Dev §IV.2 | ✅ Chaîne Telegram complète : bot→agrégation→révision→IA→corpus, dedup | T26, T27 |
-| T29 | Dev §IV.3 | ✅ Extraction composants communs : ListeLots, DetailLot, JournalLot, EditeurRevision, SuggestionsIA | T28 |
-| T30 | Dev §IV.4 | ✅ Poste de pilotage atelier : filtres source/statut, assignation, retry, erreurs | T27, T29 |
+| ~T23~ | Mig §6.1 | ✅ Promotion web : renommer mockServices → webServices, simplifier createServices | T08 |
+| ~T24~ | Mig §6.3 | ✅ Réécriture pivot→corpus : intégration directe en transaction, abandon fichier pivot | T06 |
+| ~T25~ | Dev §I.6 | ✅ Mapping atelier→corpus : contrat, garde conformité (jeu complet), hash dedup | T24 |
+| ~T26~ | Dev §IV.1 | ✅ Pont validation lot → écriture corpus + suppression lot | T24, T25 |
+| ~T27~ | Mig §6.3 complément | ✅ Machine d'états des lots : implémentation des transitions (cf. diagramme ajouté) | T26 |
+| ~T28~ | Dev §IV.2 | ✅ Chaîne Telegram complète : bot→agrégation→révision→IA→corpus, dedup | T26, T27 |
+| ~T29~ | Dev §IV.3 | ✅ Extraction composants communs : ListeLots, DetailLot, JournalLot, EditeurRevision, SuggestionsIA | T28 |
+| ~T30~ | Dev §IV.4 | ✅ Poste de pilotage atelier : filtres source/statut, assignation, retry, erreurs | T27, T29 |
 
 **✓ VALIDATION** : un lot Telegram traverse toute la chaîne → entrée visible en bibliothèque. Poste de pilotage opérationnel.
 

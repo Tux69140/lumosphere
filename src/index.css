@@ -40,7 +40,7 @@
 :root {
   --color-bg-page: #f8fefc;
   --color-bg-card: #ffffff;
-  --color-bg-header: #ffffff;
+  --color-bg-header: #fdf7f1; /* crème du wordmark de marque (fondu du bandeau) */
   --color-bg-sidebar: #f8fafc;
   --color-bg-field: #ffffff;
   --color-bg-button: #fff4f4;
@@ -76,7 +76,7 @@
 .dark {
   --color-bg-page: #0f172a;
   --color-bg-card: #1e293b;
-  --color-bg-header: #1e293b;
+  --color-bg-header: #14281e; /* vert profond du wordmark de marque (fondu du bandeau) */
   --color-bg-sidebar: #334155;
   --color-bg-field: #0f172a;
   --color-bg-button: #334155;

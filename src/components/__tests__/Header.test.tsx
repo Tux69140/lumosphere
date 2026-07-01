@@ -63,4 +63,10 @@ describe('Header', () => {
     expect(screen.getByRole('button', { name: /déconnexion/i })).toBeInTheDocument()
     expect(screen.queryByRole('link', { name: /admin/i })).not.toBeInTheDocument()
   })
+
+  it('affiche le lien de marque Lumosphère vers l’accueil', () => {
+    renderHeader(null)
+    const brand = screen.getByRole('link', { name: /lumosphère/i })
+    expect(brand).toHaveAttribute('href', '/')
+  })
 })

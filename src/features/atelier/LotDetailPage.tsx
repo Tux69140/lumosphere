@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useParams, Link } from 'react-router'
 import { ArrowLeft, ListBullets, ClockCounterClockwise } from '@phosphor-icons/react'
-import { useLotDetail, useSetDocumentKeywords } from './useLots'
+import { useLotDetail } from './useLots'
 import { DetailLot } from './components/DetailLot'
 import { JournalLot } from './components/JournalLot'
 import { BlocErreur } from './components/BlocErreur'
@@ -13,19 +13,6 @@ export function LotDetailPage() {
   const lotId = Number(id)
   const [tab, setTab] = useState<Tab>('documents')
   const { data: lot, isLoading, error } = useLotDetail(lotId)
-  const setKeywords = useSetDocumentKeywords()
-
-  function handleKeywordsAccepted(docId: number, keywordIds: number[]) {
-    if (!lot) return
-    const doc = lot.documents.find((d) => d.id === docId)
-    if (!doc) return
-    // On ne reconstruit que le panier « validé/humain » : les mots-clés déjà
-    // manuels + ceux qu'on accepte (l'upsert promeut un 'ai_suggested' en 'manual').
-    // Les suggestions IA non acceptées restent telles quelles.
-    const manualIds = doc.keywords.filter((kw) => kw.source === 'manual').map((kw) => kw.keyword_id)
-    const merged = [...new Set([...manualIds, ...keywordIds])]
-    setKeywords.mutate({ lotId: lot.id, docId, keywordIds: merged, source: 'manual' })
-  }
 
   if (isLoading)
     return <p className="py-12 text-center text-sm text-(--color-text-muted)">Chargement...</p>
@@ -76,7 +63,7 @@ export function LotDetailPage() {
         ))}
       </div>
 
-      {tab === 'documents' && <DetailLot lot={lot} onKeywordsAccepted={handleKeywordsAccepted} />}
+      {tab === 'documents' && <DetailLot lot={lot} />}
       {tab === 'journal' && <JournalLot lotId={lot.id} />}
     </div>
   )
