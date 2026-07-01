@@ -34,3 +34,18 @@ Tout traitement long passe par **`server_jobs` + cron** (jamais dans la requête
 ## 5. Chaînes PDF / Telegram / HTML
 
 Mêmes principes : brut dans `0_raw/`, traitement découplé (jobs+cron), formatage RAG §3, garde-fou §2, segmentation, puis **intégration directe au corpus** à la validation. Spécificités OCR (PDF) : outils à installer en venv (Tesseract/OCRmyPDF/Poppler), cf. stack §9.
+
+## 6. Correspondance des styles de source → Markdown (chaîne Telegram)
+
+Principe : tout style de source **non natif du Markdown** est traduit vers l'équivalent Markdown propre le plus proche — **jamais de HTML** dans le texte maître (cf. `docs/superpowers/specs/2026-07-01-formatage-styles-source-md-design.md`).
+
+| Style Telegram | Devient en Markdown | Statut |
+|---|---|---|
+| gras / italique / barré / code | inchangé (`**`, `_`, `~~`, `` ` ``) | en place |
+| souligné | gras + italique `***…***` (sens variable titre/emphase, tranché par l'humain en révision) | en place |
+| texte masqué (spoiler) | *non géré* | différé — brancher si besoin réel |
+| citation dépliable | *non géré* | différé — brancher si besoin réel |
+| emoji personnalisé | *non géré* | différé — brancher si besoin réel |
+| tout autre style inconnu | texte simple (style retiré) | comportement par défaut |
+
+Table centralisée dans `tg_formatting_map()` (`cron/lib/telegram_pipeline.php`), utilisée par la collecte en direct (Bot API, entities) et par l'import d'historique (export Telegram Desktop) — source unique, pas de duplication.

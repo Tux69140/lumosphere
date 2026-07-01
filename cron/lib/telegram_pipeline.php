@@ -62,6 +62,28 @@ function tg_parse_telegram_export(array $json): array
 }
 
 /**
+ * Table de correspondance des styles de formatage Telegram → marqueurs Markdown.
+ *
+ * Source unique de vérité (voir docs/superpowers/specs/2026-07-01-formatage-styles-source-md-design.md) :
+ * tout style non natif du Markdown est traduit vers l'équivalent Markdown propre
+ * le plus proche, jamais du HTML brut. Le souligné n'a pas d'équivalent natif ;
+ * il est rendu en gras+italique (`***`), signature distincte du gras seul et de
+ * l'italique seul qui correspondent déjà à de vrais styles Telegram.
+ *
+ * @return array<string, array{0:string,1:string}>
+ */
+function tg_formatting_map(): array
+{
+    return [
+        'bold'          => ['**',  '**'],
+        'italic'        => ['_',   '_'],
+        'underline'     => ['***', '***'],
+        'strikethrough' => ['~~',  '~~'],
+        'code'          => ['`',   '`'],
+    ];
+}
+
+/**
  * Applique les entités de formatage Telegram (Bot API) à un texte brut
  * pour produire du Markdown CommonMark.
  *
@@ -74,13 +96,7 @@ function tg_entities_to_markdown(string $text, array $entities): string
         return $text;
     }
 
-    $formattingMap = [
-        'bold'          => ['**', '**'],
-        'italic'        => ['_',  '_'],
-        'underline'     => ['<u>', '</u>'],
-        'strikethrough' => ['~~', '~~'],
-        'code'          => ['`',  '`'],
-    ];
+    $formattingMap = tg_formatting_map();
 
     // Filtrer les entités de formatage avec offset+length
     $relevant = array_values(array_filter($entities, fn($e) =>
@@ -137,13 +153,7 @@ function tg_flatten_export_text(mixed $text): string
     if (!is_array($text)) {
         return '';
     }
-    $mdMap = [
-        'bold'          => ['**', '**'],
-        'italic'        => ['_',  '_'],
-        'underline'     => ['<u>', '</u>'],
-        'strikethrough' => ['~~', '~~'],
-        'code'          => ['`',  '`'],
-    ];
+    $mdMap = tg_formatting_map();
     $parts = [];
     foreach ($text as $frag) {
         if (is_string($frag)) {

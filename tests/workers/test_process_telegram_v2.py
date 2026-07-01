@@ -38,3 +38,39 @@ def test_markdown_bold_preserved():
     cleaned = clean_text(text)
     result = format_as_markdown(cleaned)
     assert "**Titre important**" in result, repr(result)
+
+
+def test_clean_text_preserves_blank_lines():
+    """clean_text ne doit PAS fusionner les lignes vides (séparateurs de paragraphe).
+
+    Régression : le motif `\\s+\\n` avalait les `\\n\\n` car `\\s` inclut `\\n`.
+    """
+    text = "Paragraphe un.\n\nParagraphe deux."
+    cleaned = clean_text(text)
+    assert cleaned == "Paragraphe un.\n\nParagraphe deux.", repr(cleaned)
+
+
+def test_full_pipeline_keeps_paragraphs():
+    """Chaîne réelle clean_text → format_as_markdown : les paragraphes survivent.
+
+    Reproduit le bug observé dans l'atelier (posts Telegram fusionnés en un seul
+    bloc) : les sections séparées par une ligne vide dans Telegram doivent rester
+    des paragraphes distincts après nettoyage.
+    """
+    text = (
+        "Le sommeil est essentiel\nIl faut dormir après.\n\n"
+        "Régularité plutôt qu'intensité\nPratiquer tous les soirs."
+    )
+    result = format_as_markdown(clean_text(text))
+    expected = (
+        "Le sommeil est essentiel  \nIl faut dormir après.\n\n"
+        "Régularité plutôt qu'intensité  \nPratiquer tous les soirs."
+    )
+    assert result == expected, repr(result)
+
+
+def test_clean_text_strips_trailing_whitespace():
+    """L'intention d'origine (retirer les espaces en fin de ligne) est conservée."""
+    text = "Ligne avec espaces   \nLigne suivante"
+    cleaned = clean_text(text)
+    assert cleaned == "Ligne avec espaces\nLigne suivante", repr(cleaned)
