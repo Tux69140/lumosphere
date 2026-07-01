@@ -58,4 +58,13 @@ test.describe('Responsive', () => {
     await expect(page.getByLabel('Rechercher dans le contenu')).toHaveValue('')
     await expect(resetButton).toBeDisabled()
   })
+
+  test('erreur de chargement : message clair + bouton Réessayer', async ({ page }) => {
+    await page.route('**/api/**citations**', (r) => r.abort())
+    await page.goto('/')
+
+    const alert = page.getByRole('alert')
+    await expect(alert).toContainText('Impossible de charger les citations')
+    await expect(alert.getByRole('button', { name: 'Réessayer' })).toBeVisible()
+  })
 })

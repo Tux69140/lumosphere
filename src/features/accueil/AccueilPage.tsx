@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { useVirtualizer } from '@tanstack/react-virtual'
+import { useWindowVirtualizer } from '@tanstack/react-virtual'
 import { CitationCard } from '@/components/CitationCard'
 import { CitationCardSkeleton } from '@/components/CitationCardSkeleton'
 import { ResultsInfoBar } from '@/components/ResultsInfoBar'
@@ -30,7 +30,7 @@ export function AccueilPage() {
   const isClientFiltered = favoritesOnly && !user
   const items = isClientFiltered ? rawItems.filter((c) => favoriteIds.has(c.id)) : rawItems
   const sentinelRef = useRef<HTMLDivElement | null>(null)
-  const parentRef = useRef<HTMLDivElement>(null)
+  const listRef = useRef<HTMLDivElement>(null)
   const [editingId, setEditingId] = useState<number | null>(null)
 
   useEffect(() => {
@@ -46,26 +46,39 @@ export function AccueilPage() {
     return () => observer.disconnect()
   }, [hasMore, loadMore, items.length])
 
-  // TanStack Virtual renvoie des fonctions non mémoïsables : le React Compiler
-  // saute volontairement ce composant, ce qui est sans effet ici.
-  // eslint-disable-next-line react-hooks/incompatible-library
-  const virtualizer = useVirtualizer({
+  // Pattern officiel scrollMargin de useWindowVirtualizer : lecture de
+  // listRef.current pendant le rendu, hors périmètre du React Compiler.
+  /* eslint-disable react-hooks/refs */
+  const virtualizer = useWindowVirtualizer({
     count: items.length,
-    getScrollElement: () => parentRef.current,
     estimateSize: () => 200,
     overscan: 5,
+    scrollMargin: listRef.current?.offsetTop ?? 0,
   })
+  /* eslint-enable react-hooks/refs */
 
   const useVirtual = items.length > VIRTUALIZE_THRESHOLD
 
   return (
     <div className="mx-auto w-full max-w-[90rem]">
-      <h1 className="sr-only">Bibliothèque — citations</h1>
+      <h1 className="sr-only">Index interactif - publications</h1>
       <ResultsInfoBar />
 
       {error && (
-        <div className="mb-4 rounded-md bg-(--color-danger-bg) p-3 text-sm text-(--color-danger-text)">
-          {error}
+        <div
+          role="alert"
+          className="mb-4 flex flex-col gap-2 rounded-md bg-(--color-danger-bg) p-3 text-sm text-(--color-danger-text)"
+        >
+          <span>
+            Impossible de charger les citations. Vérifiez votre connexion, puis réessayez.
+          </span>
+          <button
+            type="button"
+            onClick={refresh}
+            className="self-start rounded-md bg-(--color-action) px-3 py-1.5 text-sm font-medium text-(--color-action-text) transition-colors hover:bg-(--color-action-hover)"
+          >
+            Réessayer
+          </button>
         </div>
       )}
 
@@ -97,46 +110,42 @@ export function AccueilPage() {
           )}
 
           {useVirtual ? (
-            <div ref={parentRef} className="mt-4 overflow-auto" style={{ height: '80vh' }}>
-              <div
-                style={{
-                  height: virtualizer.getTotalSize(),
-                  width: '100%',
-                  position: 'relative',
-                }}
-              >
-                {virtualizer.getVirtualItems().map((vRow) => {
-                  const c = items[vRow.index]!
-                  return (
-                    <div
-                      key={vRow.key}
-                      data-index={vRow.index}
-                      ref={virtualizer.measureElement}
-                      style={{
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        width: '100%',
-                        transform: `translateY(${vRow.start}px)`,
-                        paddingBottom: '1rem',
-                      }}
-                    >
-                      <CitationCard
-                        contenu={c.contenu}
-                        oeuvre_nom={c.oeuvre_nom}
-                        theme_nom={c.theme_nom}
-                        auteur_nom={c.auteur_nom}
-                        notes={c.notes}
-                        mots_cles={(c.mots_cles ?? []).map((k) => k.mot)}
-                        canEdit={canEdit}
-                        onEdit={() => setEditingId(c.id)}
-                        isFavorited={favoriteIds.has(c.id)}
-                        onToggleFavorite={() => toggleFavorite(c.id)}
-                      />
-                    </div>
-                  )
-                })}
-              </div>
+            <div
+              ref={listRef}
+              className="mt-4"
+              style={{ position: 'relative', height: virtualizer.getTotalSize(), width: '100%' }}
+            >
+              {virtualizer.getVirtualItems().map((vRow) => {
+                const c = items[vRow.index]!
+                return (
+                  <div
+                    key={vRow.key}
+                    data-index={vRow.index}
+                    ref={virtualizer.measureElement}
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      transform: `translateY(${vRow.start - virtualizer.options.scrollMargin}px)`,
+                      paddingBottom: '1rem',
+                    }}
+                  >
+                    <CitationCard
+                      contenu={c.contenu}
+                      oeuvre_nom={c.oeuvre_nom}
+                      theme_nom={c.theme_nom}
+                      auteur_nom={c.auteur_nom}
+                      notes={c.notes}
+                      mots_cles={(c.mots_cles ?? []).map((k) => k.mot)}
+                      canEdit={canEdit}
+                      onEdit={() => setEditingId(c.id)}
+                      isFavorited={favoriteIds.has(c.id)}
+                      onToggleFavorite={() => toggleFavorite(c.id)}
+                    />
+                  </div>
+                )
+              })}
             </div>
           ) : (
             <div className="mt-4 flex flex-col gap-4">
@@ -164,6 +173,10 @@ export function AccueilPage() {
         <div ref={sentinelRef} className="mt-4">
           {loadingMore && <CitationCardSkeleton />}
         </div>
+      )}
+
+      {!loading && !hasMore && items.length > 0 && (
+        <p className="mt-6 text-center text-sm text-(--color-text-secondary)">Fin des résultats.</p>
       )}
 
       {editingId !== null && (
