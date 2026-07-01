@@ -1,13 +1,17 @@
 import { CheckCircle, Circle, ShieldCheck } from '@phosphor-icons/react'
 import type { PasswordConditions } from './passwordPolicy'
 
-const STRENGTH_BAR: Record<string, { barClass: string; width: string }> = {
+const STRENGTH_BAR: Record<'weak' | 'medium' | 'strong', { barClass: string; width: string }> = {
   weak: { barClass: 'bg-red-500', width: 'w-1/3' },
   medium: { barClass: 'bg-orange-400', width: 'w-2/3' },
   strong: { barClass: 'bg-green-500', width: 'w-full' },
 }
 
-const STRENGTH_LABEL: Record<string, string> = { weak: 'Faible', medium: 'Moyen', strong: 'Fort' }
+const STRENGTH_LABEL: Record<'weak' | 'medium' | 'strong', string> = {
+  weak: 'Faible',
+  medium: 'Moyen',
+  strong: 'Fort',
+}
 
 type PasswordRequirementsCardProps = {
   conditions: PasswordConditions
@@ -46,7 +50,7 @@ export function PasswordRequirementsCard({
       ? 'Encore 1 caractère'
       : `Encore ${conditions.length.remaining} caractères`
 
-  const strengthBar = STRENGTH_BAR[conditions.strength.level]
+  const strengthBar = STRENGTH_BAR[conditions.strength.level] ?? STRENGTH_BAR.weak
 
   return (
     <div className="mt-2 rounded-lg border border-(--color-border) bg-(--color-bg-card) p-4">
