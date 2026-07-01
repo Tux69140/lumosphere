@@ -4,12 +4,28 @@ import { Header } from '../Header'
 import { useAuth } from '@/hooks/useAuth'
 import type { AuthUser } from '@/hooks/useAuth'
 import { renderWithClient } from '@/test/renderWithClient'
+import { _resetLocalFavoritesCache } from '@/hooks/useFavorites'
 
 vi.mock('@/hooks/useAuth', () => ({ useAuth: vi.fn() }))
 vi.mock('../ThemeToggle', () => ({ ThemeToggle: () => null }))
 
 function renderHeader(user: AuthUser | null) {
   vi.mocked(useAuth).mockReturnValue({ user, loading: false, login: vi.fn(), logout: vi.fn() })
+  renderWithClient(<Header />)
+}
+
+function renderHeaderWithFavorites(favoriteIds: number[]) {
+  localStorage.clear()
+  _resetLocalFavoritesCache()
+  if (favoriteIds.length > 0) {
+    localStorage.setItem('lum_favorites', JSON.stringify(favoriteIds))
+  }
+  vi.mocked(useAuth).mockReturnValue({
+    user: null,
+    loading: false,
+    login: vi.fn(),
+    logout: vi.fn(),
+  })
   renderWithClient(<Header />)
 }
 
@@ -64,9 +80,16 @@ describe('Header', () => {
     expect(screen.queryByRole('link', { name: /admin/i })).not.toBeInTheDocument()
   })
 
-  it('affiche le lien de marque Lumosphère vers l’accueil', () => {
+  it("affiche le lien de marque Lumosphère vers l'accueil", () => {
     renderHeader(null)
     const brand = screen.getByRole('link', { name: /lumosphère/i })
     expect(brand).toHaveAttribute('href', '/')
+  })
+
+  it('le lien Favoris actif utilise la couleur or-encre (lisible)', () => {
+    renderHeaderWithFavorites([1])
+    const link = screen.getByLabelText('Mes favoris')
+    expect(link.className).toContain('text-(--color-accent-ink)')
+    expect(link.className).not.toContain('text-(--color-accent)')
   })
 })

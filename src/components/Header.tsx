@@ -53,7 +53,7 @@ export function Header() {
           to="/?favoris=1"
           onClick={() => setMenuOpen(false)}
           className={`flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-(--color-bg-button) ${
-            hasFavorites ? 'text-(--color-accent)' : 'text-(--color-link-header)'
+            hasFavorites ? 'text-(--color-accent-ink)' : 'text-(--color-link-header)'
           }`}
           aria-label="Mes favoris"
         >
@@ -104,7 +104,7 @@ export function Header() {
   }
 
   return (
-    <header className="sticky top-0 z-50 border-b border-(--color-border-header) bg-(--color-bg-header) px-4 shadow-sm lg:px-6">
+    <header className="sticky top-0 z-50 border-b border-(--color-border-header) bg-(--color-bg-header) px-4 lg:px-6">
       <div className="flex h-16 items-center justify-between">
         <Link to="/" aria-label="Lumosphère — accueil" className="flex items-center no-underline">
           <img src={wordmarkClair} alt="" aria-hidden="true" className="h-9 w-auto dark:hidden" />
