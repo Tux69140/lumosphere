@@ -23,7 +23,9 @@ def clean_text(text: str) -> str:
     text = HASHTAG_RE.sub(" ", text)
     # Normaliser les espaces
     text = re.sub(r"[ \t]+", " ", text)
-    text = re.sub(r"\s+\n", "\n", text)
+    # Retirer les espaces/tabulations en fin de ligne SANS toucher aux lignes
+    # vides : `\s` engloberait `\n` et fusionnerait les séparateurs de paragraphe.
+    text = re.sub(r"[ \t]+\n", "\n", text)
     text = re.sub(r"\n{3,}", "\n\n", text)
     return text.strip()
 
