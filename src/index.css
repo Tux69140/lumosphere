@@ -163,3 +163,19 @@ body {
   border: 1px solid var(--color-border);
   padding: 0.25rem 0.5rem;
 }
+
+/* Éditeur Milkdown : marges responsives — le thème Crepe fixe padding: 60px 120px
+   ce qui écrase le texte sur mobile (240px mangés sur ~360px d'écran). */
+.milkdown-host .milkdown .ProseMirror {
+  padding: 1rem;
+}
+@media (min-width: 768px) {
+  .milkdown-host .milkdown .ProseMirror {
+    padding: 2rem 3rem;
+  }
+}
+@media (min-width: 1024px) {
+  .milkdown-host .milkdown .ProseMirror {
+    padding: 2rem 4rem;
+  }
+}

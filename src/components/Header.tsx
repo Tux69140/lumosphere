@@ -33,7 +33,8 @@ export function Header() {
 
   // Bouton « Filtres » mobile : seulement sur la vue corpus (contexte présent, hors admin).
   const corpus = useCorpusSearchOptional()
-  const showFilters = corpus !== null && !pathname.startsWith('/admin')
+  const showFilters =
+    corpus !== null && !pathname.startsWith('/admin') && !pathname.startsWith('/atelier')
   const activeFilters = corpus
     ? (corpus.query.trim() !== '' ? 1 : 0) +
       corpus.selectedOeuvreIds.length +

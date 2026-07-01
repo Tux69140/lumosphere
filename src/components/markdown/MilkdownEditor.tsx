@@ -1,9 +1,17 @@
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react'
 import { Crepe } from '@milkdown/crepe'
 import { callCommand, insert, replaceAll } from '@milkdown/kit/utils'
-import { wrapInHeadingCommand, turnIntoTextCommand } from '@milkdown/kit/preset/commonmark'
+import {
+  wrapInHeadingCommand,
+  turnIntoTextCommand,
+  toggleStrongCommand,
+  toggleEmphasisCommand,
+  wrapInBulletListCommand,
+  wrapInBlockquoteCommand,
+} from '@milkdown/kit/preset/commonmark'
 import { editorViewCtx } from '@milkdown/kit/core'
-import { Code, Eye } from '@phosphor-icons/react'
+import { TextSelection } from '@milkdown/kit/prose/state'
+import { Code, Eye, TextAa, CaretDown } from '@phosphor-icons/react'
 import '@milkdown/crepe/theme/common/style.css'
 import '@milkdown/crepe/theme/nord.css'
 import type { MarkdownEditorHandle, MarkdownEditorProps } from './types'
@@ -25,6 +33,10 @@ export const MilkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
     const [mode, setMode] = useState<'wysiwyg' | 'source'>('wysiwyg')
     const [sourceText, setSourceText] = useState(value)
     const [blockType, setBlockType] = useState<string>('paragraph')
+    // Barre de mise en forme repliée par défaut sur mobile (l'autrice lit/corrige
+    // le plus souvent ; elle déplie pour mettre en forme). Toujours dépliée sur
+    // desktop via les classes `md:` (il y a la place).
+    const [toolbarOpen, setToolbarOpen] = useState(false)
 
     /** Lit le type du bloc sous le curseur via ProseMirror. */
     const readBlockType = useCallback((): string => {
@@ -42,6 +54,61 @@ export const MilkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       }
     }, [])
 
+    // Redonne le focus à l'éditeur après une action de barre d'outils.
+    // Nécessaire car les boutons ne bloquent plus le blur (onMouseDown supprimé) :
+    // sans ce refocus, le clavier mobile se fermerait après chaque commande.
+    const focusEditor = useCallback(() => {
+      crepeRef.current?.editor.action((ctx) => ctx.get(editorViewCtx).focus())
+    }, [])
+
+    // Étend la sélection au mot entier sous le curseur quand rien n'est sélectionné.
+    // Couvre les caractères français accentués (é, è, à, ç, œ…).
+    const selectWordAtCursor = useCallback(() => {
+      if (!crepeRef.current) return
+      crepeRef.current.editor.action((ctx) => {
+        const view = ctx.get(editorViewCtx)
+        const { state, dispatch } = view
+        if (!state.selection.empty) return // une sélection existe déjà → on la respecte
+        const { $from } = state.selection
+        const text = $from.parent.textContent
+        const offset = $from.parentOffset
+        const wordChar = /[\wàâäéèêëîïôöùûüÿæœÀÂÄÉÈÊËÎÏÔÖÙÛÜŸÆŒçÇ'-]/
+        let start = offset
+        let end = offset
+        while (start > 0 && wordChar.test(text[start - 1]!)) start--
+        while (end < text.length && wordChar.test(text[end]!)) end++
+        if (start === end) return // curseur dans un espace → on n'étend pas
+        const nodeStart = $from.start()
+        dispatch(
+          state.tr.setSelection(
+            TextSelection.create(state.doc, nodeStart + start, nodeStart + end),
+          ),
+        )
+      })
+    }, [])
+
+    const handleToggleStrong = useCallback(() => {
+      selectWordAtCursor()
+      crepeRef.current?.editor.action(callCommand(toggleStrongCommand.key))
+      focusEditor()
+    }, [focusEditor, selectWordAtCursor])
+
+    const handleToggleEmphasis = useCallback(() => {
+      selectWordAtCursor()
+      crepeRef.current?.editor.action(callCommand(toggleEmphasisCommand.key))
+      focusEditor()
+    }, [focusEditor, selectWordAtCursor])
+
+    const handleToggleBulletList = useCallback(() => {
+      crepeRef.current?.editor.action(callCommand(wrapInBulletListCommand.key))
+      focusEditor()
+    }, [focusEditor])
+
+    const handleToggleBlockquote = useCallback(() => {
+      crepeRef.current?.editor.action(callCommand(wrapInBlockquoteCommand.key))
+      focusEditor()
+    }, [focusEditor])
+
     // Montage unique : Crepe est non contrôlé (defaultValue figé au montage).
     useEffect(() => {
       if (!rootRef.current) return
@@ -50,7 +117,10 @@ export const MilkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
       const crepe = new Crepe({
         root: rootRef.current,
         defaultValue: value,
-        features: { [Crepe.Feature.ImageBlock]: false },
+        features: {
+          [Crepe.Feature.ImageBlock]: false,
+          [Crepe.Feature.BlockEdit]: false,
+        },
       })
       crepeRef.current = crepe
       crepe.create().then(() => {
@@ -104,43 +174,80 @@ export const MilkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorPro
 
     return (
       <div className="rounded-lg border border-(--color-border) bg-(--color-bg-card)">
-        <div className="flex items-center justify-between border-b border-(--color-border) p-2">
-          {mode === 'wysiwyg' ? (
-            <MarkdownToolbar
-              onInsert={(text) => crepeRef.current?.editor.action(insert(text))}
-              onReset={() => crepeRef.current?.editor.action(replaceAll(''))}
-              onSetHeading={(level) => {
-                if (!crepeRef.current) return
-                if (level === 0) {
-                  crepeRef.current.editor.action(callCommand(turnIntoTextCommand.key))
-                } else {
-                  crepeRef.current.editor.action(callCommand(wrapInHeadingCommand.key, level))
-                }
-                setBlockType(readBlockType())
-              }}
-              currentBlockType={blockType}
-            />
-          ) : (
-            <span className="px-1 text-sm text-(--color-text-secondary)">Source Markdown</span>
-          )}
-          <button
-            type="button"
-            onClick={toggleMode}
-            className="ml-2 inline-flex shrink-0 items-center gap-1 rounded px-2 py-1 text-sm hover:bg-(--color-bg-button)"
-            aria-label={
-              mode === 'wysiwyg' ? 'Afficher la source Markdown' : 'Afficher l’éditeur visuel'
-            }
-          >
+        <div className="sticky top-16 z-10 flex flex-col gap-2 rounded-t-lg border-b border-(--color-border) bg-(--color-bg-card) p-2">
+          {/* Ligne 1 : bascule « Format » (mobile) + bascule « Source » (desktop) */}
+          <div className="flex items-center justify-between">
             {mode === 'wysiwyg' ? (
-              <>
-                <Code className="h-4 w-4" aria-hidden="true" /> Source
-              </>
+              <button
+                type="button"
+                onClick={() => setToolbarOpen((o) => !o)}
+                aria-expanded={toolbarOpen}
+                className="inline-flex items-center gap-1 rounded-md px-2 py-1.5 text-sm font-medium text-(--color-text-primary) hover:bg-(--color-bg-button) md:hidden"
+              >
+                <TextAa className="h-4 w-4" aria-hidden="true" />
+                Format
+                <CaretDown
+                  className={`h-3 w-3 opacity-60 transition-transform ${toolbarOpen ? 'rotate-180' : ''}`}
+                  aria-hidden="true"
+                />
+              </button>
             ) : (
-              <>
-                <Eye className="h-4 w-4" aria-hidden="true" /> Visuel
-              </>
+              <span className="px-1 text-sm text-(--color-text-secondary)">Source Markdown</span>
             )}
-          </button>
+
+            {/* Bascule Source/Visuel — desktop uniquement : sur mobile l'autrice
+                ne doit jamais voir la syntaxe Markdown brute. */}
+            <button
+              type="button"
+              onClick={toggleMode}
+              className="ml-auto hidden shrink-0 items-center gap-1 rounded px-2 py-1 text-sm hover:bg-(--color-bg-button) md:inline-flex"
+              aria-label={
+                mode === 'wysiwyg' ? 'Afficher la source Markdown' : "Afficher l'éditeur visuel"
+              }
+            >
+              {mode === 'wysiwyg' ? (
+                <>
+                  <Code className="h-4 w-4" aria-hidden="true" /> Source
+                </>
+              ) : (
+                <>
+                  <Eye className="h-4 w-4" aria-hidden="true" /> Visuel
+                </>
+              )}
+            </button>
+          </div>
+
+          {/* Ligne 2 : barre compacte — repliée sur mobile (hidden), toujours
+              visible sur desktop (md:flex). Dépliée sur mobile quand toolbarOpen. */}
+          {mode === 'wysiwyg' && (
+            <div className={toolbarOpen ? 'flex' : 'hidden md:flex'}>
+              <MarkdownToolbar
+                onInsert={(text) => {
+                  crepeRef.current?.editor.action(insert(text))
+                  focusEditor()
+                }}
+                onReset={() => {
+                  crepeRef.current?.editor.action(replaceAll(''))
+                  focusEditor()
+                }}
+                onSetHeading={(level) => {
+                  if (!crepeRef.current) return
+                  if (level === 0) {
+                    crepeRef.current.editor.action(callCommand(turnIntoTextCommand.key))
+                  } else {
+                    crepeRef.current.editor.action(callCommand(wrapInHeadingCommand.key, level))
+                  }
+                  setBlockType(readBlockType())
+                  focusEditor()
+                }}
+                currentBlockType={blockType}
+                onToggleStrong={handleToggleStrong}
+                onToggleEmphasis={handleToggleEmphasis}
+                onToggleBulletList={handleToggleBulletList}
+                onToggleBlockquote={handleToggleBlockquote}
+              />
+            </div>
+          )}
         </div>
         {/* root TOUJOURS monté (caché en CSS) pour ne pas recréer Crepe à la bascule */}
         <div className={mode === 'wysiwyg' ? 'block' : 'hidden'}>
