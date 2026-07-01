@@ -14,7 +14,7 @@ function TriCheckbox({ state, ...props }: TriProps) {
   return <input ref={ref} type="checkbox" checked={state === 'checked'} {...props} />
 }
 
-const sectionTitle = 'mb-1 text-xs font-semibold uppercase text-(--color-text-secondary)'
+const sectionTitle = 'mb-1 text-sm font-semibold text-(--color-text-secondary)'
 const rowLabel = 'flex items-center gap-2 py-0.5 text-sm text-(--color-text-primary)'
 
 export function CorpusFilters() {
@@ -30,14 +30,12 @@ export function CorpusFilters() {
     keywordMode,
     dateFrom,
     dateTo,
-    sort,
     toggleOeuvre,
     toggleTheme,
     toggleKeyword,
     setKeywordMode,
     setDateFrom,
     setDateTo,
-    setSort,
   } = useCorpusSearch()
 
   return (
@@ -70,40 +68,10 @@ export function CorpusFilters() {
         </div>
       </div>
 
-      {query.trim() && (
-        <div className="mb-3">
-          <h3 className={sectionTitle}>Trier par</h3>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => setSort('date')}
-              className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-                sort === 'date'
-                  ? 'bg-(--color-action) text-(--color-action-text)'
-                  : 'bg-(--color-bg-sidebar) text-(--color-text-secondary) hover:bg-(--color-bg-button)'
-              }`}
-            >
-              Date
-            </button>
-            <button
-              type="button"
-              onClick={() => setSort('score')}
-              className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-                sort === 'score'
-                  ? 'bg-(--color-action) text-(--color-action-text)'
-                  : 'bg-(--color-bg-sidebar) text-(--color-text-secondary) hover:bg-(--color-bg-button)'
-              }`}
-            >
-              Pertinence
-            </button>
-          </div>
-        </div>
-      )}
-
       <div className="mb-3">
-        <h3 className={sectionTitle}>
+        <h2 className={sectionTitle}>
           Œuvres{selectedOeuvreIds.length ? ` (${selectedOeuvreIds.length})` : ''}
-        </h3>
+        </h2>
         {oeuvres.length === 0 ? (
           <p className="text-xs text-(--color-text-placeholder)">Aucune œuvre</p>
         ) : (
@@ -124,9 +92,9 @@ export function CorpusFilters() {
       </div>
 
       <div className="mb-3">
-        <h3 className={sectionTitle}>
+        <h2 className={sectionTitle}>
           Thèmes{selectedThemeIds.length ? ` (${selectedThemeIds.length})` : ''}
-        </h3>
+        </h2>
         {themeTree.length === 0 ? (
           <p className="text-xs text-(--color-text-placeholder)">Aucun thème</p>
         ) : (
@@ -161,9 +129,9 @@ export function CorpusFilters() {
       </div>
 
       <div className="mb-3">
-        <h3 className={sectionTitle}>
+        <h2 className={sectionTitle}>
           Mots-clés{keywordIds.length ? ` (${keywordIds.length})` : ''}
-        </h3>
+        </h2>
         {keywords.length === 0 ? (
           <p className="text-xs text-(--color-text-placeholder)">Aucun mot-clé</p>
         ) : (
@@ -211,7 +179,7 @@ export function CorpusFilters() {
       </div>
 
       <div className="mb-3">
-        <h3 className={sectionTitle}>Période</h3>
+        <h2 className={sectionTitle}>Période</h2>
         <div className="flex flex-col gap-2">
           <label className="flex flex-col gap-0.5">
             <span className="text-xs text-(--color-text-secondary)">Du</span>

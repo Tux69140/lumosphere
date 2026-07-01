@@ -75,4 +75,19 @@ describe('CorpusFilters', () => {
     expect(screen.getByRole('button', { name: 'OU' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'ET' })).toBeInTheDocument()
   })
+
+  it('les titres de sections sont des h2 en casse normale', () => {
+    vi.mocked(useCorpusSearch).mockReturnValue(makeSearch())
+    render(<CorpusFilters />)
+    const h2 = screen.getByRole('heading', { level: 2, name: /Œuvres/ })
+    expect(h2).toBeInTheDocument()
+    expect(h2.className).not.toContain('uppercase')
+  })
+
+  it('ne contient plus le tri Date/Pertinence', () => {
+    vi.mocked(useCorpusSearch).mockReturnValue(makeSearch())
+    render(<CorpusFilters />)
+    expect(screen.queryByRole('button', { name: 'Pertinence' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Date' })).not.toBeInTheDocument()
+  })
 })
