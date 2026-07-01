@@ -1,18 +1,26 @@
 import { useState, useEffect, type FormEvent } from 'react'
 import { useSearchParams, useNavigate } from 'react-router'
 import { Eye, EyeSlash } from '@phosphor-icons/react'
-import { ROLE_ADMIN, ROLE_EDITEUR } from '@/constants/roles'
 import { apiClient } from '@/services/api'
-import { PasswordStrengthMeter } from './PasswordStrengthMeter'
 import { usePasswordStrength } from '@/hooks/usePasswordStrength'
+import { PasswordRequirementsCard } from './PasswordRequirementsCard'
+import { evaluatePasswordConditions, allConditionsMet, isPrivilegedRole } from './passwordPolicy'
+
+type TokenData = {
+  roleId: number
+  type: 'invite' | 'reset'
+  prenom: string
+  nom: string
+  email: string
+  roleNom: string
+}
 
 export function SetPasswordPage() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const token = searchParams.get('token') ?? ''
 
-  const [roleId, setRoleId] = useState<number | null>(null)
-  const [tokenType, setTokenType] = useState<'invite' | 'reset' | null>(null)
+  const [tokenData, setTokenData] = useState<TokenData | null>(null)
   const [tokenError, setTokenError] = useState<string | null>(!token ? 'Lien invalide.' : null)
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
@@ -22,9 +30,6 @@ export function SetPasswordPage() {
   const [submitting, setSubmitting] = useState(false)
 
   const strength = usePasswordStrength(password)
-  const isPrivileged = roleId === ROLE_ADMIN || roleId === ROLE_EDITEUR
-  const isStrong = strength === 'strong'
-  const canSubmit = !submitting && password.length > 0 && (!isPrivileged || isStrong)
 
   useEffect(() => {
     if (!token) return
@@ -32,8 +37,16 @@ export function SetPasswordPage() {
       .tokenInfo(token)
       .then((res) => {
         if (res.status === 'ok' && res.data) {
-          setRoleId(res.data.role_id)
-          setTokenType(res.data.type)
+          setTokenData({
+            roleId: res.data.role_id,
+            type: res.data.type,
+            // Défauts défensifs : couvre une fenêtre de déploiement où le frontend
+            // serait servi avant que le backend n'expose ces champs.
+            prenom: res.data.prenom ?? '',
+            nom: res.data.nom ?? '',
+            email: res.data.email ?? '',
+            roleNom: res.data.role_nom ?? '',
+          })
         } else {
           setTokenError(res.errors?.[0] ?? 'Ce lien est invalide ou a expiré.')
         }
@@ -41,18 +54,28 @@ export function SetPasswordPage() {
       .catch(() => setTokenError('Erreur réseau. Veuillez réessayer.'))
   }, [token])
 
-  const title = tokenType === 'reset' ? 'Nouveau mot de passe' : 'Définir mon mot de passe'
-  const minLength = isPrivileged ? 12 : 8
+  const title = tokenData?.type === 'reset' ? 'Nouveau mot de passe' : 'Définir mon mot de passe'
+
+  const conditions = tokenData
+    ? evaluatePasswordConditions(password, tokenData.roleId, strength, {
+        prenom: tokenData.prenom,
+        nom: tokenData.nom,
+        email: tokenData.email,
+      })
+    : null
+
+  const canSubmit =
+    !submitting &&
+    !!conditions &&
+    allConditionsMet(conditions) &&
+    password === confirm &&
+    confirm.length > 0
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     setError(null)
-    if (password.length < minLength) {
-      setError(`Le mot de passe doit faire au moins ${minLength} caractères.`)
-      return
-    }
-    if (isPrivileged && !isStrong) {
-      setError('Le mot de passe doit atteindre le niveau « Fort ».')
+    if (!conditions || !allConditionsMet(conditions)) {
+      setError('Veuillez remplir toutes les conditions du mot de passe.')
       return
     }
     if (password !== confirm) {
@@ -105,7 +128,7 @@ export function SetPasswordPage() {
     )
   }
 
-  if (roleId === null) {
+  if (!tokenData || !conditions) {
     return (
       <div className="w-full max-w-sm rounded-lg border border-(--color-border) bg-(--color-bg-card) p-6">
         <p className="text-sm text-(--color-text-secondary)">Vérification du lien…</p>
@@ -129,9 +152,7 @@ export function SetPasswordPage() {
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div className="flex flex-col gap-1">
           <label htmlFor="sp-password" className="text-sm text-(--color-text-secondary)">
-            {isPrivileged
-              ? 'Mot de passe (niveau Fort requis)'
-              : `Mot de passe (au moins ${minLength} caractères)`}
+            Mot de passe
           </label>
           <div className="relative">
             <input
@@ -151,7 +172,11 @@ export function SetPasswordPage() {
               {showPwd ? <EyeSlash size={18} /> : <Eye size={18} />}
             </button>
           </div>
-          {isPrivileged && <PasswordStrengthMeter password={password} />}
+          <PasswordRequirementsCard
+            conditions={conditions}
+            roleLabel={tokenData.roleNom}
+            isPrivileged={isPrivilegedRole(tokenData.roleId)}
+          />
         </div>
 
         <div className="flex flex-col gap-1">
