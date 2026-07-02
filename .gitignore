@@ -33,6 +33,7 @@ tmp/
 # Playwright test artifacts
 playwright-report/
 test-results/
+.playwright-mcp/
 
 # Outillage IA local (Claude Code, etc.) — non versionné
 .claude/
