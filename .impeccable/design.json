@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-06-26T13:24:51Z",
+  "generatedAt": "2026-07-02T00:00:00Z",
   "title": "Design System: Lumosphère",
   "extensions": {
     "colorMeta": {
@@ -157,7 +157,7 @@
   ],
   "narrative": {
     "northStar": "La Lumosphère : Index interactif des ressources proposées par Lulumineuse",
-    "overview": "Lumosphère est une interface de travail au service d'un corpus littéraire vivant. Sa personnalité visuelle est celle d'une revue indépendante de qualité : soignée sans être institutionnelle, dense sans être surchargée. Le design ne se montre pas — il s'efface pour laisser les citations occuper tout l'espace qu'elles méritent.\n\nLa chaleur du système naît de deux couleurs seulement : un Or Parchemin qui marque ce qui compte, et un Vert Éditorial sombre pour toutes les actions. Le reste est de l'encre sur du papier — fond quasi-blanc légèrement teinté, textes bruns-chauds, bordures argentées discrètes.\n\nCe système refuse explicitement : le blanc aseptisé SaaS, le gris institutionnel des archives académiques, les grilles de KPI analytics, et les hero sections marketing.",
+    "overview": "Lumosphère est une interface de travail au service d'un corpus vivant de citations spirituelles. Sa personnalité visuelle est celle d'une revue indépendante de qualité : soignée sans être institutionnelle, dense sans être surchargée. Le design ne se montre pas — il s'efface pour laisser les citations occuper tout l'espace qu'elles méritent.\n\nLa chaleur du système naît de deux couleurs seulement : un Or Parchemin qui marque ce qui compte, et un Vert Éditorial sombre pour toutes les actions. Le reste est de l'encre sur du papier — fond quasi-blanc légèrement teinté, textes bruns-chauds, bordures argentées discrètes.\n\nLa surface de lecture (accueil/bibliothèque) porte en plus une intention contemplative et apaisée : rythme de lecture délibérément ralenti, respiration généreuse — sans s'étendre à l'admin ni à l'atelier, qui restent denses et efficaces.\n\nCe système refuse explicitement : le blanc aseptisé SaaS, le gris institutionnel des archives académiques, les grilles de KPI analytics, les hero sections marketing, et l'esthétique de site paroissial/associatif daté (couleurs criardes, iconographie religieuse clichée).",
     "keyCharacteristics": [
       "Économie chromatique : deux couleurs-clés (or + vert), le reste en neutres chauds",
       "Typographie unique (Inter) déclinée en poids et tailles — pas de serif, pas de display extravagant",
@@ -199,7 +199,8 @@
       "Utiliser shadow-sm → shadow-md au hover sur les CitationCards uniquement.",
       "Utiliser les en-têtes de groupes en uppercase tracking-widest text-xs dans l'admin pour structurer les panneaux denses.",
       "Respecter les deux familles de tags : mauve pour les filtres actifs, givre pour les mots-clés de corpus.",
-      "Utiliser text-wrap: balance sur les h1 et h2."
+      "Utiliser text-wrap: balance sur les h1 et h2.",
+      "Privilégier l'air et l'espacement généreux sur la surface lecteur (accueil/bibliothèque) plutôt que la densité — lecture contemplative de citations spirituelles, pas un tableau de bord."
     ],
     "donts": [
       "Pas de fond crème, sable, parchemin ou ivoire (oklch L 0.84-0.97, C < 0.06, hue 40-100). Le fond de page est Blanc Végétal — teinté de vert froid, pas de brun chaud.",
@@ -211,7 +212,8 @@
       "Pas de polices en mode display (titres >24px) dans les boutons, labels ou cellules de tableaux.",
       "Ne pas utiliser modal comme première réponse à un formulaire complexe.",
       "Pas de grilles de cartes identiques (même hauteur, même icône, même structure répétée).",
-      "Pas de hex directs dans les classes Tailwind pour les couleurs sémantiques — utiliser uniquement les tokens CSS var(--color-*)."
+      "Pas de hex directs dans les classes Tailwind pour les couleurs sémantiques — utiliser uniquement les tokens CSS var(--color-*).",
+      "Pas d'esthétique religieuse/associative datée : couleurs criardes, mise en page chargée, iconographie clichée (colombes, mandalas, halos, dégradés ciel)."
     ]
   }
 }

@@ -1,6 +1,6 @@
 ---
 name: Lumosphère
-description: Index interactif des ressources proposées par Lulumineuse — bibliothèque éditoriale de citations littéraires
+description: Index interactif des ressources proposées par Lulumineuse — bibliothèque éditoriale de citations spirituelles
 colors:
   action: "#2b4f35"
   action-hover: "#4338ca"
@@ -116,11 +116,13 @@ components:
 
 **Creative North Star: "La Lumosphère : Index interactif des ressources proposées par Lulumineuse"**
 
-Lumosphère est une interface de travail au service d'un corpus littéraire vivant. Sa personnalité visuelle est celle d'une revue indépendante de qualité : soignée sans être institutionnelle, dense sans être surchargée. Le design ne se montre pas — il s'efface pour laisser les citations occuper tout l'espace qu'elles méritent. Chaque décision visuelle répond à une seule question : est-ce que ça aide à lire, à trouver, à valider ?
+Lumosphère est une interface de travail au service d'un corpus vivant de citations spirituelles. Sa personnalité visuelle est celle d'une revue indépendante de qualité : soignée sans être institutionnelle, dense sans être surchargée. Le design ne se montre pas — il s'efface pour laisser les citations occuper tout l'espace qu'elles méritent. Chaque décision visuelle répond à une seule question : est-ce que ça aide à lire, à trouver, à valider ?
 
 La chaleur du système naît de deux couleurs seulement : un **Or Parchemin** qui marque ce qui compte (titres d'œuvres, sélections, accents), et un **Vert Éditorial** sombre pour toutes les actions. Le reste est de l'encre sur du papier — fond quasi-blanc légèrement teinté de vert végétal, textes bruns-chauds, bordures argentées discrètes. En mode sombre, le Vert Éditorial devient un **Vert Nuit** (`#3f7a54`, rappel du bandeau de marque) et l'Or Parchemin (`#d3b67b`) reste identique au mode clair — les deux couleurs identitaires sont **ancrées sur la marque dans les deux modes**, plutôt que pivotées vers l'indigo/orange (choix précédent, abandonné). Seul le survol des actions (`--color-action-hover`) reste un indigo distinct, assumé comme signal de changement d'état.
 
-Ce système refuse explicitement : le blanc aseptisé SaaS (Notion/Linear), le gris institutionnel des archives académiques, les grilles de KPI analytics, et les hero sections marketing avec animations de scroll.
+La surface de lecture (accueil/bibliothèque) porte en plus une intention **contemplative et apaisée** : le contenu étant des citations spirituelles, le rythme de lecture y est délibérément ralenti — respiration généreuse, pas de course à la densité. Cette respiration reste propre à la surface lecteur ; elle ne s'étend pas à l'admin ni à l'atelier, qui restent denses et efficaces (§ Users, PRODUCT.md).
+
+Ce système refuse explicitement : le blanc aseptisé SaaS (Notion/Linear), le gris institutionnel des archives académiques, les grilles de KPI analytics, les hero sections marketing avec animations de scroll, et l'esthétique de site paroissial ou associatif daté (couleurs criardes, mise en page chargée, iconographie religieuse clichée — colombes, mandalas, halos).
 
 **Key Characteristics:**
 - Économie chromatique : deux couleurs-clés (or + vert), le reste en neutres chauds
@@ -266,6 +268,7 @@ En-têtes de groupes de permissions dans l'écran Rôles et droits : `text-xs fo
 - **Do** utiliser les en-têtes de groupes en `uppercase tracking-widest text-xs` dans l'admin pour structurer les panneaux denses. C'est la signature typographique de la zone d'administration.
 - **Do** respecter les deux familles de tags : mauve (`--color-tag-bg`) pour les filtres actifs, givre (`--color-bg-sidebar`) pour les mots-clés de corpus.
 - **Do** utiliser `text-wrap: balance` sur les `<h1>` et `<h2>` pour éviter les veuves.
+- **Do** privilégier l'air et l'espacement généreux sur la surface lecteur (accueil/bibliothèque) plutôt que la densité : c'est une lecture contemplative de citations spirituelles, pas un tableau de bord à parcourir vite.
 
 ### Don't:
 - **Don't** introduire de fond crème, sable, parchemin ou ivoire (`oklch L 0.84-0.97, C < 0.06, hue 40-100`). Le fond de page est Blanc Végétal (`#f8fefc`) — légèrement teinté de vert froid, pas de brun chaud. C'est délibéré et distinctif.
@@ -278,3 +281,4 @@ En-têtes de groupes de permissions dans l'écran Rôles et droits : `text-xs fo
 - **Don't** utiliser `modal` comme première réponse à un formulaire complexe. Épuiser les alternatives inline avant d'ouvrir une Dialog.
 - **Don't** créer de grilles de cartes identiques (même hauteur, même icône, même structure répétée). Les cartes de citations varient naturellement ; si une nouvelle grille devient uniforme, revoir l'architecture du composant.
 - **Don't** ignorer le mode sombre lors de l'ajout de couleurs codées en dur. Utiliser uniquement les tokens CSS (`var(--color-*)`) — jamais de hex directs dans les classes Tailwind pour les couleurs sémantiques.
+- **Don't** utiliser d'esthétique religieuse/associative datée : couleurs criardes, mise en page chargée, iconographie clichée (colombes, mandalas, halos, dégradés ciel). Anti-référence explicite du projet (PRODUCT.md).
